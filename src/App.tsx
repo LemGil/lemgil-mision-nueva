@@ -39,6 +39,7 @@ export default function App() {
 
   const configurada = hayConexionConfigurada();
   const [dentro, setDentro] = useState(!configurada);
+  const [menuAbierto, setMenuAbierto] = useState(false);
   const [restaurando, setRestaurando] = useState(configurada);
   const [sync, setSync] = useState<Sincronizador | null>(null);
   const [estadoSync, setEstadoSync] = useState<EstadoSync | null>(null);
@@ -101,7 +102,23 @@ export default function App() {
   return (
     <HashRouter>
       <div className="app">
-        <nav className="menu">
+        <div className="barra-movil">
+          <span className="menu-marca">Ministerio LemGil</span>
+          <button
+            type="button"
+            className="barra-boton"
+            aria-label={menuAbierto ? 'Recoger el menú' : 'Abrir el menú'}
+            onClick={() => setMenuAbierto((v) => !v)}
+          >
+            {menuAbierto ? '✕' : '☰'}
+          </button>
+        </div>
+        <nav
+          className={`menu ${menuAbierto ? 'abierto' : ''}`}
+          onClick={(e) => {
+            if ((e.target as HTMLElement).closest('a')) setMenuAbierto(false);
+          }}
+        >
           <div className="menu-marca">Ministerio LemGil</div>
           <div className="menu-grupo">Secretaría</div>
           <NavLink to="/" end>

@@ -199,10 +199,37 @@ button.persona-fila:hover, .persona-fila.activa { border-color: var(--dorado); }
   color: var(--texto); padding: 9px 10px; font-size: 15px;
 }
 
+/* Barra superior del móvil: el menú se recoge tras el ☰ para que el
+ * contenido aproveche toda la pantalla. En escritorio no se ve. */
+.barra-movil {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--superficie);
+  border-bottom: 1px solid var(--borde);
+  padding: 10px 14px;
+  position: sticky;
+  top: 0;
+  z-index: 200;
+}
+.barra-movil .menu-marca { padding: 0; }
+.barra-boton {
+  background: none;
+  border: 1px solid var(--borde);
+  color: var(--texto);
+  border-radius: 9px;
+  font-size: 18px;
+  padding: 5px 13px;
+  cursor: pointer;
+}
+
 @media (max-width: 720px) {
   .app { flex-direction: column; }
-  .menu { width: 100%; flex-direction: row; flex-wrap: wrap; align-items: center; }
-  .menu-grupo { width: 100%; padding-top: 6px; }
+  .barra-movil { display: flex; }
+  /* Recogido por defecto; se despliega como panel al tocar el ☰. */
+  .menu { display: none; width: 100%; border-right: none; border-bottom: 1px solid var(--borde); }
+  .menu.abierto { display: flex; }
+  .menu .menu-marca { display: none; }
   .contenido { padding: 14px; }
 }
 
