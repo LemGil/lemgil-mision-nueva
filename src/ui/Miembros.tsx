@@ -7,6 +7,8 @@ import type { DatosMinisterio, EstadoMiembro } from '../modelo/tipos';
 import { cumpleanosProximos } from '../motor/alertas';
 import { escaleraDeMiembro, estaEnElPaso, tarjetasDeMiembros } from '../motor/miembros';
 import { buscarPersonas } from '../motor/personaVista';
+import { agrupar } from '../motor/vistas';
+import BarraVistas, { type Vista } from './BarraVistas';
 import SelectorPersona from './SelectorPersona';
 import Modal from './Modal';
 
@@ -26,6 +28,8 @@ export default function Miembros({ repo }: { repo: Repo }) {
   const [error, setError] = useState('');
   const [hitoPaso, setHitoPaso] = useState('');
   const [hitoFecha, setHitoFecha] = useState(hoyIso());
+  const [vista, setVista] = useState<Vista>('lista');
+  const [agruparPor, setAgruparPor] = useState('grupo');
 
   const recargar = useCallback(() => setRecargas((x) => x + 1), []);
   useEffect(() => {
@@ -69,6 +73,58 @@ export default function Miembros({ repo }: { repo: Repo }) {
     ['Sirviendo', tarjetas.sirviendo], ['Hermano Mayor', tarjetas.hermanoMayor],
     ['Líderes', tarjetas.lideres],
   ];
+
+  const grupoDeMiembro = (m: (typeof lista)[number]) => {
+    const gid = m.grupoId ?? personaDe(m.personaId)?.grupoId;
+    return gid ? datos.grupos.find((g) => g.id === gid)?.nombre : undefined;
+  };
+
+  const claveGrupo = (m: (typeof lista)[number]): string => {
+    if (agruparPor === 'zona') return personaDe(m.personaId)?.zona?.trim() || 'Sin zona';
+    if (agruparPor === 'escalera') {
+      const esc = escaleraDeMiembro(datos, m);
+      return esc.actual ? `${esc.actual.emoji} Le falta: ${esc.actual.nombre}` : '🏁 Escalera completa';
+    }
+    return grupoDeMiembro(m) ?? 'Sin grupo';
+  };
+
+  const filaMiembro = (m: (typeof lista)[number]) => {
+    const p = personaDe(m.personaId);
+    const esc = escaleraDeMiembro(datos, m);
+    return (
+      <li key={m.id}>
+        <button className={`persona-fila ${seleccionado === m.id ? 'activa' : ''}`} onClick={() => setSeleccionado(m.id)}>
+          <span className="persona-nombre">{p?.nombre} {p?.apellidos ?? ''}</span>
+          <span className="persona-meta">
+            {m.estado} · escalera {esc.cumplidos}/{esc.total}
+            {esc.actual ? ` · le falta ${esc.actual.nombre}` : ' · completa'}
+          </span>
+        </button>
+      </li>
+    );
+  };
+
+  const tarjetaMiembro = (m: (typeof lista)[number]) => {
+    const p = personaDe(m.personaId);
+    const esc = escaleraDeMiembro(datos, m);
+    return (
+      <button key={m.id} className="persona-card" onClick={() => setSeleccionado(m.id)}>
+        <span className="persona-nombre">{p?.nombre} {p?.apellidos ?? ''}</span>
+        <span className="persona-meta">{m.estado} · {grupoDeMiembro(m) ?? 'Sin grupo'}</span>
+        <span className="franja">
+          {esc.estados.map((e) => (
+            <span key={e.paso.id} className={`franja-paso ${e.cumplido ? 'paso-hecho' : 'paso-falta'}`}>
+              {e.cumplido ? '✓' : '○'} {e.paso.emoji}
+            </span>
+          ))}
+        </span>
+        <span className="persona-meta">
+          Escalera {esc.cumplidos}/{esc.total}
+          {esc.actual ? ` · le falta ${esc.actual.nombre}` : ' · 🏁 completa'}
+        </span>
+      </button>
+    );
+  };
 
   return (
     <div className="panel">
@@ -144,24 +200,39 @@ export default function Miembros({ repo }: { repo: Repo }) {
         <span className="tenue">{lista.length} en el Directorio</span>
       </div>
 
-      <ul className="lista-personas">
-        {lista.map((m) => {
-          const p = personaDe(m.personaId);
-          const esc = escaleraDeMiembro(datos, m);
-          return (
-            <li key={m.id}>
-              <button className={`persona-fila ${seleccionado === m.id ? 'activa' : ''}`} onClick={() => setSeleccionado(m.id)}>
-                <span className="persona-nombre">{p?.nombre} {p?.apellidos ?? ''}</span>
-                <span className="persona-meta">
-                  {m.estado} · escalera {esc.cumplidos}/{esc.total}
-                  {esc.actual ? ` · le falta ${esc.actual.nombre}` : ' · completa'}
-                </span>
-              </button>
-            </li>
-          );
-        })}
-        {lista.length === 0 && <li className="tenue">Sin miembros para este filtro.</li>}
-      </ul>
+      <BarraVistas
+        vista={vista}
+        setVista={setVista}
+        agruparPor={agruparPor}
+        setAgruparPor={setAgruparPor}
+        opciones={[
+          { valor: 'grupo', etiqueta: 'Grupo' },
+          { valor: 'zona', etiqueta: 'Zona' },
+          { valor: 'escalera', etiqueta: 'El paso que le falta' },
+        ]}
+      />
+
+      {vista === 'lista' && (
+        <ul className="lista-personas">
+          {lista.map(filaMiembro)}
+          {lista.length === 0 && <li className="tenue">Sin miembros para este filtro.</li>}
+        </ul>
+      )}
+      {vista === 'tarjetas' && (
+        lista.length === 0
+          ? <p className="tenue">Sin miembros para este filtro.</p>
+          : <div className="tarjetas-grid">{lista.map(tarjetaMiembro)}</div>
+      )}
+      {vista === 'agrupada' && (
+        lista.length === 0
+          ? <p className="tenue">Sin miembros para este filtro.</p>
+          : agrupar(lista, claveGrupo).map((g) => (
+              <div key={g.titulo}>
+                <h3 className="grupo-titulo">{g.titulo} · {g.items.length}</h3>
+                <ul className="lista-personas">{g.items.map(filaMiembro)}</ul>
+              </div>
+            ))
+      )}
 
       {detalle && escalera && (
         <Modal onCerrar={() => setSeleccionado(null)}>

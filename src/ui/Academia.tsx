@@ -9,6 +9,7 @@ export default function Academia({ repo }: { repo: Repo }) {
   const [datos, setDatos] = useState<DatosMinisterio | null>(null);
   const [recargas, setRecargas] = useState(0);
   const [error, setError] = useState('');
+  const [ver, setVer] = useState('activos');
   const recargar = useCallback(() => setRecargas((x) => x + 1), []);
   useEffect(() => {
     let vivo = true;
@@ -22,6 +23,8 @@ export default function Academia({ repo }: { repo: Repo }) {
   }, [repo, recargas]);
 
   if (!datos) return <p className="cargando">Cargando…</p>;
+
+  const visibles = datos.estudiantes.filter((e) => ver === 'todos' || (ver === 'activos' ? e.estado === 'Activo' : e.estado !== 'Activo'));
   const activos = datos.estudiantes.filter((e) => e.estado === 'Activo').length;
   const personaDe = (id: string) => datos.personas.find((p) => p.id === id);
 
@@ -50,8 +53,19 @@ export default function Academia({ repo }: { repo: Repo }) {
           }}
         />
       </section>
+      <div className="vista-barra">
+        <label>
+          Ver{' '}
+          <select value={ver} onChange={(e) => setVer(e.target.value)}>
+            <option value="activos">Solo activos</option>
+            <option value="inactivos">Inactivos</option>
+            <option value="todos">Todos</option>
+          </select>
+        </label>
+        <span className="tenue">{visibles.length} en la lista</span>
+      </div>
       <ul className="lista-personas">
-        {datos.estudiantes.map((e) => {
+        {visibles.map((e) => {
           const p = personaDe(e.personaId);
           return (
             <li key={e.id}>
@@ -71,7 +85,7 @@ export default function Academia({ repo }: { repo: Repo }) {
             </li>
           );
         })}
-        {datos.estudiantes.length === 0 && <li className="tenue">Sin estudiantes todavía.</li>}
+        {visibles.length === 0 && <li className="tenue">Sin estudiantes para esta vista.</li>}
       </ul>
     </div>
   );

@@ -4,6 +4,9 @@ import { actualizarPersona, registrarPersona, type EntradaMision } from '../dato
 import type { Repo } from '../datos/repo';
 import type { DatosMinisterio, Persona, Sexo } from '../modelo/tipos';
 import { buscarPersonas, fichaDePersona, situacionDe } from '../motor/personaVista';
+import { clasificarPersona } from '../motor/censo';
+import { agrupar, visibleSegunVer, type VerPersonas } from '../motor/vistas';
+import BarraVistas, { type Vista } from './BarraVistas';
 import Modal from './Modal';
 
 const hoyIso = () => new Date().toISOString().slice(0, 10);
@@ -174,6 +177,9 @@ export default function Personas({ repo }: { repo: Repo }) {
   const [altaBeneficiario, setAltaBeneficiario] = useState(false);
   const [errorForm, setErrorForm] = useState('');
   const [errorEdicion, setErrorEdicion] = useState('');
+  const [ver, setVer] = useState<VerPersonas>('activos');
+  const [vista, setVista] = useState<Vista>('lista');
+  const [agruparPor, setAgruparPor] = useState('paso');
 
   const recargar = useCallback(() => setRecargas((x) => x + 1), []);
 
@@ -190,7 +196,9 @@ export default function Personas({ repo }: { repo: Repo }) {
 
   if (!datos) return <p className="cargando">Cargando…</p>;
 
-  const lista = buscarPersonas(datos, busqueda);
+  const lista = buscarPersonas(datos, busqueda).filter((per) =>
+    visibleSegunVer(clasificarPersona(datos, per.id).clase, ver),
+  );
   const ficha = seleccionada ? fichaDePersona(datos, seleccionada) : null;
   const nombrePasoEntrada = (e: EntradaMision) =>
     datos.pasos.find((p) => p.id === { alcanzado: 'ps-congregado', confeso: 'ps-confeso', converso: 'ps-nuevo', bautizado: 'ps-bautizado' }[e])?.nombre ?? e;
@@ -261,6 +269,45 @@ export default function Personas({ repo }: { repo: Repo }) {
       ).filter((f): f is [string, string] => !!f[1])
     : [];
 
+  const claveGrupo = (per: Persona): string => {
+    if (agruparPor === 'zona') return per.zona?.trim() || 'Sin zona';
+    if (agruparPor === 'grupo') return grupoDe(per.grupoId) ?? 'Sin grupo';
+    return situacionDe(datos, per.id).texto;
+  };
+
+  const filaPersona = (per: Persona) => {
+    const sit = situacionDe(datos, per.id);
+    const fichaP = fichaDePersona(datos, per.id);
+    return (
+      <li key={per.id}>
+        <button className={`persona-fila ${seleccionada === per.id ? 'activa' : ''}`} onClick={() => setSeleccionada(per.id)}>
+          <span className="persona-nombre">{per.nombre} {per.apellidos ?? ''}</span>
+          <span className="persona-meta">{per.telefono ?? 'Sin teléfono'}{per.numeroIdentidad ? ` · ${per.numeroIdentidad}` : ''}</span>
+          <span className={`chip chip-${sit.tono}`}>{sit.texto}</span>
+          {fichaP && fichaP.repetidos.length > 0 && (
+            <span className="chip chip-rojo">
+              ⚠ {fichaP.repetidos.map((r) => `${r.cantidad} en ${r.proceso}`).join(' · ')}
+            </span>
+          )}
+        </button>
+      </li>
+    );
+  };
+
+  const tarjetaPersona = (per: Persona) => {
+    const sit = situacionDe(datos, per.id);
+    return (
+      <button key={per.id} className="persona-card" onClick={() => setSeleccionada(per.id)}>
+        <span className="persona-nombre">{per.nombre} {per.apellidos ?? ''}</span>
+        <span><span className={`chip chip-${sit.tono}`}>{sit.texto}</span></span>
+        <span className="persona-meta">{per.telefono ?? 'Sin teléfono'}</span>
+        <span className="persona-meta">
+          {[grupoDe(per.grupoId), per.zona].filter(Boolean).join(' · ') || 'Sin grupo ni zona'}
+        </span>
+      </button>
+    );
+  };
+
   return (
     <div className="panel">
       <header className="panel-cabecera">
@@ -312,32 +359,47 @@ export default function Personas({ repo }: { repo: Repo }) {
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
         />
-        <span className="tenue">
-          {busqueda ? `Mostrando ${lista.length} de ${datos.personas.length}` : `${datos.personas.length} personas`}
-        </span>
+        <select value={ver} onChange={(e) => setVer(e.target.value as VerPersonas)}>
+          <option value="activos">Solo activos</option>
+          <option value="bajas">Bajas (apartados, traslados, fallecidos)</option>
+          <option value="todos">Todos</option>
+        </select>
+        <span className="tenue">Mostrando {lista.length} de {datos.personas.length}</span>
       </div>
 
-      <ul className="lista-personas">
-        {lista.map((per) => {
-          const sit = situacionDe(datos, per.id);
-          const fichaP = fichaDePersona(datos, per.id);
-          return (
-            <li key={per.id}>
-              <button className={`persona-fila ${seleccionada === per.id ? 'activa' : ''}`} onClick={() => setSeleccionada(per.id)}>
-                <span className="persona-nombre">{per.nombre} {per.apellidos ?? ''}</span>
-                <span className="persona-meta">{per.telefono ?? 'Sin teléfono'}{per.numeroIdentidad ? ` · ${per.numeroIdentidad}` : ''}</span>
-                <span className={`chip chip-${sit.tono}`}>{sit.texto}</span>
-                {fichaP && fichaP.repetidos.length > 0 && (
-                  <span className="chip chip-rojo">
-                    ⚠ {fichaP.repetidos.map((r) => `${r.cantidad} en ${r.proceso}`).join(' · ')}
-                  </span>
-                )}
-              </button>
-            </li>
-          );
-        })}
-        {lista.length === 0 && <li className="tenue">Sin coincidencias.</li>}
-      </ul>
+      <BarraVistas
+        vista={vista}
+        setVista={setVista}
+        agruparPor={agruparPor}
+        setAgruparPor={setAgruparPor}
+        opciones={[
+          { valor: 'paso', etiqueta: 'El paso en que está' },
+          { valor: 'zona', etiqueta: 'Zona' },
+          { valor: 'grupo', etiqueta: 'Grupo' },
+        ]}
+      />
+
+      {vista === 'lista' && (
+        <ul className="lista-personas">
+          {lista.map(filaPersona)}
+          {lista.length === 0 && <li className="tenue">Sin coincidencias.</li>}
+        </ul>
+      )}
+      {vista === 'tarjetas' && (
+        lista.length === 0
+          ? <p className="tenue">Sin coincidencias.</p>
+          : <div className="tarjetas-grid">{lista.map(tarjetaPersona)}</div>
+      )}
+      {vista === 'agrupada' && (
+        lista.length === 0
+          ? <p className="tenue">Sin coincidencias.</p>
+          : agrupar(lista, claveGrupo).map((g) => (
+              <div key={g.titulo}>
+                <h3 className="grupo-titulo">{g.titulo} · {g.items.length}</h3>
+                <ul className="lista-personas">{g.items.map(filaPersona)}</ul>
+              </div>
+            ))
+      )}
 
       {ficha && p && (
         <Modal

@@ -17,6 +17,7 @@ export default function BienComun({ repo }: { repo: Repo }) {
   const [mes, setMes] = useState(0);
   const [seleccionado, setSeleccionado] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [ver, setVer] = useState('activos');
   const [monto, setMonto] = useState('');
   const [fechaAporte, setFechaAporte] = useState(hoyIso());
   const [tipoAporte, setTipoAporte] = useState<'Diezmo' | 'Ofrenda'>('Diezmo');
@@ -34,6 +35,8 @@ export default function BienComun({ repo }: { repo: Repo }) {
   }, [repo, recargas]);
 
   if (!datos) return <p className="cargando">Cargando…</p>;
+
+  const visibles = datos.diezmadores.filter((d) => ver === 'todos' || (ver === 'activos' ? d.activo : !d.activo));
   const periodo: Periodo | undefined =
     ano === 0
       ? undefined
@@ -102,8 +105,19 @@ export default function BienComun({ repo }: { repo: Repo }) {
         />
       </section>
 
+      <div className="vista-barra">
+        <label>
+          Ver{' '}
+          <select value={ver} onChange={(e) => setVer(e.target.value)}>
+            <option value="activos">Solo activos</option>
+            <option value="inactivos">Inactivos</option>
+            <option value="todos">Todos</option>
+          </select>
+        </label>
+        <span className="tenue">{visibles.length} en la lista</span>
+      </div>
       <ul className="lista-personas">
-        {datos.diezmadores.map((d) => {
+        {visibles.map((d) => {
           const p = personaDe(d.personaId);
           return (
             <li key={d.id}>
@@ -115,7 +129,7 @@ export default function BienComun({ repo }: { repo: Repo }) {
             </li>
           );
         })}
-        {datos.diezmadores.length === 0 && <li className="tenue">Sin diezmadores todavía.</li>}
+        {visibles.length === 0 && <li className="tenue">Sin diezmadores para esta vista.</li>}
       </ul>
 
       {detalle && (

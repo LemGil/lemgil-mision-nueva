@@ -354,3 +354,33 @@ button.persona-fila:hover, .persona-fila.activa { border-color: var(--dorado); }
  * cajón entra por la izquierda y el botón que lo abre vive ahí mismo. */
 .barra-movil { justify-content: flex-start; gap: 12px; }
 .barra-boton { order: -1; }
+
+/* Vistas de las listas */
+.vista-barra { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; margin: 10px 0; }
+.vista-barra select {
+  background: var(--superficie); border: 1px solid var(--borde); border-radius: 8px;
+  color: var(--texto); padding: 6px 8px; font-size: 14px;
+}
+.tarjetas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(215px, 1fr));
+  gap: 10px;
+  margin: 8px 0;
+}
+.persona-card {
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  padding: 14px;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: var(--texto);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  box-shadow: 0 1px 4px rgba(28, 28, 28, 0.07);
+}
+.persona-card:hover { border-color: var(--dorado); }
+.persona-card .persona-meta { display: block; }
+.grupo-titulo { margin: 16px 0 6px; font-size: 16px; }

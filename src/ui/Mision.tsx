@@ -7,6 +7,8 @@ import type { DatosMinisterio, Periodo } from '../modelo/tipos';
 import { fechaEnPasoActual } from '../motor/alertas';
 import { conteoMision, siguientePasoEnRuta } from '../motor/mision';
 import { buscarPersonas } from '../motor/personaVista';
+import { agrupar } from '../motor/vistas';
+import BarraVistas, { type Vista } from './BarraVistas';
 import Modal from './Modal';
 
 const hoyIso = () => new Date().toISOString().slice(0, 10);
@@ -21,6 +23,8 @@ export default function Mision({ repo }: { repo: Repo }) {
   const [busqueda, setBusqueda] = useState('');
   const [seleccionada, setSeleccionada] = useState<string | null>(null);
   const [errorAccion, setErrorAccion] = useState('');
+  const [vista, setVista] = useState<Vista>('lista');
+  const [agruparPor, setAgruparPor] = useState('paso');
 
   // Nuevo congregado
   const [mostrarNuevo, setMostrarNuevo] = useState(false);
@@ -98,6 +102,66 @@ export default function Mision({ repo }: { repo: Repo }) {
 
   const anoActual = new Date().getFullYear();
   const anos = [0, anoActual - 1, anoActual, anoActual + 1];
+
+  const diasEnPaso = (c: (typeof lista)[number]) =>
+    Math.max(
+      0,
+      Math.round(
+        (new Date(hoy + 'T12:00:00').getTime() -
+          new Date(fechaEnPasoActual(c.estado, c.historial, c.fecha) + 'T12:00:00').getTime()) /
+          86400000,
+      ),
+    );
+
+  const claveGrupo = (c: (typeof lista)[number]): string => {
+    const per = personaDe(c.personaId);
+    if (agruparPor === 'zona') return per?.zona?.trim() || 'Sin zona';
+    if (agruparPor === 'grupo') {
+      const g = per?.grupoId ? datos.grupos.find((x) => x.id === per.grupoId) : undefined;
+      return g?.nombre ?? 'Sin grupo';
+    }
+    const paso = datos.pasos.find((x) => x.id === c.estado);
+    return paso ? `${paso.emoji} ${paso.nombre}` : c.estado;
+  };
+
+  const filaConversion = (c: (typeof lista)[number]) => {
+    const p = personaDe(c.personaId);
+    const paso = datos.pasos.find((x) => x.id === c.estado);
+    const siguiente = siguientePasoEnRuta(datos, c.estado);
+    return (
+      <li key={c.id}>
+        <div className={`persona-fila ${seleccionada === c.id ? 'activa' : ''}`}>
+          <button className="persona-main" onClick={() => setSeleccionada(c.id)}>
+            <span className="persona-nombre">{p?.nombre ?? '(sin ficha)'} {p?.apellidos ?? ''}</span>
+            <span className="persona-meta">{paso?.emoji} {paso?.nombre} · {diasEnPaso(c)} días en el paso</span>
+          </button>
+          {siguiente && paso?.rol !== 'gozne' && (
+            <button
+              className="btn btn-avance"
+              title={`Avanzar a ${datos.pasos.find((x) => x.id === siguiente)?.nombre}`}
+              onClick={() => avanzar(c.id, siguiente, 'Avance rápido')}
+            >
+              ▸
+            </button>
+          )}
+        </div>
+      </li>
+    );
+  };
+
+  const tarjetaConversion = (c: (typeof lista)[number]) => {
+    const p = personaDe(c.personaId);
+    const paso = datos.pasos.find((x) => x.id === c.estado);
+    return (
+      <button key={c.id} className="persona-card" onClick={() => setSeleccionada(c.id)}>
+        <span className="persona-nombre">{p?.nombre ?? '(sin ficha)'} {p?.apellidos ?? ''}</span>
+        <span className="persona-meta">{paso?.emoji} {paso?.nombre} · {diasEnPaso(c)} días en el paso</span>
+        <span className="persona-meta">
+          {[p?.telefono, p?.zona].filter(Boolean).join(' · ') || 'Sin teléfono ni zona'}
+        </span>
+      </button>
+    );
+  };
 
   return (
     <div className="panel">
@@ -217,37 +281,39 @@ export default function Mision({ repo }: { repo: Repo }) {
         <span className="tenue">{lista.length} registros</span>
       </div>
 
-      <ul className="lista-personas">
-        {lista.map((c) => {
-          const p = personaDe(c.personaId);
-          const paso = datos.pasos.find((x) => x.id === c.estado);
-          const siguiente = siguientePasoEnRuta(datos, c.estado);
-          const dias = Math.max(
-            0,
-            Math.round((new Date(hoy + 'T12:00:00').getTime() - new Date(fechaEnPasoActual(c.estado, c.historial, c.fecha) + 'T12:00:00').getTime()) / 86400000),
-          );
-          return (
-            <li key={c.id}>
-              <div className={`persona-fila ${seleccionada === c.id ? 'activa' : ''}`}>
-                <button className="persona-main" onClick={() => setSeleccionada(c.id)}>
-                  <span className="persona-nombre">{p?.nombre ?? '(sin ficha)'} {p?.apellidos ?? ''}</span>
-                  <span className="persona-meta">{paso?.emoji} {paso?.nombre} · {dias} días en el paso</span>
-                </button>
-                {siguiente && paso?.rol !== 'gozne' && (
-                  <button
-                    className="btn btn-avance"
-                    title={`Avanzar a ${datos.pasos.find((x) => x.id === siguiente)?.nombre}`}
-                    onClick={() => avanzar(c.id, siguiente, 'Avance rápido')}
-                  >
-                    ▸
-                  </button>
-                )}
+      <BarraVistas
+        vista={vista}
+        setVista={setVista}
+        agruparPor={agruparPor}
+        setAgruparPor={setAgruparPor}
+        opciones={[
+          { valor: 'paso', etiqueta: 'El paso en que está' },
+          { valor: 'zona', etiqueta: 'Zona' },
+          { valor: 'grupo', etiqueta: 'Grupo' },
+        ]}
+      />
+
+      {vista === 'lista' && (
+        <ul className="lista-personas">
+          {lista.map(filaConversion)}
+          {lista.length === 0 && <li className="tenue">Sin registros para este filtro.</li>}
+        </ul>
+      )}
+      {vista === 'tarjetas' && (
+        lista.length === 0
+          ? <p className="tenue">Sin registros para este filtro.</p>
+          : <div className="tarjetas-grid">{lista.map(tarjetaConversion)}</div>
+      )}
+      {vista === 'agrupada' && (
+        lista.length === 0
+          ? <p className="tenue">Sin registros para este filtro.</p>
+          : agrupar(lista, claveGrupo).map((g) => (
+              <div key={g.titulo}>
+                <h3 className="grupo-titulo">{g.titulo} · {g.items.length}</h3>
+                <ul className="lista-personas">{g.items.map(filaConversion)}</ul>
               </div>
-            </li>
-          );
-        })}
-        {lista.length === 0 && <li className="tenue">Sin registros para este filtro.</li>}
-      </ul>
+            ))
+      )}
 
       {detalle && (
         <Modal onCerrar={() => setSeleccionada(null)}>
