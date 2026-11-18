@@ -306,7 +306,7 @@ export function convertirRespaldo(respaldo: RespaldoViejo): {
 
   if ((respaldo.colaboradores ?? []).length > 0) {
     avisos.push(
-      `La Red de Colaboradores (${(respaldo.colaboradores ?? []).length} registros) no migra: es un registro externo a la ficha única y se queda en su propio registro.`,
+      `La Red de Colaboradores (${(respaldo.colaboradores ?? []).length} registros) no entra en esta migración: es un registro externo a la ficha única y se trae aparte, con su herramienta en esta misma pantalla («Traer la Red de Colaboradores»).`,
     );
   }
   const tablasIgnoradas = Object.keys(respaldo).filter(
@@ -334,6 +334,8 @@ export function convertirRespaldo(respaldo: RespaldoViejo): {
     grupos,
     evangelismos,
     aportes,
+    colaboradores: [],
+    aportesRed: [],
     pasos,
   };
   return {

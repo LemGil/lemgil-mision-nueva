@@ -22,6 +22,8 @@ const base: DatosMinisterio = {
   ],
   grupos: [],
   evangelismos: [],
+  colaboradores: [],
+  aportesRed: [],
   pasos: [],
 };
 

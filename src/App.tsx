@@ -20,6 +20,7 @@ import Grupos from './ui/Grupos';
 import Informe from './ui/Informe';
 import ManosAbiertas from './ui/ManosAbiertas';
 import Mapa from './ui/Mapa';
+import RedColaboradores from './ui/RedColaboradores';
 import Miembros from './ui/Miembros';
 import Migrar from './ui/Migrar';
 import Mision from './ui/Mision';
@@ -147,6 +148,7 @@ export default function App() {
           <NavLink to="/grupos">👥 Grupos</NavLink>
           <NavLink to="/evangelismos">📣 Evangelismos</NavLink>
           <NavLink to="/bien-comun">🌾 Bien Común</NavLink>
+          <NavLink to="/red">🤝 Red de Colaboradores</NavLink>
           <NavLink to="/manos-abiertas">👐 Manos Abiertas</NavLink>
           <NavLink to="/mapa">🗺️ Mapa</NavLink>
           {configurada && (
@@ -172,6 +174,7 @@ export default function App() {
             <Route path="/grupos" element={<Grupos repo={repo} />} />
             <Route path="/evangelismos" element={<Evangelismos repo={repo} />} />
             <Route path="/bien-comun" element={<BienComun repo={repo} />} />
+            <Route path="/red" element={<RedColaboradores repo={repo} />} />
             <Route path="/manos-abiertas" element={<ManosAbiertas repo={repo} />} />
             <Route path="/mapa" element={<Mapa repo={repo} />} />
             <Route path="/migrar" element={<Migrar repo={repo} />} />

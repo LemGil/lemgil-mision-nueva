@@ -22,6 +22,8 @@ export const TABLAS = [
   'grupos',
   'evangelismos',
   'aportes',
+  'colaboradores',
+  'aportesRed',
 ] as const;
 
 export type Tabla = (typeof TABLAS)[number];
@@ -59,14 +61,25 @@ export class BaseLocal extends Dexie {
   grupos!: Table<Fila, string>;
   evangelismos!: Table<Fila, string>;
   aportes!: Table<Fila, string>;
+  colaboradores!: Table<Fila, string>;
+  aportesRed!: Table<Fila, string>;
   salida!: Table<EntradaSalida, string>;
   meta!: Table<MetaKV, string>;
 
   constructor(nombre = 'mision-nueva') {
     super(nombre);
+    // v1: las 12 tablas originales. v2: + la Red de Colaboradores.
+    const v1 = [
+      'personas', 'conversiones', 'miembros', 'estudiantes', 'diezmadores',
+      'beneficiarios', 'hitos', 'asignaciones', 'pasos', 'grupos',
+      'evangelismos', 'aportes',
+    ];
+    const tiendasV1: Record<string, string> = { salida: 'clave', meta: 'clave' };
+    for (const t of v1) tiendasV1[t] = 'id';
+    this.version(1).stores(tiendasV1);
     const tiendas: Record<string, string> = { salida: 'clave', meta: 'clave' };
     for (const t of TABLAS) tiendas[t] = 'id';
-    this.version(1).stores(tiendas);
+    this.version(2).stores(tiendas);
   }
 
   tabla(nombre: Tabla): Table<Fila, string> {

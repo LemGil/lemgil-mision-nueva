@@ -9,6 +9,7 @@ import {
   vistaPreviaCompletar,
   type ResumenCompletar,
 } from '../migracion/completar';
+import { traerRed, vistaPreviaRed, type VistaPreviaRed } from '../migracion/traerRed';
 import { convertirRespaldo, type InformeMigracion, type RespaldoViejo } from '../migracion/convertir';
 import { importarEnRepo, puedeImportar } from '../migracion/importar';
 import GuiaPagina from './GuiaPagina';
@@ -29,6 +30,10 @@ export default function Migrar({ repo }: { repo: Repo }) {
   const [previaCompletar, setPreviaCompletar] = useState<ResumenCompletar | null>(null);
   const [completado, setCompletado] = useState<ResumenCompletar | null>(null);
   const [completando, setCompletando] = useState(false);
+  const [respaldoRed, setRespaldoRed] = useState<RespaldoViejo | null>(null);
+  const [previaRed, setPreviaRed] = useState<VistaPreviaRed | null>(null);
+  const [traidaRed, setTraidaRed] = useState<VistaPreviaRed | null>(null);
+  const [trayendoRed, setTrayendoRed] = useState(false);
 
   const cargar = useCallback(async () => {
     setActuales(await aDatosMinisterio(repo));
@@ -108,6 +113,38 @@ export default function Migrar({ repo }: { repo: Repo }) {
     Object.entries(r.campos)
       .map(([campo, n]) => `${ETIQUETA_CAMPO[campo] ?? campo} ×${n}`)
       .join(' · ');
+
+  const leerArchivoRed = async (archivo: File) => {
+    setError('');
+    setPreviaRed(null);
+    setTraidaRed(null);
+    try {
+      const respaldo = JSON.parse(await archivo.text()) as RespaldoViejo;
+      if (!respaldo || typeof respaldo !== 'object' || !Array.isArray(respaldo.colaboradores)) {
+        throw new Error('Ese archivo no trae la Red de Colaboradores de la app anterior.');
+      }
+      setRespaldoRed(respaldo);
+      setPreviaRed(vistaPreviaRed(respaldo));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  };
+
+  const traerLaRed = async () => {
+    if (!respaldoRed) return;
+    setTrayendoRed(true);
+    setError('');
+    try {
+      const resumen = await traerRed(repo, respaldoRed);
+      setTraidaRed(resumen);
+      setPreviaRed(null);
+      await cargar();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setTrayendoRed(false);
+    }
+  };
 
   return (
     <div className="panel">
@@ -241,6 +278,55 @@ export default function Migrar({ repo }: { repo: Repo }) {
               Sincroniza para subirlo.
             </p>
           )}
+        </section>
+      )}
+
+      {actuales.colaboradores.length === 0 ? (
+        <section className="tarjeta">
+          <h2>🤝 Traer la Red de Colaboradores</h2>
+          <p className="tenue">
+            La Red quedó fuera de la migración principal porque es externa a la ficha única.
+            Elige el mismo respaldo y entran sus colaboradores con todos sus aportes, tal cual
+            estaban. Solo trabaja si la Red está vacía aquí: nunca duplica.
+          </p>
+          <input
+            type="file"
+            accept="application/json,.json"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) void leerArchivoRed(f);
+            }}
+          />
+          {previaRed && previaRed.colaboradores > 0 && (
+            <>
+              <p>
+                Entrarían <strong>{previaRed.colaboradores} colaboradores</strong> con{' '}
+                <strong>{previaRed.aportes} aportes</strong> (total {previaRed.total}).
+                {previaRed.huerfanos > 0 &&
+                  ` ${previaRed.huerfanos} aporte(s) sin colaborador quedan fuera.`}
+              </p>
+              <button className="btn btn-dorado" disabled={trayendoRed} onClick={traerLaRed}>
+                {trayendoRed ? 'Trayendo…' : '🤝 Traer la Red'}
+              </button>
+            </>
+          )}
+          {previaRed && previaRed.colaboradores === 0 && (
+            <p className="aviso aviso-rojo">Ese respaldo no trae colaboradores en su Red.</p>
+          )}
+          {traidaRed && (
+            <p className="aviso aviso-verde">
+              ✓ Entraron {traidaRed.colaboradores} colaboradores con {traidaRed.aportes} aportes
+              (total {traidaRed.total}). Sincroniza para subirlos.
+            </p>
+          )}
+        </section>
+      ) : (
+        <section className="tarjeta">
+          <h2>🤝 Red de Colaboradores</h2>
+          <p className="aviso aviso-verde">
+            ✓ La Red ya está en la app ({actuales.colaboradores.length} colaboradores). Su mesa
+            está en el menú: 🤝 Red de Colaboradores.
+          </p>
         </section>
       )}
     </div>

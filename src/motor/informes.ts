@@ -9,6 +9,7 @@ import { calcularCenso } from './censo';
 import { verificarCuadre } from './cuadre';
 import { escaleraDeMiembro, tarjetasDeMiembros } from './miembros';
 import { conteoMision } from './mision';
+import { nombreColaborador, resumenRed } from './red';
 
 export type DepartamentoId =
   | 'general'
@@ -215,22 +216,41 @@ export function construirInforme(
         ],
       };
     }
-    case 'colaboradores':
+    case 'colaboradores': {
+      const resumen = resumenRed(datos, opts.periodo);
+      const porColaborador: [string, string][] = datos.colaboradores
+        .map((c) => ({
+          nombre: nombreColaborador(c),
+          total: resumen.porColaborador.get(c.id) ?? 0,
+        }))
+        .filter((x) => x.total > 0)
+        .sort((a, b) => b.total - a.total)
+        .map((x): [string, string] => [x.nombre, n(x.total)]);
       return {
         id,
         titulo: 'Informe de la Red de Colaboradores',
         secciones: [
           {
-            titulo: '🤝 Nota',
+            titulo: '🤝 Colaboradores (externos al Ministerio)',
             filas: [
-              [
-                'Registro',
-                'Los colaboradores son externos al Ministerio: su registro no entra en la ficha única. Su mesa llega en la Fase 4.',
-              ],
+              ['Activos', n(resumen.activos)],
+              ['Inactivos', n(resumen.inactivos)],
+              ['Total', n(datos.colaboradores.length)],
             ],
           },
+          {
+            titulo: opts.periodo ? '💰 Aportes del período' : '💰 Aportes',
+            filas: [
+              ['Total aportado', n(resumen.totalAportes)],
+              ['Cantidad de aportes', n(resumen.cantidadAportes)],
+            ],
+          },
+          ...(porColaborador.length > 0
+            ? [{ titulo: '💰 Por colaborador', filas: porColaborador }]
+            : []),
         ],
       };
+    }
     case 'manos-abiertas': {
       const porEstado = new Map<string, number>();
       for (const b of datos.beneficiarios) {

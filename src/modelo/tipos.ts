@@ -148,6 +148,37 @@ export interface Aporte {
   tipo: 'Diezmo' | 'Ofrenda';
 }
 
+/**
+ * Un colaborador de la Red: apoyo externo (persona, iglesia, ministerio…).
+ * NO es una persona de la ficha única: vive en su propio registro.
+ */
+export interface Colaborador {
+  id: string;
+  nombre: string;
+  apellido?: string;
+  telefono?: string;
+  email?: string;
+  /** 'Activo' | 'Inactivo' */
+  estado: string;
+  /** 'Persona' | 'Iglesia' | 'Ministerio' | 'Empresa' | 'Otro' */
+  tipo?: string;
+  planOfrendaTipo?: string;
+  planOfrendaMonto?: number;
+  notas?: string;
+}
+
+/** Un aporte de un colaborador de la Red. */
+export interface AporteRed {
+  id: string;
+  colaboradorId: string;
+  fecha: string;
+  monto: number;
+  tipo: string;
+  metodo?: string;
+  referencia?: string;
+  notas?: string;
+}
+
 /** Todo lo que el motor de conteo necesita. Nada más que esto cuenta. */
 export interface DatosMinisterio {
   personas: Persona[];
@@ -161,6 +192,8 @@ export interface DatosMinisterio {
   grupos: Grupo[];
   evangelismos: Evangelismo[];
   aportes: Aporte[];
+  colaboradores: Colaborador[];
+  aportesRed: AporteRed[];
   pasos: Paso[];
 }
 

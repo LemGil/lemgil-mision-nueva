@@ -19,8 +19,10 @@ import {
 } from '../modelo/catalogo';
 import type {
   Aporte,
+  AporteRed,
   AsignacionMinisterio,
   Beneficiario,
+  Colaborador,
   Conversion,
   DatosMinisterio,
   Diezmador,
@@ -270,6 +272,33 @@ export async function registrarAporte(
 ): Promise<Aporte> {
   const completo: Aporte = { ...aporte, id: nuevoId() };
   await repo.guardar('aportes', completo);
+  return completo;
+}
+
+// ── Red de Colaboradores (externos: NO pasan por la ficha única) ──────
+
+export async function crearColaborador(
+  repo: Repo,
+  colaborador: Omit<Colaborador, 'id'>,
+): Promise<Colaborador> {
+  const completo: Colaborador = { ...colaborador, id: nuevoId() };
+  await repo.guardar('colaboradores', completo);
+  return completo;
+}
+
+export async function actualizarColaborador(
+  repo: Repo,
+  colaborador: Colaborador,
+): Promise<void> {
+  await repo.guardar('colaboradores', colaborador);
+}
+
+export async function registrarAporteRed(
+  repo: Repo,
+  aporte: Omit<AporteRed, 'id'>,
+): Promise<AporteRed> {
+  const completo: AporteRed = { ...aporte, id: nuevoId() };
+  await repo.guardar('aportesRed', completo);
   return completo;
 }
 

@@ -68,6 +68,8 @@ export const CASO_2026: DatosMinisterio = {
   asignaciones: [{ id: 'a7', personaId: 'p7', ministerio: 'Alabanza' }],
   grupos: [{ id: 'g1', nombre: 'Grupo Central', liderId: 'p7', zona: 'Centro' }],
   evangelismos: [],
+  colaboradores: [],
+  aportesRed: [],
   aportes: [
     { id: 'ap5', personaId: 'p5', fecha: '2026-11-03', monto: 500, tipo: 'Diezmo' },
     { id: 'ap12', personaId: 'p12', fecha: '2026-11-10', monto: 200, tipo: 'Diezmo' },
