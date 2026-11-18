@@ -41,6 +41,8 @@ const RESPALDO: RespaldoViejo = {
   estudiantes: [{ id: 'e1', personaId: 'p1', estado: 'Activo' }],
   beneficiarios: [{ id: 'b1', personaId: 'p2', estado: 'Activo' }],
   hitos: [{ id: 'h1', miembroId: 'm1', tipo: 'Liderazgo', fecha: '2026-06-01' }],
+  ministerios: [{ id: 'min1', nombre: 'Alabanza' }],
+  miembrosMinisterios: [{ id: 'mm1', miembroId: 'm1', ministerioId: 'min1', rol: 'Servidor' }],
   grupos: [{ id: 'g1', nombre: 'Grupo Central', lider: 'Ana Uno', zona: 'Centro', lat: 23.11, lng: -82.36 }],
   evangelismos: [
     { id: 'ev1', fecha: '2026-11-05', lugar: 'Parque', liderId: 'p1', participanteIds: ['p1', 'p2', 'fantasma'] },
@@ -61,6 +63,8 @@ describe('la migración única', () => {
     expect(datos.hitos[0].personaId).toBe('p1');
     expect(datos.aportes[0].personaId).toBe('p1');
     expect(datos.personas.find((p) => p.id === 'p1')?.hermanoMayorId).toBe('p3');
+    // La asignación de ministerio (tabla miembrosMinisterios) llega por persona y nombre.
+    expect(datos.asignaciones).toEqual([{ id: 'mm1', personaId: 'p1', ministerio: 'Alabanza' }]);
   });
 
   it('el líder en texto libre no se enlaza a ciegas: queda el aviso', () => {
@@ -78,8 +82,7 @@ describe('la migración única', () => {
     expect(informe.avisos.some((a) => a.includes('tablaRara'))).toBe(true);
   });
 
-  it('lo migrado pasa el cuadre y se importa entero en la base nueva', async () => {
-    const cuadre = verificarCuadre(datos);
+  it('lo migrado pasa el cuadre y se importa entero en la base nueva', async () => {    const cuadre = verificarCuadre(datos);
     expect(cuadre.verde).toBe(true);
 
     const repo = new Repo(new BaseLocal('migracion-test'));
@@ -89,5 +92,16 @@ describe('la migración única', () => {
     expect(leidos.conversiones).toHaveLength(2);
     expect(leidos.pasos.find((p) => p.id === 'ps-congregado')?.nombre).toBe('Alcanzado');
     expect(verificarCuadre(leidos).verde).toBe(true);
+  });
+});
+
+describe('la guardia de la importación', () => {
+  it('solo se importa sobre la base vacía', async () => {
+    const { puedeImportar } = await import('./importar');
+    const { datos } = convertirRespaldo(RESPALDO);
+    expect(puedeImportar({ ...datos, personas: [] }).ok).toBe(true);
+    const conGente = puedeImportar(datos);
+    expect(conGente.ok).toBe(false);
+    expect(conGente.motivo).toContain('ya tiene 3 personas');
   });
 });

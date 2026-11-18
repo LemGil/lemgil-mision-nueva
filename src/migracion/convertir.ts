@@ -115,7 +115,7 @@ export function convertirRespaldo(respaldo: RespaldoViejo): {
           }))
         : [],
       bautizado: r.bautizado === true || undefined,
-      fechaBautismo: texto(r.fechaBautismo),
+      fechaBautismo: texto(r.fechaBautismo) ?? texto(r.fechabautismo),
     }));
 
   // — Miembros. —
@@ -162,7 +162,7 @@ export function convertirRespaldo(respaldo: RespaldoViejo): {
       activo: r.activo !== false,
     }));
 
-  const aportes: Aporte[] = (respaldo.aportes ?? respaldo.aportesComun ?? respaldo.registros ?? [])
+  const aportes: Aporte[] = (respaldo.aportesComun ?? respaldo.registros ?? respaldo.aportes ?? [])
     .filter((r) => texto(r.personaId) || texto(r.diezmadorId))
     .map((r) => {
       // En la app vieja el aporte cuelga del diezmador; aquí, de la persona.
@@ -221,7 +221,7 @@ export function convertirRespaldo(respaldo: RespaldoViejo): {
 
   // — Ministerios: la asignación vieja era por miembro; aquí, por persona. —
   const asignaciones: AsignacionMinisterio[] = (
-    respaldo.miembroMinisterios ?? respaldo.asignaciones ?? []
+    respaldo.miembrosMinisterios ?? respaldo.miembroMinisterios ?? respaldo.asignaciones ?? []
   )
     .map((r) => {
       let pid = texto(r.personaId);
@@ -264,9 +264,14 @@ export function convertirRespaldo(respaldo: RespaldoViejo): {
     fecha: texto(r.fecha) ?? '',
     lugar: texto(r.lugar),
     liderId: textoONulo(r.liderId),
-    participanteIds: Array.isArray(r.participanteIds)
-      ? (r.participanteIds as unknown[]).map(String).filter((id) => idsPersonas.has(id))
-      : [],
+    participanteIds: (Array.isArray(r.participanteIds)
+      ? (r.participanteIds as unknown[])
+      : Array.isArray(r.participantes)
+        ? (r.participantes as unknown[])
+        : []
+    )
+      .map(String)
+      .filter((id) => idsPersonas.has(id)),
     notas: texto(r.notas),
   }));
 
@@ -280,7 +285,7 @@ export function convertirRespaldo(respaldo: RespaldoViejo): {
       ![
         'personas', 'conversiones', 'miembros', 'estudiantes', 'dadores', 'diezmadores',
         'aportes', 'aportesComun', 'registros', 'beneficiarios', 'hitos',
-        'miembroMinisterios', 'asignaciones', 'ministerios', 'grupos', 'evangelismos',
+        'miembrosMinisterios', 'miembroMinisterios', 'asignaciones', 'ministerios', 'grupos', 'evangelismos',
         'pasosSeguimiento', 'pasos', 'colaboradores',
       ].includes(t),
   );

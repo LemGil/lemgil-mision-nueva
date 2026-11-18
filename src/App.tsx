@@ -13,6 +13,7 @@ import Informe from './ui/Informe';
 import ManosAbiertas from './ui/ManosAbiertas';
 import Mapa from './ui/Mapa';
 import Miembros from './ui/Miembros';
+import Migrar from './ui/Migrar';
 import Mision from './ui/Mision';
 import Panel from './ui/Panel';
 import Personas from './ui/Personas';
@@ -53,6 +54,7 @@ export default function App() {
           </NavLink>
           <NavLink to="/informe">📄 Informe</NavLink>
           <NavLink to="/personas">👥 Personas</NavLink>
+          <NavLink to="/migrar">🧳 Migración</NavLink>
           <div className="menu-grupo">Mesas</div>
           <NavLink to="/mision">🧭 Misión</NavLink>
           <NavLink to="/miembros">🏠 Miembros</NavLink>
@@ -81,6 +83,7 @@ export default function App() {
             <Route path="/bien-comun" element={<BienComun repo={repo} />} />
             <Route path="/manos-abiertas" element={<ManosAbiertas repo={repo} />} />
             <Route path="/mapa" element={<Mapa repo={repo} />} />
+            <Route path="/migrar" element={<Migrar repo={repo} />} />
           </Routes>
         </main>
       </div>
