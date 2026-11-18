@@ -114,12 +114,23 @@ export default function App() {
             {menuAbierto ? '✕' : '☰'}
           </button>
         </div>
+        {menuAbierto && (
+          <div className="menu-fondo" onClick={() => setMenuAbierto(false)} />
+        )}
         <nav
           className={`menu ${menuAbierto ? 'abierto' : ''}`}
           onClick={(e) => {
             if ((e.target as HTMLElement).closest('a')) setMenuAbierto(false);
           }}
         >
+          <button
+            type="button"
+            className="menu-cerrar"
+            aria-label="Recoger el menú"
+            onClick={() => setMenuAbierto(false)}
+          >
+            ✕
+          </button>
           <div className="menu-marca">Ministerio LemGil</div>
           <div className="menu-grupo">Secretaría</div>
           <NavLink to="/" end>

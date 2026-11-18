@@ -234,10 +234,30 @@ button.persona-fila:hover, .persona-fila.activa { border-color: var(--dorado); }
 @media (max-width: 900px) {
   .app { flex-direction: column; }
   .barra-movil { display: flex; }
-  /* Recogido por defecto; se despliega como panel al tocar el ☰. */
-  .menu { display: none; width: 100%; border-right: none; border-bottom: 1px solid var(--borde); }
-  .menu.abierto { display: flex; }
-  .menu .menu-marca { display: none; }
+  /* Recogido fuera de pantalla; entra como cajón desde la izquierda,
+   * igual que en la app original. */
+  .menu {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 300;
+    width: 250px;
+    max-width: 82vw;
+    height: 100dvh;
+    overflow-y: auto;
+    transform: translateX(-105%);
+    transition: transform 0.3s ease;
+    border-bottom: none;
+  }
+  .menu.abierto { transform: translateX(0); box-shadow: 8px 0 30px rgba(0, 0, 0, 0.35); }
+  .menu .menu-cerrar { display: block; }
+  .app .menu-fondo {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 250;
+  }
   .contenido { padding: 14px; }
 }
 
@@ -313,3 +333,19 @@ button.persona-fila:hover, .persona-fila.activa { border-color: var(--dorado); }
 .menu-salir:hover { color: #f5d77a; border-color: var(--dorado); }
 .barra-movil { background: #1a3a4a; border-bottom: 1px solid rgba(201, 162, 74, 0.25); }
 .barra-boton { color: #f5f1e8; border-color: rgba(201, 162, 74, 0.45); }
+
+/* Fondo oscuro tras el cajón y su botón de cerrar (solo móvil). */
+.menu-fondo { display: none; }
+.menu-cerrar {
+  display: none;
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: 1px solid rgba(201, 162, 74, 0.45);
+  color: #f5f1e8;
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+}
