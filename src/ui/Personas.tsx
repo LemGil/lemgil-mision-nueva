@@ -1,32 +1,179 @@
 import { useCallback, useEffect, useState } from 'react';
 import { aDatosMinisterio } from '../datos/aDatosMinisterio';
-import { registrarPersona, type EntradaMision } from '../datos/acciones';
+import { actualizarPersona, registrarPersona, type EntradaMision } from '../datos/acciones';
 import type { Repo } from '../datos/repo';
-import type { DatosMinisterio, Sexo } from '../modelo/tipos';
+import type { DatosMinisterio, Persona, Sexo } from '../modelo/tipos';
 import { buscarPersonas, fichaDePersona, situacionDe } from '../motor/personaVista';
 import Modal from './Modal';
 
 const hoyIso = () => new Date().toISOString().slice(0, 10);
+const txt = (v: string) => v.trim() || undefined;
+
+/** Los campos de datos de la persona, compartidos por el registro y la
+ * edición: un solo juego de campos para la ficha única. */
+interface Campos {
+  nombre: string;
+  apellidos: string;
+  carnet: string;
+  telefono: string;
+  sexo: Sexo;
+  nacimiento: string;
+  direccion: string;
+  zona: string;
+  profesion: string;
+  estadoCivil: string;
+  conyuge: string;
+  hijos: string;
+  contacto: string;
+  email: string;
+  bautizado: boolean;
+  fechaBautismo: string;
+  grupoId: string;
+  hermanoMayorId: string;
+}
+
+const camposDe = (p?: Persona): Campos => ({
+  nombre: p?.nombre ?? '',
+  apellidos: p?.apellidos ?? '',
+  carnet: p?.numeroIdentidad ?? '',
+  telefono: p?.telefono ?? '',
+  sexo: p?.sexo ?? null,
+  nacimiento: p?.fechaNacimiento ?? '',
+  direccion: p?.direccion ?? '',
+  zona: p?.zona ?? '',
+  profesion: p?.profesion ?? '',
+  estadoCivil: p?.estadoCivil ?? '',
+  conyuge: p?.conyuge ?? '',
+  hijos: p?.hijos ?? '',
+  contacto: p?.contactoPreferido ?? '',
+  email: p?.email ?? '',
+  bautizado: p?.bautizado ?? false,
+  fechaBautismo: p?.fechaBautismo ?? '',
+  grupoId: p?.grupoId ?? '',
+  hermanoMayorId: p?.hermanoMayorId ?? '',
+});
+
+const personaDe = (c: Campos): Omit<Persona, 'id'> => ({
+  nombre: c.nombre.trim(),
+  apellidos: txt(c.apellidos),
+  numeroIdentidad: txt(c.carnet),
+  telefono: txt(c.telefono),
+  sexo: c.sexo,
+  fechaNacimiento: c.nacimiento || undefined,
+  direccion: txt(c.direccion),
+  zona: txt(c.zona),
+  profesion: txt(c.profesion),
+  estadoCivil: txt(c.estadoCivil),
+  conyuge: txt(c.conyuge),
+  hijos: txt(c.hijos),
+  contactoPreferido: txt(c.contacto),
+  email: txt(c.email),
+  bautizado: c.bautizado,
+  fechaBautismo: c.bautizado ? c.fechaBautismo || undefined : undefined,
+  grupoId: c.grupoId || null,
+  hermanoMayorId: c.hermanoMayorId || null,
+});
+
+function FormularioCampos({
+  campos,
+  set,
+  datos,
+  excluirId,
+}: {
+  campos: Campos;
+  set: (c: Campos) => void;
+  datos: DatosMinisterio;
+  excluirId?: string;
+}) {
+  const u = (parcial: Partial<Campos>) => set({ ...campos, ...parcial });
+  return (
+    <>
+      <div className="form-fila">
+        <label>Nombre<input value={campos.nombre} onChange={(e) => u({ nombre: e.target.value })} required /></label>
+        <label>Apellidos<input value={campos.apellidos} onChange={(e) => u({ apellidos: e.target.value })} /></label>
+      </div>
+      <div className="form-fila">
+        <label>Nº de Identidad<input value={campos.carnet} onChange={(e) => u({ carnet: e.target.value })} /></label>
+        <label>Teléfono<input value={campos.telefono} onChange={(e) => u({ telefono: e.target.value })} /></label>
+      </div>
+      <div className="form-fila">
+        <label>
+          Sexo
+          <select value={campos.sexo ?? ''} onChange={(e) => u({ sexo: (e.target.value || null) as Sexo })}>
+            <option value="">Sin especificar</option>
+            <option value="M">Hombre</option>
+            <option value="F">Mujer</option>
+          </select>
+        </label>
+        <label>Fecha de nacimiento<input type="date" value={campos.nacimiento} onChange={(e) => u({ nacimiento: e.target.value })} /></label>
+      </div>
+      <div className="form-fila">
+        <label>Dirección<input value={campos.direccion} onChange={(e) => u({ direccion: e.target.value })} /></label>
+        <label>Zona<input value={campos.zona} onChange={(e) => u({ zona: e.target.value })} /></label>
+      </div>
+      <div className="form-fila">
+        <label>Profesión<input value={campos.profesion} onChange={(e) => u({ profesion: e.target.value })} /></label>
+        <label>Estado civil<input value={campos.estadoCivil} onChange={(e) => u({ estadoCivil: e.target.value })} /></label>
+      </div>
+      <div className="form-fila">
+        <label>Cónyuge<input value={campos.conyuge} onChange={(e) => u({ conyuge: e.target.value })} /></label>
+        <label>Hijos<input value={campos.hijos} onChange={(e) => u({ hijos: e.target.value })} /></label>
+      </div>
+      <div className="form-fila">
+        <label>Contacto preferido<input value={campos.contacto} onChange={(e) => u({ contacto: e.target.value })} /></label>
+        <label>Correo<input value={campos.email} onChange={(e) => u({ email: e.target.value })} /></label>
+      </div>
+      <div className="form-fila">
+        <label>
+          Grupo
+          <select value={campos.grupoId} onChange={(e) => u({ grupoId: e.target.value })}>
+            <option value="">Sin grupo</option>
+            {datos.grupos.map((g) => (
+              <option key={g.id} value={g.id}>{g.nombre}</option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Hermano mayor
+          <select value={campos.hermanoMayorId} onChange={(e) => u({ hermanoMayorId: e.target.value })}>
+            <option value="">Sin hermano mayor</option>
+            {datos.personas
+              .filter((p) => p.id !== excluirId)
+              .map((p) => (
+                <option key={p.id} value={p.id}>{p.nombre} {p.apellidos ?? ''}</option>
+              ))}
+          </select>
+        </label>
+      </div>
+      <div className="form-fila">
+        <label className="check">
+          <input type="checkbox" checked={campos.bautizado} onChange={(e) => u({ bautizado: e.target.checked })} />
+          Bautizado en aguas
+        </label>
+        {campos.bautizado && (
+          <label>Fecha de bautismo<input type="date" value={campos.fechaBautismo} onChange={(e) => u({ fechaBautismo: e.target.value })} /></label>
+        )}
+      </div>
+    </>
+  );
+}
 
 export default function Personas({ repo }: { repo: Repo }) {
   const [datos, setDatos] = useState<DatosMinisterio | null>(null);
   const [busqueda, setBusqueda] = useState('');
   const [seleccionada, setSeleccionada] = useState<string | null>(null);
   const [mostrarForm, setMostrarForm] = useState(false);
+  const [editando, setEditando] = useState(false);
   const [recargas, setRecargas] = useState(0);
 
-  // Formulario de registro (el único que teclea datos nuevos)
-  const [nombre, setNombre] = useState('');
-  const [apellidos, setApellidos] = useState('');
-  const [carnet, setCarnet] = useState('');
-  const [telefono, setTelefono] = useState('');
-  const [sexo, setSexo] = useState<Sexo>(null);
-  const [nacimiento, setNacimiento] = useState('');
+  const [campos, setCampos] = useState<Campos>(camposDe());
+  const [camposEdicion, setCamposEdicion] = useState<Campos>(camposDe());
   const [altaMision, setAltaMision] = useState(false);
   const [entrada, setEntrada] = useState<EntradaMision>('alcanzado');
   const [altaIntegrado, setAltaIntegrado] = useState(false);
   const [altaBeneficiario, setAltaBeneficiario] = useState(false);
   const [errorForm, setErrorForm] = useState('');
+  const [errorEdicion, setErrorEdicion] = useState('');
 
   const recargar = useCallback(() => setRecargas((x) => x + 1), []);
 
@@ -47,6 +194,11 @@ export default function Personas({ repo }: { repo: Repo }) {
   const ficha = seleccionada ? fichaDePersona(datos, seleccionada) : null;
   const nombrePasoEntrada = (e: EntradaMision) =>
     datos.pasos.find((p) => p.id === { alcanzado: 'ps-congregado', confeso: 'ps-confeso', converso: 'ps-nuevo', bautizado: 'ps-bautizado' }[e])?.nombre ?? e;
+  const nombreDe = (id?: string | null) => {
+    const p = id ? datos.personas.find((x) => x.id === id) : undefined;
+    return p ? `${p.nombre} ${p.apellidos ?? ''}`.trim() : undefined;
+  };
+  const grupoDe = (id?: string | null) => (id ? datos.grupos.find((g) => g.id === id)?.nombre : undefined);
 
   const guardar = async (ev: React.FormEvent) => {
     ev.preventDefault();
@@ -55,14 +207,7 @@ export default function Personas({ repo }: { repo: Repo }) {
       const persona = await registrarPersona(
         repo,
         datos,
-        {
-          nombre: nombre.trim(),
-          apellidos: apellidos.trim() || undefined,
-          numeroIdentidad: carnet.trim() || undefined,
-          telefono: telefono.trim() || undefined,
-          sexo,
-          fechaNacimiento: nacimiento || undefined,
-        },
+        personaDe(campos),
         {
           mision: altaIntegrado ? undefined : altaMision ? entrada : undefined,
           integrado: altaIntegrado,
@@ -71,8 +216,7 @@ export default function Personas({ repo }: { repo: Repo }) {
         hoyIso(),
       );
       setMostrarForm(false);
-      setNombre(''); setApellidos(''); setCarnet(''); setTelefono('');
-      setSexo(null); setNacimiento('');
+      setCampos(camposDe());
       setAltaMision(false); setAltaIntegrado(false); setAltaBeneficiario(false);
       setSeleccionada(persona.id);
       recargar();
@@ -80,6 +224,42 @@ export default function Personas({ repo }: { repo: Repo }) {
       setErrorForm(e instanceof Error ? e.message : String(e));
     }
   };
+
+  const guardarEdicion = async (ev: React.FormEvent) => {
+    ev.preventDefault();
+    if (!ficha) return;
+    setErrorEdicion('');
+    try {
+      await actualizarPersona(repo, datos, { ...ficha.persona, ...personaDe(camposEdicion) });
+      setEditando(false);
+      recargar();
+    } catch (e) {
+      setErrorEdicion(e instanceof Error ? e.message : String(e));
+    }
+  };
+
+  const p = ficha?.persona;
+  const filasDatos: [string, string][] = p
+    ? (
+        [
+          ['Nº de Identidad', p.numeroIdentidad],
+          ['Teléfono', p.telefono],
+          ['Nació', p.fechaNacimiento],
+          ['Sexo', p.sexo ? (p.sexo === 'M' ? 'Hombre' : 'Mujer') : undefined],
+          ['Dirección', p.direccion],
+          ['Zona', p.zona],
+          ['Profesión', p.profesion],
+          ['Estado civil', p.estadoCivil],
+          ['Cónyuge', p.conyuge],
+          ['Hijos', p.hijos],
+          ['Contacto preferido', p.contactoPreferido],
+          ['Correo', p.email],
+          ['Grupo', grupoDe(p.grupoId)],
+          ['Hermano mayor', nombreDe(p.hermanoMayorId)],
+          ['Bautizado', p.bautizado === undefined ? undefined : p.bautizado ? `Sí${p.fechaBautismo ? ` · ${p.fechaBautismo}` : ''}` : 'No'],
+        ] as [string, string | undefined][]
+      ).filter((f): f is [string, string] => !!f[1])
+    : [];
 
   return (
     <div className="panel">
@@ -93,25 +273,7 @@ export default function Personas({ repo }: { repo: Repo }) {
       {mostrarForm && (
         <form className="tarjeta formulario" onSubmit={guardar}>
           <h2>➕ Nueva persona</h2>
-          <div className="form-fila">
-            <label>Nombre<input value={nombre} onChange={(e) => setNombre(e.target.value)} required /></label>
-            <label>Apellidos<input value={apellidos} onChange={(e) => setApellidos(e.target.value)} /></label>
-          </div>
-          <div className="form-fila">
-            <label>Nº de Identidad<input value={carnet} onChange={(e) => setCarnet(e.target.value)} /></label>
-            <label>Teléfono<input value={telefono} onChange={(e) => setTelefono(e.target.value)} /></label>
-          </div>
-          <div className="form-fila">
-            <label>
-              Sexo
-              <select value={sexo ?? ''} onChange={(e) => setSexo((e.target.value || null) as Sexo)}>
-                <option value="">Sin especificar</option>
-                <option value="M">Hombre</option>
-                <option value="F">Mujer</option>
-              </select>
-            </label>
-            <label>Fecha de nacimiento<input type="date" value={nacimiento} onChange={(e) => setNacimiento(e.target.value)} /></label>
-          </div>
+          <FormularioCampos campos={campos} set={setCampos} datos={datos} />
           <fieldset className="altas">
             <legend>Al guardar, dar de alta también como:</legend>
             <label className="check">
@@ -156,14 +318,14 @@ export default function Personas({ repo }: { repo: Repo }) {
       </div>
 
       <ul className="lista-personas">
-        {lista.map((p) => {
-          const sit = situacionDe(datos, p.id);
-          const fichaP = fichaDePersona(datos, p.id);
+        {lista.map((per) => {
+          const sit = situacionDe(datos, per.id);
+          const fichaP = fichaDePersona(datos, per.id);
           return (
-            <li key={p.id}>
-              <button className={`persona-fila ${seleccionada === p.id ? 'activa' : ''}`} onClick={() => setSeleccionada(p.id)}>
-                <span className="persona-nombre">{p.nombre} {p.apellidos ?? ''}</span>
-                <span className="persona-meta">{p.telefono ?? 'Sin teléfono'}{p.numeroIdentidad ? ` · ${p.numeroIdentidad}` : ''}</span>
+            <li key={per.id}>
+              <button className={`persona-fila ${seleccionada === per.id ? 'activa' : ''}`} onClick={() => setSeleccionada(per.id)}>
+                <span className="persona-nombre">{per.nombre} {per.apellidos ?? ''}</span>
+                <span className="persona-meta">{per.telefono ?? 'Sin teléfono'}{per.numeroIdentidad ? ` · ${per.numeroIdentidad}` : ''}</span>
                 <span className={`chip chip-${sit.tono}`}>{sit.texto}</span>
                 {fichaP && fichaP.repetidos.length > 0 && (
                   <span className="chip chip-rojo">
@@ -177,10 +339,15 @@ export default function Personas({ repo }: { repo: Repo }) {
         {lista.length === 0 && <li className="tenue">Sin coincidencias.</li>}
       </ul>
 
-      {ficha && (
-        <Modal onCerrar={() => setSeleccionada(null)}>
+      {ficha && p && (
+        <Modal
+          onCerrar={() => {
+            setSeleccionada(null);
+            setEditando(false);
+          }}
+        >
           <h2>
-            {ficha.persona.nombre} {ficha.persona.apellidos ?? ''}{' '}
+            {p.nombre} {p.apellidos ?? ''}{' '}
             <span className={`chip chip-${ficha.situacion.tono}`}>{ficha.situacion.texto}</span>
           </h2>
           {ficha.repetidos.length > 0 && (
@@ -190,12 +357,43 @@ export default function Personas({ repo }: { repo: Repo }) {
               registro bueno y borra el sobrante en su módulo.
             </p>
           )}
-          <p className="tenue">
-            {ficha.persona.numeroIdentidad && <>Nº de Identidad {ficha.persona.numeroIdentidad} · </>}
-            {ficha.persona.telefono && <>Tel. {ficha.persona.telefono} · </>}
-            {ficha.persona.fechaNacimiento && <>Nació {ficha.persona.fechaNacimiento} · </>}
-            {ficha.persona.sexo && <>{ficha.persona.sexo === 'M' ? 'Hombre' : 'Mujer'}</>}
-          </p>
+
+          {editando ? (
+            <form className="formulario" onSubmit={guardarEdicion}>
+              <FormularioCampos campos={camposEdicion} set={setCamposEdicion} datos={datos} excluirId={p.id} />
+              {errorEdicion && <p className="aviso aviso-rojo">{errorEdicion}</p>}
+              <div className="form-acciones">
+                <button className="btn btn-dorado" type="submit">💾 Guardar cambios</button>
+                <button className="btn" type="button" onClick={() => setEditando(false)}>Cancelar</button>
+              </div>
+            </form>
+          ) : (
+            <>
+              {filasDatos.length > 0 ? (
+                <table className="tabla-datos">
+                  <tbody>
+                    {filasDatos.map(([etiqueta, valor]) => (
+                      <tr key={etiqueta}><td className="tenue">{etiqueta}</td><td>{valor}</td></tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <p className="tenue">Sin datos registrados todavía.</p>
+              )}
+              <div className="form-acciones">
+                <button
+                  className="btn"
+                  onClick={() => {
+                    setCamposEdicion(camposDe(p));
+                    setErrorEdicion('');
+                    setEditando(true);
+                  }}
+                >
+                  ✏️ Editar datos
+                </button>
+              </div>
+            </>
+          )}
 
           {ficha.mision.map((m) => (
             <div key={m.conversion.id} className="proceso">

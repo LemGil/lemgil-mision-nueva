@@ -17,6 +17,10 @@ export interface Persona {
   fechaNacimiento?: string; // YYYY-MM-DD
   profesion?: string;
   estadoCivil?: string;
+  conyuge?: string;
+  /** Cantidad de hijos, como texto (así viene del registro original). */
+  hijos?: string;
+  email?: string;
   contactoPreferido?: string;
   grupoId?: string | null;
   /** personaId de su hermano mayor (uno solo). */

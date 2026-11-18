@@ -147,3 +147,35 @@ describe('convertirRespaldo — enlaces con la ortografía vieja (respaldo real 
     expect(informe.avisos.some((a) => a.includes('1 aportes'))).toBe(true);
   });
 });
+
+describe('datos completos de la persona', () => {
+  it('apellido en singular y los campos que antes no viajaban', () => {
+    const { datos } = convertirRespaldo({
+      personas: [
+        {
+          id: 'x1',
+          nombre: 'Luz',
+          apellido: 'MORTICORENA RAMIREZ',
+          profesion: 'Maestra',
+          estadoCivil: 'Casada',
+          conyuge: 'Luis Enrique',
+          hijos: '2',
+          email: 'luz@correo.cu',
+          contactoPreferido: 'WhatsApp',
+          bautizado: true,
+          fechabautismo: '2020-03-15',
+        },
+      ],
+    });
+    const p = datos.personas[0];
+    expect(p.apellidos).toBe('MORTICORENA RAMIREZ');
+    expect(p.profesion).toBe('Maestra');
+    expect(p.estadoCivil).toBe('Casada');
+    expect(p.conyuge).toBe('Luis Enrique');
+    expect(p.hijos).toBe('2');
+    expect(p.email).toBe('luz@correo.cu');
+    expect(p.contactoPreferido).toBe('WhatsApp');
+    expect(p.bautizado).toBe(true);
+    expect(p.fechaBautismo).toBe('2020-03-15');
+  });
+});

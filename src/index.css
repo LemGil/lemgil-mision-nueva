@@ -1,14 +1,17 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Nunito:wght@300;400;600;700;800&display=swap');
+
 :root {
-  --fondo: #14101d;
-  --superficie: #1f1930;
-  --superficie-2: #2a2142;
-  --borde: #3a2f58;
-  --texto: #f2ede4;
-  --tenue: #b9aed1;
-  --dorado: #d9a83c;
-  --verde: #3fae6a;
-  --rojo: #e05252;
-  --ambar: #e0a83c;
+  /* Los colores madre de la app original: marfil, blanco y oro apostólico. */
+  --fondo: #f5f1e8;
+  --superficie: #ffffff;
+  --superficie-2: #faf7f0;
+  --borde: rgba(201, 162, 74, 0.35);
+  --texto: #1c1c1c;
+  --tenue: #8a7a60;
+  --dorado: #c9a24a;
+  --verde: #3d7a4f;
+  --rojo: #b04040;
+  --ambar: #c9a24a;
 }
 
 * { box-sizing: border-box; }
@@ -17,7 +20,12 @@ body {
   margin: 0;
   background: var(--fondo);
   color: var(--texto);
-  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-family: 'Nunito', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+h1, h2, .menu-marca {
+  font-family: 'Cinzel', 'Times New Roman', serif;
+  letter-spacing: 0.01em;
 }
 
 .app { display: flex; min-height: 100vh; }
@@ -95,7 +103,7 @@ body {
 .demografia, .periodo-lineas { color: var(--tenue); margin: 12px 0 0; }
 
 .aviso { border-radius: 10px; padding: 12px 14px; margin: 14px 0; }
-.aviso-rojo { background: #3a1620; border: 1px solid var(--rojo); }
+.aviso-rojo { background: #f9ecec; border: 1px solid var(--rojo); }
 .aviso ul { margin: 6px 0 0; padding-left: 18px; }
 
 .vacio {
@@ -174,7 +182,7 @@ button.persona-fila:hover, .persona-fila.activa { border-color: var(--dorado); }
   margin-bottom: 8px;
 }
 
-.aviso-verde { background: #14301f; border: 1px solid var(--verde); }
+.aviso-verde { background: #edf4ee; border: 1px solid var(--verde); }
 
 .mapa-contenedor {
   height: 460px; border-radius: 12px; overflow: hidden;
@@ -237,7 +245,7 @@ button.persona-fila:hover, .persona-fila.activa { border-color: var(--dorado); }
   margin-top: 14px;
   background: none;
   border: 1px solid var(--borde);
-  color: var(--texto-suave);
+  color: var(--tenue);
   border-radius: 10px;
   padding: 9px 12px;
   font: inherit;
@@ -249,7 +257,7 @@ button.persona-fila:hover, .persona-fila.activa { border-color: var(--dorado); }
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(5, 3, 12, 0.72);
+  background: rgba(28, 28, 28, 0.45);
   z-index: 400;
   display: flex;
   align-items: flex-start;
@@ -259,7 +267,7 @@ button.persona-fila:hover, .persona-fila.activa { border-color: var(--dorado); }
 }
 .modal-box {
   background: var(--superficie);
-  border: 1px solid var(--borde);
+  border: 1.5px solid var(--dorado);
   border-radius: 16px;
   padding: 20px;
   width: min(680px, 100%);
@@ -269,7 +277,7 @@ button.persona-fila:hover, .persona-fila.activa { border-color: var(--dorado); }
   float: right;
   background: none;
   border: 1px solid var(--borde);
-  color: var(--texto-suave);
+  color: var(--tenue);
   border-radius: 8px;
   width: 32px;
   height: 32px;
@@ -277,3 +285,12 @@ button.persona-fila:hover, .persona-fila.activa { border-color: var(--dorado); }
   font-size: 14px;
 }
 .modal-cerrar:hover { color: var(--texto); border-color: var(--dorado); }
+
+
+/* Tema claro de la app original: las tarjetas respiran sobre el marfil. */
+.tarjeta, .kpi {
+  box-shadow: 0 1px 4px rgba(28, 28, 28, 0.07);
+}
+.tabla-datos { border-collapse: collapse; margin: 6px 0 4px; }
+.tabla-datos td { padding: 3px 14px 3px 0; vertical-align: top; }
+.tabla-datos td:first-child { white-space: nowrap; }

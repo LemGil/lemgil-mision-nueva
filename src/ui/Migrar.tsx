@@ -3,6 +3,12 @@ import { aDatosMinisterio } from '../datos/aDatosMinisterio';
 import type { Repo } from '../datos/repo';
 import type { DatosMinisterio } from '../modelo/tipos';
 import { verificarCuadre, type ResultadoCuadre } from '../motor/cuadre';
+import {
+  completarPersonas,
+  ETIQUETA_CAMPO,
+  vistaPreviaCompletar,
+  type ResumenCompletar,
+} from '../migracion/completar';
 import { convertirRespaldo, type InformeMigracion, type RespaldoViejo } from '../migracion/convertir';
 import { importarEnRepo, puedeImportar } from '../migracion/importar';
 
@@ -18,6 +24,10 @@ export default function Migrar({ repo }: { repo: Repo }) {
   const [error, setError] = useState('');
   const [importado, setImportado] = useState(false);
   const [importando, setImportando] = useState(false);
+  const [respaldoCompletar, setRespaldoCompletar] = useState<RespaldoViejo | null>(null);
+  const [previaCompletar, setPreviaCompletar] = useState<ResumenCompletar | null>(null);
+  const [completado, setCompletado] = useState<ResumenCompletar | null>(null);
+  const [completando, setCompletando] = useState(false);
 
   const cargar = useCallback(async () => {
     setActuales(await aDatosMinisterio(repo));
@@ -59,6 +69,44 @@ export default function Migrar({ repo }: { repo: Repo }) {
       setImportando(false);
     }
   };
+
+  const leerArchivoCompletar = async (archivo: File) => {
+    setError('');
+    setPreviaCompletar(null);
+    setCompletado(null);
+    try {
+      const respaldo = JSON.parse(await archivo.text()) as RespaldoViejo;
+      if (!respaldo || typeof respaldo !== 'object' || !Array.isArray(respaldo.personas)) {
+        throw new Error('Ese archivo no es un respaldo de la app actual (le falta la tabla de personas).');
+      }
+      const { datos } = convertirRespaldo(respaldo);
+      setRespaldoCompletar(respaldo);
+      setPreviaCompletar(vistaPreviaCompletar(actuales.personas, datos.personas).resumen);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  };
+
+  const completar = async () => {
+    if (!respaldoCompletar) return;
+    setCompletando(true);
+    setError('');
+    try {
+      const resumen = await completarPersonas(repo, respaldoCompletar, actuales.personas);
+      setCompletado(resumen);
+      setPreviaCompletar(null);
+      await cargar();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setCompletando(false);
+    }
+  };
+
+  const textoResumen = (r: ResumenCompletar) =>
+    Object.entries(r.campos)
+      .map(([campo, n]) => `${ETIQUETA_CAMPO[campo] ?? campo} ×${n}`)
+      .join(' · ');
 
   return (
     <div className="panel">
@@ -152,6 +200,46 @@ export default function Migrar({ repo }: { repo: Repo }) {
             </>
           )}
         </>
+      )}
+
+      {actuales.personas.length > 0 && (
+        <section className="tarjeta">
+          <h2>💾 Completar datos de las personas</h2>
+          <p className="tenue">
+            La primera conversión dejó campos sin viajar (apellidos, profesión, estado civil,
+            bautismo, cónyuge, hijos…). Elige el mismo respaldo y se rellenan <strong>solo los
+            huecos</strong> de las personas que ya están aquí: nunca se sobrescribe un dato, no
+            se crea a nadie y no se tocan los procesos.
+          </p>
+          <input
+            type="file"
+            accept="application/json,.json"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) void leerArchivoCompletar(f);
+            }}
+          />
+          {previaCompletar && previaCompletar.personas > 0 && (
+            <>
+              <p>
+                <strong>{previaCompletar.personas} personas</strong> ganarían datos:{' '}
+                {textoResumen(previaCompletar)}.
+              </p>
+              <button className="btn btn-dorado" disabled={completando} onClick={completar}>
+                {completando ? 'Completando…' : '💾 Completar los datos'}
+              </button>
+            </>
+          )}
+          {previaCompletar && previaCompletar.personas === 0 && (
+            <p className="aviso aviso-verde">✓ No falta nada: las fichas ya tienen todos los datos del respaldo.</p>
+          )}
+          {completado && (
+            <p className="aviso aviso-verde">
+              ✓ Se completaron {completado.personas} personas ({textoResumen(completado)}).
+              Sincroniza para subirlo.
+            </p>
+          )}
+        </section>
       )}
     </div>
   );

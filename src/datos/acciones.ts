@@ -348,3 +348,24 @@ export async function asignarMinisterio(
 export async function quitarDeMinisterio(repo: Repo, asignacionId: string): Promise<void> {
   await repo.borrar('asignaciones', asignacionId);
 }
+
+/** Edita los datos de una persona ya registrada. El carné sigue siendo
+ * único: si el nuevo número ya es de OTRA persona, se bloquea. */
+export async function actualizarPersona(
+  repo: Repo,
+  datos: DatosMinisterio,
+  persona: Persona,
+): Promise<void> {
+  const carnet = persona.numeroIdentidad ? digitos(persona.numeroIdentidad) : '';
+  if (carnet) {
+    const choque = datos.personas.find(
+      (p) => p.id !== persona.id && p.numeroIdentidad && digitos(p.numeroIdentidad) === carnet,
+    );
+    if (choque) {
+      throw new Error(
+        `Ya existe otra persona con ese Nº de Identidad: ${choque.nombre}. No se puede repetir.`,
+      );
+    }
+  }
+  await repo.guardar('personas', persona);
+}
