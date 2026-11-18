@@ -231,7 +231,7 @@ button.persona-fila:hover, .persona-fila.activa { border-color: var(--dorado); }
   cursor: pointer;
 }
 
-@media (max-width: 720px) {
+@media (max-width: 900px) {
   .app { flex-direction: column; }
   .barra-movil { display: flex; }
   /* Recogido por defecto; se despliega como panel al tocar el ☰. */
