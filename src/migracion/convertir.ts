@@ -84,12 +84,17 @@ export function convertirRespaldo(respaldo: RespaldoViejo): {
   const personaIdDe = (r: Registro): string => texto(r.personaId) ?? idDe(r);
 
   // — El catálogo viaja: los nombres vivos son del maestro. —
+  // En la app vieja el ámbito de los pasos de Miembros se escribe «miembro»
+  // (singular); aquí se normaliza a «miembros». El paso pm-integracion NO
+  // viaja: en el modelo congelado la Integración es la puerta (el gozne),
+  // no un peldaño de la escalera.
   const pasosViejos = respaldo.pasosSeguimiento ?? respaldo.pasos ?? [];
   const pasos: Paso[] = pasosViejos
-    .filter((r) => r.ambito === 'mision' || r.ambito === 'miembros')
+    .filter((r) => r.ambito === 'mision' || r.ambito === 'miembros' || r.ambito === 'miembro')
+    .filter((r) => idDe(r) !== 'pm-integracion')
     .map((r) => ({
       id: idDe(r),
-      ambito: r.ambito as Paso['ambito'],
+      ambito: r.ambito === 'mision' ? ('mision' as const) : ('miembros' as const),
       nombre: texto(r.nombre) ?? idDe(r),
       emoji: texto(r.emoji) ?? '',
       orden: numero(r.orden) ?? 0,
@@ -98,6 +103,10 @@ export function convertirRespaldo(respaldo: RespaldoViejo): {
       protegido: r.protegido === true,
     }));
   if (pasos.length === 0) avisos.push('El respaldo no traía catálogo: se usará la semilla.');
+  if (pasosViejos.some((r) => idDe(r) === 'pm-integracion'))
+    avisos.push(
+      'El paso «Integrado» de la escalera de Miembros no viaja como peldaño: en el modelo nuevo la Integración es la puerta (el gozne), no un paso.',
+    );
 
   // — Misión. —
   const conversiones: Conversion[] = (respaldo.conversiones ?? [])
@@ -162,7 +171,15 @@ export function convertirRespaldo(respaldo: RespaldoViejo): {
       activo: r.activo !== false,
     }));
 
-  const aportes: Aporte[] = (respaldo.aportesComun ?? respaldo.registros ?? respaldo.aportes ?? [])
+  // En la app vieja una parte de los aportes nace sin diezmador asignado:
+  // no se pueden colgar de ninguna persona y quedan en la app actual.
+  const filasAportes = respaldo.aportesComun ?? respaldo.registros ?? respaldo.aportes ?? [];
+  const sinDiezmador = filasAportes.filter((r) => !texto(r.personaId) && !texto(r.diezmadorId)).length;
+  if (sinDiezmador > 0)
+    avisos.push(
+      `${sinDiezmador} aportes de la app vieja no tienen diezmador asignado: no se pueden colgar de ninguna persona y quedan en la app actual.`,
+    );
+  const aportes: Aporte[] = filasAportes
     .filter((r) => texto(r.personaId) || texto(r.diezmadorId))
     .map((r) => {
       // En la app vieja el aporte cuelga del diezmador; aquí, de la persona.
@@ -195,12 +212,15 @@ export function convertirRespaldo(respaldo: RespaldoViejo): {
       estado: texto(r.estado) === 'Inactivo' ? 'Inactivo' : 'Activo',
     }));
 
-  // — Hitos: en la app vieja cuelgan del miembro; aquí, de la persona. —
+  // — Hitos: en la app vieja cuelgan del miembro; aquí, de la persona.
+  // El enlace viene como miembroId o como miembroid (todo en minúscula),
+  // según la época en que se escribió el registro. —
   const hitos: Hito[] = (respaldo.hitos ?? [])
     .map((r) => {
       let pid = texto(r.personaId);
-      if (!pid && texto(r.miembroId)) {
-        const m = miembroPorId.get(texto(r.miembroId)!);
+      const mid = texto(r.miembroId) ?? texto(r.miembroid);
+      if (!pid && mid) {
+        const m = miembroPorId.get(mid);
         pid = m ? personaIdDe(m) : undefined;
       }
       return {
@@ -225,8 +245,9 @@ export function convertirRespaldo(respaldo: RespaldoViejo): {
   )
     .map((r) => {
       let pid = texto(r.personaId);
-      if (!pid && texto(r.miembroId)) {
-        const m = miembroPorId.get(texto(r.miembroId)!);
+      const mid = texto(r.miembroId) ?? texto(r.miembroid);
+      if (!pid && mid) {
+        const m = miembroPorId.get(mid);
         pid = m ? personaIdDe(m) : undefined;
       }
       const ministerio =

@@ -105,3 +105,45 @@ describe('la guardia de la importación', () => {
     expect(conGente.motivo).toContain('ya tiene 3 personas');
   });
 });
+
+describe('convertirRespaldo — enlaces con la ortografía vieja (respaldo real 2026-11-18)', () => {
+  const viejo = {
+    personas: [{ id: 'p1', nombre: 'Ana' }],
+    miembros: [{ id: 'm1', personaId: 'p1', estado: 'Activo' }],
+    ministerios: [{ id: 'n1', nombre: 'Alabanza' }],
+    hitos: [
+      { id: 'h1', miembroid: 'm1', tipo: 'Bautismo', fecha: '2024-05-01' },
+      { id: 'h2', miembroid: 'NOMBRE EN TEXTO', tipo: 'Integración', fecha: '2023-01-01' },
+    ],
+    miembrosMinisterios: [{ id: 'a1', miembroid: 'm1', ministerioId: 'n1' }],
+    pasosSeguimiento: [
+      { id: 'pm-integracion', ambito: 'miembro', nombre: 'Integrado', orden: 0 },
+      { id: 'pm-grupo', ambito: 'miembro', nombre: 'En un grupo', orden: 1, fuente: 'grupo' },
+    ],
+    aportesComun: [
+      { id: 'ap1', fecha: '2024-01-01', monto: 100 },
+      { id: 'ap2', diezmadorId: 'd1', fecha: '2024-02-01', monto: 50 },
+    ],
+    dadores: [{ id: 'd1', personaId: 'p1', activo: true }],
+  };
+  const { datos, informe } = convertirRespaldo(viejo as never);
+
+  it('resuelve hitos y asignaciones enlazados con «miembroid» en minúscula', () => {
+    expect(datos.hitos.map((h) => h.id)).toEqual(['h1']);
+    expect(datos.hitos[0].personaId).toBe('p1');
+    expect(datos.asignaciones).toHaveLength(1);
+    expect(datos.asignaciones[0].ministerio).toBe('Alabanza');
+    expect(informe.huerfanos.some((h) => h.startsWith('hitos:h2'))).toBe(true);
+  });
+
+  it('los pasos de ámbito «miembro» viajan como «miembros» y pm-integracion no viaja', () => {
+    expect(datos.pasos.map((p) => p.id)).toEqual(['pm-grupo']);
+    expect(datos.pasos[0].ambito).toBe('miembros');
+    expect(informe.avisos.some((a) => a.includes('Integración es la puerta'))).toBe(true);
+  });
+
+  it('avisa de los aportes sin diezmador en vez de saltarlos en silencio', () => {
+    expect(datos.aportes.map((a) => a.id)).toEqual(['ap2']);
+    expect(informe.avisos.some((a) => a.includes('1 aportes'))).toBe(true);
+  });
+});

@@ -46,6 +46,10 @@ de un solo motor de conteo (`src/motor/`); el cuadre se verifica solo
   contrato; SQL en `sql/agregar-tablas-fase4.sql`).
 - **La app ya tiene todas las superficies del plano.** Queda la Fase 5: la
   migración única desde la app actual, y la convivencia hasta el cuadre en
-  verde con los datos reales.
+  verde con los datos reales. **El conversor ya está construido y probado**
+  (`src/migracion/`): toma el respaldo JSON de la app actual, conserva el
+  catálogo con sus nombres vivos, re-enlaza a la persona lo que colgaba del
+  miembro o del diezmador, y reporta huérfanos y no-mapeados sin inventar
+  nada; lo convertido pasa el cuadre y se importa entero (48/48 pruebas).
 
 La app actual (`lemgil-mision-apk`) sigue viva e intacta mientras tanto.
