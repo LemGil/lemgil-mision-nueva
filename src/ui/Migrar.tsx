@@ -11,6 +11,7 @@ import {
 } from '../migracion/completar';
 import { convertirRespaldo, type InformeMigracion, type RespaldoViejo } from '../migracion/convertir';
 import { importarEnRepo, puedeImportar } from '../migracion/importar';
+import GuiaPagina from './GuiaPagina';
 
 interface VistaPrevia {
   datos: DatosMinisterio;
@@ -111,6 +112,7 @@ export default function Migrar({ repo }: { repo: Repo }) {
   return (
     <div className="panel">
       <header className="panel-cabecera"><h1>🧳 Migración (una sola vez)</h1></header>
+      <GuiaPagina texto="La puerta de entrada de los datos: importar el respaldo de la app anterior (solo con la base vacía) y completar los datos que falten, sin sobrescribir nada." />
       <p className="tenue">
         Trae el respaldo JSON completo de la app actual («💾 Respaldo JSON», junto al botón de
         sincronizar). Primero verás el informe de la conversión — qué viaja, qué queda fuera y

@@ -7,6 +7,7 @@ import type { DatosMinisterio } from '../modelo/tipos';
 import { calcularCenso, type Censo } from '../motor/censo';
 import { cumpleanosProximos, estancados, type CumpleProximo, type Estancado } from '../motor/alertas';
 import { verificarCuadre, type ResultadoCuadre } from '../motor/cuadre';
+import GuiaPagina from './GuiaPagina';
 
 interface Props {
   repo: Repo;
@@ -102,6 +103,7 @@ export default function Panel({ repo, sync, estadoSync, modoLocal }: Props) {
           )}
         </div>
       </header>
+      <GuiaPagina texto="La foto de la congregación hoy: cada persona cuenta una sola vez, en su etapa más avanzada. Aquí no se trabaja, se mira: el total, el cuadre, las alertas y el movimiento de este mes." />
 
       {!cuadre.verde && (
         <section className="aviso aviso-rojo">

@@ -9,6 +9,7 @@ import {
   type Informe as InformeTipo,
 } from '../motor/informes';
 import { anosConRegistros, mesesConRegistros } from '../motor/periodos';
+import GuiaPagina from './GuiaPagina';
 
 
 const MESES = [
@@ -64,6 +65,7 @@ export default function Informe({ repo }: { repo: Repo }) {
           🖨️ Imprimir
         </button>
       </header>
+      <GuiaPagina texto="Los números para compartir, por departamento y por período, listos para imprimir. Cuenta personas, como el Panel, no registros." />
 
       <div className="selector-depto">
         {DEPARTAMENTOS.map((d) => (

@@ -6,6 +6,7 @@ import type { DatosMinisterio } from '../modelo/tipos';
 import SelectorPersona from './SelectorPersona';
 import { agrupar } from '../motor/vistas';
 import BarraVistas, { type Vista } from './BarraVistas';
+import GuiaPagina from './GuiaPagina';
 
 
 export default function ManosAbiertas({ repo }: { repo: Repo }) {
@@ -76,6 +77,7 @@ export default function ManosAbiertas({ repo }: { repo: Repo }) {
   return (
     <div className="panel">
       <header className="panel-cabecera"><h1>👐 Manos Abiertas</h1></header>
+      <GuiaPagina texto="Las casas y personas que reciben ayuda, activas e inactivas." />
       {error && <p className="aviso aviso-rojo">{error}</p>}
       <section className="kpis">
         <div className="kpi kpi-principal"><span className="kpi-numero">{activos}</span><span className="kpi-titulo">Beneficiarios activos</span></div>

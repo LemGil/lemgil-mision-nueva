@@ -6,6 +6,7 @@ import type { DatosMinisterio } from '../modelo/tipos';
 import SelectorPersona from './SelectorPersona';
 import { agrupar } from '../motor/vistas';
 import BarraVistas, { type Vista } from './BarraVistas';
+import GuiaPagina from './GuiaPagina';
 
 
 export default function Academia({ repo }: { repo: Repo }) {
@@ -80,6 +81,7 @@ export default function Academia({ repo }: { repo: Repo }) {
   return (
     <div className="panel">
       <header className="panel-cabecera"><h1>🎓 Academia</h1></header>
+      <GuiaPagina texto="Los estudiantes de la Academia del Espíritu: quién está activo y quién no." />
       {error && <p className="aviso aviso-rojo">{error}</p>}
       <section className="kpis">
         <div className="kpi kpi-principal"><span className="kpi-numero">{activos}</span><span className="kpi-titulo">Estudiantes activos</span></div>

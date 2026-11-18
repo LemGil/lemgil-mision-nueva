@@ -8,6 +8,7 @@ import { clasificarPersona } from '../motor/censo';
 import { agrupar, visibleSegunVer, type VerPersonas } from '../motor/vistas';
 import BarraVistas, { type Vista } from './BarraVistas';
 import Modal from './Modal';
+import GuiaPagina from './GuiaPagina';
 
 const hoyIso = () => new Date().toISOString().slice(0, 10);
 const txt = (v: string) => v.trim() || undefined;
@@ -316,6 +317,7 @@ export default function Personas({ repo }: { repo: Repo }) {
           ➕ Nueva persona
         </button>
       </header>
+      <GuiaPagina texto="La ficha única: aquí cada persona se escribe una sola vez, con su Nº de Identidad. Todas las demás mesas eligen de esta lista." />
 
       {mostrarForm && (
         <form className="tarjeta formulario" onSubmit={guardar}>

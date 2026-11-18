@@ -7,6 +7,7 @@ import { resumenMinisterios } from '../motor/ministerios';
 import BarraVistas, { type Vista } from './BarraVistas';
 import Modal from './Modal';
 import SelectorPersona from './SelectorPersona';
+import GuiaPagina from './GuiaPagina';
 
 export default function Ministerios({ repo }: { repo: Repo }) {
   const [datos, setDatos] = useState<DatosMinisterio | null>(null);
@@ -45,6 +46,7 @@ export default function Ministerios({ repo }: { repo: Repo }) {
   return (
     <div>
       <h1>🤲 Ministerios</h1>
+      <GuiaPagina texto="Quién sirve en cada ministerio. Al asignar a un miembro, su escalera marca sola el paso de Sirviendo." />
       <p className="tenue">
         Cada ministerio con su gente. Al asignar a una persona, su escalera de Miembros marca el
         paso de servir sola.

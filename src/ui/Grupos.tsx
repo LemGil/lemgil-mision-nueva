@@ -8,6 +8,7 @@ import { agrupar } from '../motor/vistas';
 import BarraVistas, { type Vista } from './BarraVistas';
 
 import Modal from './Modal';
+import GuiaPagina from './GuiaPagina';
 
 export default function Grupos({ repo }: { repo: Repo }) {
   const [datos, setDatos] = useState<DatosMinisterio | null>(null);
@@ -77,6 +78,7 @@ export default function Grupos({ repo }: { repo: Repo }) {
   return (
     <div className="panel">
       <header className="panel-cabecera"><h1>🏠 Grupos</h1></header>
+      <GuiaPagina texto="Los grupos de la congregación, con su líder y su zona. Cada persona pertenece a un solo grupo." />
       {error && <p className="aviso aviso-rojo">{error}</p>}
       <section className="kpis">
         <div className="kpi kpi-principal"><span className="kpi-numero">{datos.grupos.length}</span><span className="kpi-titulo">Grupos</span></div>

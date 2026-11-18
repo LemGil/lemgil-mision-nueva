@@ -13,6 +13,7 @@ import { anosConRegistros, mesesConRegistros } from '../motor/periodos';
 import BarraVistas, { type Vista } from './BarraVistas';
 import SelectorPersona from './SelectorPersona';
 import Modal from './Modal';
+import GuiaPagina from './GuiaPagina';
 
 const hoyIso = () => new Date().toISOString().slice(0, 10);
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
@@ -134,6 +135,7 @@ export default function Miembros({ repo }: { repo: Repo }) {
       <header className="panel-cabecera">
         <h1>🏠 Miembros</h1>
       </header>
+      <GuiaPagina texto="El directorio de los integrados y su escalera: Grupo → Diezmador → Academia → Ministerio → Hermano Mayor → Liderazgo. La Integración es la puerta, no un peldaño." />
       {error && <p className="aviso aviso-rojo">{error}</p>}
 
       <section className="tarjeta">

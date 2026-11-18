@@ -6,6 +6,7 @@ import type { DatosMinisterio } from '../modelo/tipos';
 import SelectorPersona from './SelectorPersona';
 import { agrupar } from '../motor/vistas';
 import BarraVistas, { type Vista } from './BarraVistas';
+import GuiaPagina from './GuiaPagina';
 
 
 const hoyIso = () => new Date().toISOString().slice(0, 10);
@@ -79,6 +80,7 @@ export default function Evangelismos({ repo }: { repo: Repo }) {
         <h1>📣 Evangelismos</h1>
         <button className="btn btn-dorado" onClick={() => setMostrarForm((v) => !v)}>➕ Nuevo</button>
       </header>
+      <GuiaPagina texto="Las salidas evangelísticas: fecha, lugar, líder y participantes." />
       {error && <p className="aviso aviso-rojo">{error}</p>}
       <section className="kpis">
         <div className="kpi kpi-principal"><span className="kpi-numero">{datos.evangelismos.length}</span><span className="kpi-titulo">Evangelismos</span></div>

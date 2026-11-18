@@ -11,6 +11,7 @@ import { agrupar } from '../motor/vistas';
 import BarraVistas, { type Vista } from './BarraVistas';
 
 import Modal from './Modal';
+import GuiaPagina from './GuiaPagina';
 
 const hoyIso = () => new Date().toISOString().slice(0, 10);
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
@@ -99,6 +100,7 @@ export default function BienComun({ repo }: { repo: Repo }) {
   return (
     <div className="panel">
       <header className="panel-cabecera"><h1>🌾 Bien Común</h1></header>
+      <GuiaPagina texto="Los diezmadores y sus aportes de diezmos y ofrendas. Los aportes quedan a nombre de la persona para siempre: son historia, no se borran con su salida." />
       {error && <p className="aviso aviso-rojo">{error}</p>}
 
       <div className="selector-periodo">

@@ -384,3 +384,15 @@ button.persona-fila:hover, .persona-fila.activa { border-color: var(--dorado); }
 .persona-card:hover { border-color: var(--dorado); }
 .persona-card .persona-meta { display: block; }
 .grupo-titulo { margin: 16px 0 6px; font-size: 16px; }
+
+.guia-pagina {
+  background: rgba(201, 162, 74, 0.12);
+  border: 1px solid var(--borde);
+  border-left: 4px solid var(--dorado);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin: 0 0 14px;
+  font-size: 14.5px;
+  line-height: 1.45;
+  color: var(--texto);
+}

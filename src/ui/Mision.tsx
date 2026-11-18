@@ -12,6 +12,7 @@ import { anosConRegistros, mesesConRegistros } from '../motor/periodos';
 
 import BarraVistas, { type Vista } from './BarraVistas';
 import Modal from './Modal';
+import GuiaPagina from './GuiaPagina';
 
 const hoyIso = () => new Date().toISOString().slice(0, 10);
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
@@ -174,6 +175,7 @@ export default function Mision({ repo }: { repo: Repo }) {
           ➕ Nuevo Congregado
         </button>
       </header>
+      <GuiaPagina texto="La mesa del camino: Alcanzado → Confeso → Converso → Discipulado → Bautizado → Integrado. Cuenta registros paso a paso; al llegar a Integrado, la persona nace como miembro." />
 
       {errorAccion && <p className="aviso aviso-rojo">{errorAccion}</p>}
 
