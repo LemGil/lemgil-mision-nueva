@@ -8,6 +8,8 @@ import {
   type DepartamentoId,
   type Informe as InformeTipo,
 } from '../motor/informes';
+import { anosConRegistros, mesesConRegistros } from '../motor/periodos';
+
 
 const MESES = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -32,16 +34,27 @@ export default function Informe({ repo }: { repo: Repo }) {
     };
   }, [repo]);
 
+  const fechasInforme = datos
+    ? [
+        ...datos.conversiones.flatMap((c) => [c.fecha, ...c.historial.map((h) => h.fecha)]),
+        ...datos.miembros.map((m) => m.fechaIngreso),
+        ...datos.aportes.map((a) => a.fecha),
+        ...datos.evangelismos.map((e) => e.fecha),
+      ]
+    : [];
+  const anos = datos ? anosConRegistros(fechasInforme) : [];
+  const anoEfectivo = anos.includes(ano) ? ano : (anos[0] ?? ano);
+  const mesesDisp = datos ? mesesConRegistros(fechasInforme, anoEfectivo) : [];
+
   const informe: InformeTipo | null = useMemo(() => {
     if (!datos) return null;
-    const desde = `${ano}-${String(mes === 0 ? 1 : mes).padStart(2, '0')}-01`;
-    const fin = mes === 0 ? new Date(ano, 12, 0) : new Date(ano, mes, 0);
+    const desde = `${anoEfectivo}-${String(mes === 0 ? 1 : mes).padStart(2, '0')}-01`;
+    const fin = mes === 0 ? new Date(anoEfectivo, 12, 0) : new Date(anoEfectivo, mes, 0);
     const hasta = `${fin.getFullYear()}-${String(fin.getMonth() + 1).padStart(2, '0')}-${String(fin.getDate()).padStart(2, '0')}`;
     const periodo: Periodo = { desde, hasta };
-    return construirInforme(depto, datos, { periodo, cohorte: { ano, mes: mes === 0 ? undefined : mes } });
-  }, [datos, depto, ano, mes]);
-
-  const anos = [hoy.getFullYear() - 1, hoy.getFullYear(), hoy.getFullYear() + 1];
+    return construirInforme(depto, datos, { periodo, cohorte: { ano: anoEfectivo, mes: mes === 0 ? undefined : mes } });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [datos, depto, anoEfectivo, mes]);
 
   return (
     <div className="panel">
@@ -67,8 +80,8 @@ export default function Informe({ repo }: { repo: Repo }) {
       <div className="selector-periodo">
         <label>
           Año{' '}
-          <select value={ano} onChange={(e) => setAno(Number(e.target.value))}>
-            {anos.map((a) => (
+          <select value={anoEfectivo} onChange={(e) => setAno(Number(e.target.value))}>
+            {(anos.length > 0 ? anos : [anoEfectivo]).map((a) => (
               <option key={a} value={a}>
                 {a}
               </option>
@@ -79,11 +92,14 @@ export default function Informe({ repo }: { repo: Repo }) {
           Mes{' '}
           <select value={mes} onChange={(e) => setMes(Number(e.target.value))}>
             <option value={0}>Todo el año</option>
-            {MESES.map((m, i) => (
-              <option key={m} value={i + 1}>
-                {m}
+            {mesesDisp.map((m) => (
+              <option key={m} value={m}>
+                {MESES[m - 1]}
               </option>
             ))}
+            {mes !== 0 && !mesesDisp.includes(mes) && (
+              <option value={mes}>{MESES[mes - 1]}</option>
+            )}
           </select>
         </label>
       </div>

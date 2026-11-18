@@ -8,6 +8,8 @@ import { cumpleanosProximos } from '../motor/alertas';
 import { escaleraDeMiembro, estaEnElPaso, tarjetasDeMiembros } from '../motor/miembros';
 import { buscarPersonas } from '../motor/personaVista';
 import { agrupar } from '../motor/vistas';
+import { anosConRegistros, mesesConRegistros } from '../motor/periodos';
+
 import BarraVistas, { type Vista } from './BarraVistas';
 import SelectorPersona from './SelectorPersona';
 import Modal from './Modal';
@@ -63,7 +65,8 @@ export default function Miembros({ repo }: { repo: Repo }) {
     datos.miembros.filter((m) => ['Activo', 'Inactivo', 'Disciplinado'].includes(m.estado)).map((m) => m.personaId),
   );
   const cumples = cumpleanosProximos(datos, hoyIso()).filter((c) => enCasa.has(c.personaId));
-  const anoActual = new Date().getFullYear();
+  const fechasMiembros = datos.miembros.map((m) => m.fechaIngreso);
+  const mesesDisp = ano === 0 ? [] : mesesConRegistros(fechasMiembros, ano);
 
   const tarjetasVista: [string, number][] = [
     ['Activos', tarjetas.activos], ['Inactivos', tarjetas.inactivos],
@@ -156,7 +159,7 @@ export default function Miembros({ repo }: { repo: Repo }) {
           📅 Tarjetas:{' '}
           <select value={ano} onChange={(e) => setAno(Number(e.target.value))}>
             <option value={0}>Foto completa</option>
-            {[anoActual - 1, anoActual, anoActual + 1].map((a) => (
+            {anosConRegistros(fechasMiembros).map((a) => (
               <option key={a} value={a}>{a}</option>
             ))}
           </select>
@@ -165,9 +168,12 @@ export default function Miembros({ repo }: { repo: Repo }) {
           Mes{' '}
           <select value={mes} onChange={(e) => setMes(Number(e.target.value))} disabled={ano === 0}>
             <option value={0}>Todo el año</option>
-            {MESES.map((m, i) => (
-              <option key={m} value={i + 1}>{m}</option>
+            {mesesDisp.map((m) => (
+              <option key={m} value={m}>{MESES[m - 1]}</option>
             ))}
+            {mes !== 0 && !mesesDisp.includes(mes) && (
+              <option value={mes}>{MESES[mes - 1]}</option>
+            )}
           </select>
         </label>
         {ano !== 0 && <span className="tenue">la foto de los que ingresaron en el período</span>}

@@ -5,6 +5,8 @@ import type { Repo } from '../datos/repo';
 import type { DatosMinisterio, Periodo } from '../modelo/tipos';
 import { resumenBienComun } from '../motor/bienComun';
 import SelectorPersona from './SelectorPersona';
+import { anosConRegistros, mesesConRegistros } from '../motor/periodos';
+
 import { agrupar } from '../motor/vistas';
 import BarraVistas, { type Vista } from './BarraVistas';
 
@@ -58,7 +60,8 @@ export default function BienComun({ repo }: { repo: Repo }) {
   const aportesDe = detalle
     ? datos.aportes.filter((a) => a.personaId === detalle.personaId).slice().sort((a, b) => (a.fecha < b.fecha ? 1 : -1))
     : [];
-  const anoActual = new Date().getFullYear();
+  const fechasAportes = datos.aportes.map((a) => a.fecha);
+  const mesesDisp = ano === 0 ? [] : mesesConRegistros(fechasAportes, ano);
 
   const claveGrupo = (d: (typeof visibles)[number]): string => {
     const p = personaDe(d.personaId);
@@ -103,7 +106,7 @@ export default function BienComun({ repo }: { repo: Repo }) {
           📅 Aportes:{' '}
           <select value={ano} onChange={(e) => setAno(Number(e.target.value))}>
             <option value={0}>Todo el tiempo</option>
-            {[anoActual - 1, anoActual, anoActual + 1].map((a) => (
+            {anosConRegistros(fechasAportes).map((a) => (
               <option key={a} value={a}>{a}</option>
             ))}
           </select>
@@ -112,9 +115,12 @@ export default function BienComun({ repo }: { repo: Repo }) {
           Mes{' '}
           <select value={mes} onChange={(e) => setMes(Number(e.target.value))} disabled={ano === 0}>
             <option value={0}>Todo el año</option>
-            {MESES.map((m, i) => (
-              <option key={m} value={i + 1}>{m}</option>
+            {mesesDisp.map((m) => (
+              <option key={m} value={m}>{MESES[m - 1]}</option>
             ))}
+            {mes !== 0 && !mesesDisp.includes(mes) && (
+              <option value={mes}>{MESES[mes - 1]}</option>
+            )}
           </select>
         </label>
       </div>

@@ -8,6 +8,8 @@ import { fechaEnPasoActual } from '../motor/alertas';
 import { conteoMision, siguientePasoEnRuta } from '../motor/mision';
 import { buscarPersonas } from '../motor/personaVista';
 import { agrupar } from '../motor/vistas';
+import { anosConRegistros, mesesConRegistros } from '../motor/periodos';
+
 import BarraVistas, { type Vista } from './BarraVistas';
 import Modal from './Modal';
 
@@ -100,8 +102,9 @@ export default function Mision({ repo }: { repo: Repo }) {
     }
   };
 
-  const anoActual = new Date().getFullYear();
-  const anos = [0, anoActual - 1, anoActual, anoActual + 1];
+  const fechasMision = datos.conversiones.flatMap((c) => [c.fecha, ...c.historial.map((h) => h.fecha)]);
+  const anos = [0, ...anosConRegistros(fechasMision)];
+  const mesesDisp = ano === 0 ? [] : mesesConRegistros(fechasMision, ano);
 
   const diasEnPaso = (c: (typeof lista)[number]) =>
     Math.max(
@@ -235,9 +238,12 @@ export default function Mision({ repo }: { repo: Repo }) {
           Mes{' '}
           <select value={mes} onChange={(e) => setMes(Number(e.target.value))} disabled={ano === 0}>
             <option value={0}>Todo el año</option>
-            {MESES.map((m, i) => (
-              <option key={m} value={i + 1}>{m}</option>
+            {mesesDisp.map((m) => (
+              <option key={m} value={m}>{MESES[m - 1]}</option>
             ))}
+            {mes !== 0 && !mesesDisp.includes(mes) && (
+              <option value={mes}>{MESES[mes - 1]}</option>
+            )}
           </select>
         </label>
         {periodo && <span className="tenue">cuentan las entradas a cada paso en el período</span>}
