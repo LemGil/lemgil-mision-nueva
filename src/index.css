@@ -205,3 +205,16 @@ button.persona-fila:hover, .persona-fila.activa { border-color: var(--dorado); }
   .menu-grupo { width: 100%; padding-top: 6px; }
   .contenido { padding: 14px; }
 }
+
+.menu-salir {
+  margin-top: 14px;
+  background: none;
+  border: 1px solid var(--borde);
+  color: var(--texto-suave);
+  border-radius: 10px;
+  padding: 9px 12px;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.menu-salir:hover { color: var(--texto); border-color: var(--dorado); }

@@ -1,6 +1,14 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { HashRouter, NavLink, Route, Routes } from 'react-router-dom';
-import { crearCliente, entrarYSincronizar, hayConexionConfigurada } from './datos/conexion';
+import {
+  crearCliente,
+  crearSincronizador,
+  entrarYSincronizar,
+  entradoGuardado,
+  hayConexionConfigurada,
+  olvidarEntrado,
+  restaurarSesion,
+} from './datos/conexion';
 import { BaseLocal, instalarVigilanciaDeVersion } from './datos/db';
 import { Repo } from './datos/repo';
 import { sembrarCatalogoSiVacio } from './datos/aDatosMinisterio';
@@ -31,8 +39,36 @@ export default function App() {
 
   const configurada = hayConexionConfigurada();
   const [dentro, setDentro] = useState(!configurada);
+  const [restaurando, setRestaurando] = useState(configurada);
   const [sync, setSync] = useState<Sincronizador | null>(null);
   const [estadoSync, setEstadoSync] = useState<EstadoSync | null>(null);
+
+  // Al abrir (o refrescar): la sesión guardada en el equipo manda. Si
+  // Supabase la reconoce, se entra sin pedir nada; si no hay red para
+  // comprobarla pero este equipo ya entró antes, se entra igual a los
+  // datos locales y la sync se pondrá al día cuando vuelva la conexión.
+  useEffect(() => {
+    if (!configurada) return;
+    let vivo = true;
+    void (async () => {
+      const cliente = crearCliente();
+      const s = await restaurarSesion(cliente, repo, setEstadoSync);
+      if (!vivo) return;
+      if (s) {
+        setSync(s);
+        setEstadoSync(s.estadoActual);
+        setDentro(true);
+      } else if (entradoGuardado()) {
+        setSync(crearSincronizador(cliente, repo, setEstadoSync));
+        setDentro(true);
+      }
+      setRestaurando(false);
+    })();
+    return () => {
+      vivo = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const entrar = async (correo: string, contrasena: string) => {
     const s = await entrarYSincronizar(crearCliente(), repo, correo, contrasena, setEstadoSync);
@@ -41,6 +77,25 @@ export default function App() {
     setDentro(true);
   };
 
+  const salir = async () => {
+    olvidarEntrado();
+    try {
+      await crearCliente().auth.signOut();
+    } catch {
+      /* sin red: la entrada local ya quedó olvidada */
+    }
+    window.location.reload();
+  };
+
+  if (restaurando)
+    return (
+      <div className="entrar">
+        <div className="entrar-caja">
+          <h1>Ministerio LemGil</h1>
+          <p className="entrar-sub">Abriendo tu sesión guardada…</p>
+        </div>
+      </div>
+    );
   if (!dentro) return <Entrar onEntrar={entrar} />;
 
   return (
@@ -64,6 +119,11 @@ export default function App() {
           <NavLink to="/bien-comun">🌾 Bien Común</NavLink>
           <NavLink to="/manos-abiertas">👐 Manos Abiertas</NavLink>
           <NavLink to="/mapa">🗺️ Mapa</NavLink>
+          {configurada && (
+            <button type="button" className="menu-salir" onClick={() => void salir()}>
+              🚪 Salir
+            </button>
+          )}
         </nav>
         <main className="contenido">
           <Routes>
