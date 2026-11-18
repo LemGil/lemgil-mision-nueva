@@ -294,3 +294,22 @@ button.persona-fila:hover, .persona-fila.activa { border-color: var(--dorado); }
 .tabla-datos { border-collapse: collapse; margin: 6px 0 4px; }
 .tabla-datos td { padding: 3px 14px 3px 0; vertical-align: top; }
 .tabla-datos td:first-child { white-space: nowrap; }
+
+/* La combinación de la app original: menú petróleo oscuro (#1A3A4A, el de
+ * su barra lateral) con letras claras y oro, y el contenido en marfil. */
+.menu {
+  background: #1a3a4a;
+  border-right: 1px solid rgba(201, 162, 74, 0.25);
+  color: #f5f1e8;
+}
+.menu-grupo { color: rgba(255, 255, 255, 0.35); }
+.menu a { color: rgba(255, 255, 255, 0.55); }
+.menu a:hover { background: rgba(255, 255, 255, 0.06); color: rgba(255, 255, 255, 0.9); }
+.menu a.active {
+  background: linear-gradient(90deg, rgba(201, 162, 74, 0.18), transparent);
+  color: #f5d77a;
+}
+.menu-salir { color: rgba(255, 255, 255, 0.55); border-color: rgba(201, 162, 74, 0.35); }
+.menu-salir:hover { color: #f5d77a; border-color: var(--dorado); }
+.barra-movil { background: #1a3a4a; border-bottom: 1px solid rgba(201, 162, 74, 0.25); }
+.barra-boton { color: #f5f1e8; border-color: rgba(201, 162, 74, 0.45); }
