@@ -19,6 +19,7 @@ import {
 } from '../modelo/catalogo';
 import type {
   Aporte,
+  AsignacionMinisterio,
   Beneficiario,
   Conversion,
   DatosMinisterio,
@@ -319,4 +320,31 @@ export async function fijarUbicacion(
     const g = datos.grupos.find((x) => x.id === id);
     if (g) await repo.guardar('grupos', { ...g, lat, lng });
   }
+}
+
+/** Asigna una persona a un ministerio (por nombre: el ministerio nace con
+ * su primera asignación). Una persona no se repite en el mismo ministerio. */
+export async function asignarMinisterio(
+  repo: Repo,
+  datos: DatosMinisterio,
+  entrada: { personaId: string; ministerio: string },
+): Promise<AsignacionMinisterio> {
+  const nombre = entrada.ministerio.trim();
+  if (!nombre) throw new Error('El ministerio necesita un nombre.');
+  const repetida = datos.asignaciones.some(
+    (a) => a.personaId === entrada.personaId && a.ministerio.toLowerCase() === nombre.toLowerCase(),
+  );
+  if (repetida) throw new Error('Esa persona ya está en ese ministerio.');
+  const asignacion: AsignacionMinisterio = {
+    id: nuevoId(),
+    personaId: entrada.personaId,
+    ministerio: nombre,
+  };
+  await repo.guardar('asignaciones', asignacion);
+  return asignacion;
+}
+
+/** Quita a una persona de un ministerio (borrado lógico del Repo). */
+export async function quitarDeMinisterio(repo: Repo, asignacionId: string): Promise<void> {
+  await repo.borrar('asignaciones', asignacionId);
 }

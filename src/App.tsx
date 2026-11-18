@@ -23,6 +23,7 @@ import Mapa from './ui/Mapa';
 import Miembros from './ui/Miembros';
 import Migrar from './ui/Migrar';
 import Mision from './ui/Mision';
+import Ministerios from './ui/Ministerios';
 import Panel from './ui/Panel';
 import Personas from './ui/Personas';
 import Academia from './ui/Academia';
@@ -130,6 +131,7 @@ export default function App() {
           <div className="menu-grupo">Mesas</div>
           <NavLink to="/mision">🧭 Misión</NavLink>
           <NavLink to="/miembros">🏠 Miembros</NavLink>
+          <NavLink to="/ministerios">🤲 Ministerios</NavLink>
           <NavLink to="/academia">🎓 Academia</NavLink>
           <NavLink to="/grupos">👥 Grupos</NavLink>
           <NavLink to="/evangelismos">📣 Evangelismos</NavLink>
@@ -154,6 +156,7 @@ export default function App() {
             <Route path="/personas" element={<Personas repo={repo} />} />
             <Route path="/mision" element={<Mision repo={repo} />} />
             <Route path="/miembros" element={<Miembros repo={repo} />} />
+            <Route path="/ministerios" element={<Ministerios repo={repo} />} />
             <Route path="/academia" element={<Academia repo={repo} />} />
             <Route path="/grupos" element={<Grupos repo={repo} />} />
             <Route path="/evangelismos" element={<Evangelismos repo={repo} />} />

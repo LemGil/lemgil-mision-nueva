@@ -96,3 +96,21 @@ describe('acciones con las reglas del modelo', () => {
     expect(datos2.miembros.find((m) => m.personaId === p.id)?.estado).toBe('Trasladado');
   });
 });
+
+describe('ministerios', () => {
+  it('asignar crea la asignación y repetir en el mismo ministerio se bloquea', async () => {
+    const { asignarMinisterio, quitarDeMinisterio } = await import('./acciones');
+    const repo = await repoListo();
+    const p = await registrarPersona(repo, await aDatosMinisterio(repo), { nombre: 'Luz' }, {}, HOY);
+    const datos = await aDatosMinisterio(repo);
+    const a = await asignarMinisterio(repo, datos, { personaId: p.id, ministerio: 'ENSEÑANZA' });
+    expect(a.ministerio).toBe('ENSEÑANZA');
+    const datos2 = await aDatosMinisterio(repo);
+    expect(datos2.asignaciones).toHaveLength(1);
+    await expect(
+      asignarMinisterio(repo, datos2, { personaId: p.id, ministerio: 'enseñanza' }),
+    ).rejects.toThrow('ya está en ese ministerio');
+    await quitarDeMinisterio(repo, a.id);
+    expect((await aDatosMinisterio(repo)).asignaciones).toHaveLength(0);
+  });
+});
