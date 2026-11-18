@@ -5,6 +5,9 @@ import type { Repo } from '../datos/repo';
 import type { DatosMinisterio, Periodo } from '../modelo/tipos';
 import { resumenBienComun } from '../motor/bienComun';
 import SelectorPersona from './SelectorPersona';
+import { agrupar } from '../motor/vistas';
+import BarraVistas, { type Vista } from './BarraVistas';
+
 import Modal from './Modal';
 
 const hoyIso = () => new Date().toISOString().slice(0, 10);
@@ -18,6 +21,8 @@ export default function BienComun({ repo }: { repo: Repo }) {
   const [seleccionado, setSeleccionado] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [ver, setVer] = useState('activos');
+  const [vista, setVista] = useState<Vista>('lista');
+  const [agruparPor, setAgruparPor] = useState('zona');
   const [monto, setMonto] = useState('');
   const [fechaAporte, setFechaAporte] = useState(hoyIso());
   const [tipoAporte, setTipoAporte] = useState<'Diezmo' | 'Ofrenda'>('Diezmo');
@@ -54,6 +59,39 @@ export default function BienComun({ repo }: { repo: Repo }) {
     ? datos.aportes.filter((a) => a.personaId === detalle.personaId).slice().sort((a, b) => (a.fecha < b.fecha ? 1 : -1))
     : [];
   const anoActual = new Date().getFullYear();
+
+  const claveGrupo = (d: (typeof visibles)[number]): string => {
+    const p = personaDe(d.personaId);
+    if (agruparPor === 'estado') return d.activo ? 'Activos' : 'Inactivos';
+    if (agruparPor === 'grupo') {
+      const g = p?.grupoId ? datos.grupos.find((x) => x.id === p.grupoId) : undefined;
+      return g?.nombre ?? 'Sin grupo';
+    }
+    return p?.zona?.trim() || 'Sin zona';
+  };
+  const filaDiezmador = (d: (typeof visibles)[number]) => {
+    const p = personaDe(d.personaId);
+    return (
+      <li key={d.id}>
+        <button className={`persona-fila ${seleccionado === d.id ? 'activa' : ''}`} onClick={() => setSeleccionado(d.id)}>
+          <span className="persona-nombre">{p?.nombre} {p?.apellidos ?? ''}</span>
+          <span className="persona-meta">aportó {resumen.porPersona.get(d.personaId) ?? 0}{periodo ? ' en el período' : ''}</span>
+          <span className={`chip ${d.activo ? 'chip-verde' : 'chip-gris'}`}>{d.activo ? 'Activo' : 'Inactivo'}</span>
+        </button>
+      </li>
+    );
+  };
+  const tarjetaDiezmador = (d: (typeof visibles)[number]) => {
+    const p = personaDe(d.personaId);
+    return (
+      <button key={d.id} className="persona-card" onClick={() => setSeleccionado(d.id)}>
+        <span className="persona-nombre">{p?.nombre} {p?.apellidos ?? ''}</span>
+        <span><span className={`chip ${d.activo ? 'chip-verde' : 'chip-gris'}`}>{d.activo ? 'Activo' : 'Inactivo'}</span></span>
+        <span className="persona-meta">aportó {resumen.porPersona.get(d.personaId) ?? 0}{periodo ? ' en el período' : ''}</span>
+        <span className="persona-meta">{p?.zona ?? 'Sin zona'}</span>
+      </button>
+    );
+  };
 
   return (
     <div className="panel">
@@ -116,21 +154,38 @@ export default function BienComun({ repo }: { repo: Repo }) {
         </label>
         <span className="tenue">{visibles.length} en la lista</span>
       </div>
-      <ul className="lista-personas">
-        {visibles.map((d) => {
-          const p = personaDe(d.personaId);
-          return (
-            <li key={d.id}>
-              <button className={`persona-fila ${seleccionado === d.id ? 'activa' : ''}`} onClick={() => setSeleccionado(d.id)}>
-                <span className="persona-nombre">{p?.nombre} {p?.apellidos ?? ''}</span>
-                <span className="persona-meta">aportó {resumen.porPersona.get(d.personaId) ?? 0}{periodo ? ' en el período' : ''}</span>
-                <span className={`chip ${d.activo ? 'chip-verde' : 'chip-gris'}`}>{d.activo ? 'Activo' : 'Inactivo'}</span>
-              </button>
-            </li>
-          );
-        })}
-        {visibles.length === 0 && <li className="tenue">Sin diezmadores para esta vista.</li>}
-      </ul>
+      <BarraVistas
+        vista={vista}
+        setVista={setVista}
+        agruparPor={agruparPor}
+        setAgruparPor={setAgruparPor}
+        opciones={[
+          { valor: 'zona', etiqueta: 'Zona' },
+          { valor: 'grupo', etiqueta: 'Grupo' },
+          { valor: 'estado', etiqueta: 'Estado' },
+        ]}
+      />
+      {vista === 'lista' && (
+        <ul className="lista-personas">
+          {visibles.map(filaDiezmador)}
+          {visibles.length === 0 && <li className="tenue">Sin diezmadores para esta vista.</li>}
+        </ul>
+      )}
+      {vista === 'tarjetas' && (
+        visibles.length === 0
+          ? <p className="tenue">Sin diezmadores para esta vista.</p>
+          : <div className="tarjetas-grid">{visibles.map(tarjetaDiezmador)}</div>
+      )}
+      {vista === 'agrupada' && (
+        visibles.length === 0
+          ? <p className="tenue">Sin diezmadores para esta vista.</p>
+          : agrupar(visibles, claveGrupo).map((g) => (
+              <div key={g.titulo}>
+                <h3 className="grupo-titulo">{g.titulo} · {g.items.length}</h3>
+                <ul className="lista-personas">{g.items.map(filaDiezmador)}</ul>
+              </div>
+            ))
+      )}
 
       {detalle && (
         <Modal onCerrar={() => setSeleccionado(null)}>

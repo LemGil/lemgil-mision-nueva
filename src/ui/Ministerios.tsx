@@ -4,6 +4,7 @@ import { asignarMinisterio, quitarDeMinisterio } from '../datos/acciones';
 import type { Repo } from '../datos/repo';
 import type { DatosMinisterio } from '../modelo/tipos';
 import { resumenMinisterios } from '../motor/ministerios';
+import BarraVistas, { type Vista } from './BarraVistas';
 import Modal from './Modal';
 import SelectorPersona from './SelectorPersona';
 
@@ -13,6 +14,8 @@ export default function Ministerios({ repo }: { repo: Repo }) {
   const [nuevoNombre, setNuevoNombre] = useState('');
   const [personaNueva, setPersonaNueva] = useState('');
   const [error, setError] = useState('');
+  const [vista, setVista] = useState<Vista>('lista');
+  const [agruparPor, setAgruparPor] = useState('ministerio');
 
   const recargar = async () => setDatos(await aDatosMinisterio(repo));
   useEffect(() => {
@@ -22,7 +25,7 @@ export default function Ministerios({ repo }: { repo: Repo }) {
 
   if (!datos) return <p className="cargando">Cargando…</p>;
   const ministerios = resumenMinisterios(datos);
-  const vista = abierto ? ministerios.find((m) => m.nombre === abierto) : undefined;
+  const detalleMin = abierto ? ministerios.find((m) => m.nombre === abierto) : undefined;
   const sirviendo = new Set(datos.asignaciones.map((a) => a.personaId));
   const nombreDe = (id: string) => {
     const p = datos.personas.find((x) => x.id === id);
@@ -59,19 +62,67 @@ export default function Ministerios({ repo }: { repo: Repo }) {
         </div>
       </section>
 
-      <ul className="lista-personas">
-        {ministerios.map((m) => (
-          <li key={m.nombre}>
-            <button className="persona-fila" onClick={() => setAbierto(m.nombre)}>
-              <span className="persona-nombre">🤲 {m.nombre}</span>
-              <span className="tenue">
-                {m.miembros.length} {m.miembros.length === 1 ? 'persona' : 'personas'}
-              </span>
-            </button>
-          </li>
-        ))}
-        {ministerios.length === 0 && <li className="tenue">Aún no hay ministerios con gente.</li>}
-      </ul>
+      <BarraVistas
+        vista={vista}
+        setVista={setVista}
+        agruparPor={agruparPor}
+        setAgruparPor={setAgruparPor}
+        opciones={[{ valor: 'ministerio', etiqueta: 'Ministerio' }]}
+      />
+
+      {vista === 'lista' && (
+        <ul className="lista-personas">
+          {ministerios.map((m) => (
+            <li key={m.nombre}>
+              <button className="persona-fila" onClick={() => setAbierto(m.nombre)}>
+                <span className="persona-nombre">🤲 {m.nombre}</span>
+                <span className="tenue">
+                  {m.miembros.length} {m.miembros.length === 1 ? 'persona' : 'personas'}
+                </span>
+              </button>
+            </li>
+          ))}
+          {ministerios.length === 0 && <li className="tenue">Aún no hay ministerios con gente.</li>}
+        </ul>
+      )}
+      {vista === 'tarjetas' && (
+        ministerios.length === 0
+          ? <p className="tenue">Aún no hay ministerios con gente.</p>
+          : (
+            <div className="tarjetas-grid">
+              {ministerios.map((m) => (
+                <button key={m.nombre} className="persona-card" onClick={() => setAbierto(m.nombre)}>
+                  <span className="persona-nombre">🤲 {m.nombre}</span>
+                  <span className="persona-meta">
+                    {m.miembros.length} {m.miembros.length === 1 ? 'persona' : 'personas'}
+                  </span>
+                  <span className="persona-meta">
+                    {m.miembros.slice(0, 3).map((p) => p.nombre).join(', ')}
+                    {m.miembros.length > 3 ? '…' : ''}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )
+      )}
+      {vista === 'agrupada' && (
+        ministerios.length === 0
+          ? <p className="tenue">Aún no hay ministerios con gente.</p>
+          : ministerios.map((m) => (
+              <div key={m.nombre}>
+                <h3 className="grupo-titulo">🤲 {m.nombre} · {m.miembros.length}</h3>
+                <ul className="lista-personas">
+                  {m.miembros.map((p) => (
+                    <li key={p.asignacionId}>
+                      <button className="persona-fila" onClick={() => setAbierto(m.nombre)}>
+                        <span className="persona-nombre">{p.nombre}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))
+      )}
 
       <section className="tarjeta formulario">
         <h2>Nuevo ministerio</h2>
@@ -100,12 +151,12 @@ export default function Ministerios({ repo }: { repo: Repo }) {
         <p className="tenue">Un ministerio nace con su primera persona; el resto se agrega dentro.</p>
       </section>
 
-      {vista && (
+      {detalleMin && (
         <Modal onCerrar={() => setAbierto(null)}>
-          <h2>🤲 {vista.nombre}</h2>
+          <h2>🤲 {detalleMin.nombre}</h2>
           {error && <p className="aviso aviso-rojo">{error}</p>}
           <ul className="lista-personas">
-            {vista.miembros.map((p) => (
+            {detalleMin.miembros.map((p) => (
               <li key={p.asignacionId} className="persona-fila">
                 <span className="persona-nombre">{p.nombre}</span>
                 <button
@@ -120,13 +171,13 @@ export default function Ministerios({ repo }: { repo: Repo }) {
                 </button>
               </li>
             ))}
-            {vista.miembros.length === 0 && <li className="tenue">Sin personas todavía.</li>}
+            {detalleMin.miembros.length === 0 && <li className="tenue">Sin personas todavía.</li>}
           </ul>
           <h3>Agregar a una persona</h3>
           <SelectorPersona
             datos={datos}
-            excluir={new Set(vista.miembros.map((p) => p.personaId))}
-            onElegir={(id) => void asignar(vista.nombre, id)}
+            excluir={new Set(detalleMin.miembros.map((p) => p.personaId))}
+            onElegir={(id) => void asignar(detalleMin.nombre, id)}
           />
           <p className="tenue">Toca una persona de la lista para agregarla al momento.</p>
         </Modal>

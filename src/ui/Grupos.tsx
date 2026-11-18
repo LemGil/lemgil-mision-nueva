@@ -4,6 +4,9 @@ import { crearGrupo } from '../datos/acciones';
 import type { Repo } from '../datos/repo';
 import type { DatosMinisterio } from '../modelo/tipos';
 import SelectorPersona from './SelectorPersona';
+import { agrupar } from '../motor/vistas';
+import BarraVistas, { type Vista } from './BarraVistas';
+
 import Modal from './Modal';
 
 export default function Grupos({ repo }: { repo: Repo }) {
@@ -14,6 +17,8 @@ export default function Grupos({ repo }: { repo: Repo }) {
   const [zona, setZona] = useState('');
   const [liderId, setLiderId] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [vista, setVista] = useState<Vista>('lista');
+  const [agruparPor, setAgruparPor] = useState('zona');
   const recargar = useCallback(() => setRecargas((x) => x + 1), []);
   useEffect(() => {
     let vivo = true;
@@ -38,6 +43,36 @@ export default function Grupos({ repo }: { repo: Repo }) {
   const conGrupo = new Set<string>();
   for (const m of datos.miembros) if (m.grupoId) conGrupo.add(m.personaId);
   for (const p of datos.personas) if (p.grupoId) conGrupo.add(p.id);
+
+  const claveGrupo = (g: (typeof datos.grupos)[number]): string => {
+    if (agruparPor === 'lider') {
+      const l = g.liderId ? personaDe(g.liderId) : undefined;
+      return l ? `${l.nombre} ${l.apellidos ?? ''}`.trim() : 'Sin líder';
+    }
+    return g.zona?.trim() || 'Sin zona';
+  };
+  const filaGrupo = (g: (typeof datos.grupos)[number]) => (
+    <li key={g.id}>
+      <button className={`persona-fila ${seleccionado === g.id ? 'activa' : ''}`} onClick={() => setSeleccionado(g.id)}>
+        <span className="persona-nombre">🏠 {g.nombre}</span>
+        <span className="persona-meta">
+          {miembrosDe(g.id).length} personas
+          {g.liderId ? ` · líder ${personaDe(g.liderId)?.nombre ?? ''}` : ''}
+          {g.lat != null ? ' · 📍 en el mapa' : ''}
+        </span>
+      </button>
+    </li>
+  );
+  const tarjetaGrupo = (g: (typeof datos.grupos)[number]) => (
+    <button key={g.id} className="persona-card" onClick={() => setSeleccionado(g.id)}>
+      <span className="persona-nombre">🏠 {g.nombre}</span>
+      <span className="persona-meta">{miembrosDe(g.id).length} personas{g.zona ? ` · Zona ${g.zona}` : ''}</span>
+      <span className="persona-meta">
+        {g.liderId ? `Líder: ${personaDe(g.liderId)?.nombre ?? ''} ${personaDe(g.liderId)?.apellidos ?? ''}` : 'Sin líder'}
+        {g.lat != null ? ' · 📍 en el mapa' : ''}
+      </span>
+    </button>
+  );
 
   return (
     <div className="panel">
@@ -76,21 +111,37 @@ export default function Grupos({ repo }: { repo: Repo }) {
         </div>
       </section>
 
-      <ul className="lista-personas">
-        {datos.grupos.map((g) => (
-          <li key={g.id}>
-            <button className={`persona-fila ${seleccionado === g.id ? 'activa' : ''}`} onClick={() => setSeleccionado(g.id)}>
-              <span className="persona-nombre">🏠 {g.nombre}</span>
-              <span className="persona-meta">
-                {miembrosDe(g.id).length} personas
-                {g.liderId ? ` · líder ${personaDe(g.liderId)?.nombre ?? ''}` : ''}
-                {g.lat != null ? ' · 📍 en el mapa' : ''}
-              </span>
-            </button>
-          </li>
-        ))}
-        {datos.grupos.length === 0 && <li className="tenue">Sin grupos todavía.</li>}
-      </ul>
+      <BarraVistas
+        vista={vista}
+        setVista={setVista}
+        agruparPor={agruparPor}
+        setAgruparPor={setAgruparPor}
+        opciones={[
+          { valor: 'zona', etiqueta: 'Zona' },
+          { valor: 'lider', etiqueta: 'Líder' },
+        ]}
+      />
+      {vista === 'lista' && (
+        <ul className="lista-personas">
+          {datos.grupos.map(filaGrupo)}
+          {datos.grupos.length === 0 && <li className="tenue">Sin grupos todavía.</li>}
+        </ul>
+      )}
+      {vista === 'tarjetas' && (
+        datos.grupos.length === 0
+          ? <p className="tenue">Sin grupos todavía.</p>
+          : <div className="tarjetas-grid">{datos.grupos.map(tarjetaGrupo)}</div>
+      )}
+      {vista === 'agrupada' && (
+        datos.grupos.length === 0
+          ? <p className="tenue">Sin grupos todavía.</p>
+          : agrupar(datos.grupos, claveGrupo).map((g) => (
+              <div key={g.titulo}>
+                <h3 className="grupo-titulo">{g.titulo} · {g.items.length}</h3>
+                <ul className="lista-personas">{g.items.map(filaGrupo)}</ul>
+              </div>
+            ))
+      )}
 
       {detalle && (
         <Modal onCerrar={() => setSeleccionado(null)}>
