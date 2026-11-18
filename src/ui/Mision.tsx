@@ -7,6 +7,7 @@ import type { DatosMinisterio, Periodo } from '../modelo/tipos';
 import { fechaEnPasoActual } from '../motor/alertas';
 import { conteoMision, siguientePasoEnRuta } from '../motor/mision';
 import { buscarPersonas } from '../motor/personaVista';
+import Modal from './Modal';
 
 const hoyIso = () => new Date().toISOString().slice(0, 10);
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
@@ -249,7 +250,7 @@ export default function Mision({ repo }: { repo: Repo }) {
       </ul>
 
       {detalle && (
-        <section className="tarjeta ficha">
+        <Modal onCerrar={() => setSeleccionada(null)}>
           <h2>
             {personaDe(detalle.personaId)?.nombre} {personaDe(detalle.personaId)?.apellidos ?? ''}
           </h2>
@@ -314,7 +315,7 @@ export default function Mision({ repo }: { repo: Repo }) {
               </ul>
             </>
           )}
-        </section>
+        </Modal>
       )}
     </div>
   );

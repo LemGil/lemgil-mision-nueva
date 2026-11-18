@@ -4,6 +4,7 @@ import { crearGrupo } from '../datos/acciones';
 import type { Repo } from '../datos/repo';
 import type { DatosMinisterio } from '../modelo/tipos';
 import SelectorPersona from './SelectorPersona';
+import Modal from './Modal';
 
 export default function Grupos({ repo }: { repo: Repo }) {
   const [datos, setDatos] = useState<DatosMinisterio | null>(null);
@@ -92,7 +93,7 @@ export default function Grupos({ repo }: { repo: Repo }) {
       </ul>
 
       {detalle && (
-        <section className="tarjeta ficha">
+        <Modal onCerrar={() => setSeleccionado(null)}>
           <h2>🏠 {detalle.nombre}</h2>
           <p className="tenue">
             {detalle.zona && <>Zona {detalle.zona} · </>}
@@ -108,7 +109,7 @@ export default function Grupos({ repo }: { repo: Repo }) {
               ))}
             </ul>
           )}
-        </section>
+        </Modal>
       )}
     </div>
   );

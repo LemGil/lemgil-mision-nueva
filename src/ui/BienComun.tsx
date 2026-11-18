@@ -5,6 +5,7 @@ import type { Repo } from '../datos/repo';
 import type { DatosMinisterio, Periodo } from '../modelo/tipos';
 import { resumenBienComun } from '../motor/bienComun';
 import SelectorPersona from './SelectorPersona';
+import Modal from './Modal';
 
 const hoyIso = () => new Date().toISOString().slice(0, 10);
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
@@ -118,7 +119,7 @@ export default function BienComun({ repo }: { repo: Repo }) {
       </ul>
 
       {detalle && (
-        <section className="tarjeta ficha">
+        <Modal onCerrar={() => setSeleccionado(null)}>
           <h2>{personaDe(detalle.personaId)?.nombre} {personaDe(detalle.personaId)?.apellidos ?? ''}</h2>
           <button
             className="btn"
@@ -168,7 +169,7 @@ export default function BienComun({ repo }: { repo: Repo }) {
               </button>
             </div>
           </div>
-        </section>
+        </Modal>
       )}
     </div>
   );

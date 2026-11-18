@@ -4,6 +4,7 @@ import { registrarPersona, type EntradaMision } from '../datos/acciones';
 import type { Repo } from '../datos/repo';
 import type { DatosMinisterio, Sexo } from '../modelo/tipos';
 import { buscarPersonas, fichaDePersona, situacionDe } from '../motor/personaVista';
+import Modal from './Modal';
 
 const hoyIso = () => new Date().toISOString().slice(0, 10);
 
@@ -177,7 +178,7 @@ export default function Personas({ repo }: { repo: Repo }) {
       </ul>
 
       {ficha && (
-        <section className="tarjeta ficha">
+        <Modal onCerrar={() => setSeleccionada(null)}>
           <h2>
             {ficha.persona.nombre} {ficha.persona.apellidos ?? ''}{' '}
             <span className={`chip chip-${ficha.situacion.tono}`}>{ficha.situacion.texto}</span>
@@ -234,7 +235,7 @@ export default function Personas({ repo }: { repo: Repo }) {
           {ficha.mision.length === 0 && ficha.miembros.length === 0 && !ficha.estudiante && !ficha.diezmador && !ficha.beneficiario && (
             <p className="tenue">Sin procesos todavía.</p>
           )}
-        </section>
+        </Modal>
       )}
     </div>
   );
