@@ -349,3 +349,8 @@ button.persona-fila:hover, .persona-fila.activa { border-color: var(--dorado); }
   height: 32px;
   cursor: pointer;
 }
+
+/* El botón ☰ a la izquierda, como el flotante de la app original: el
+ * cajón entra por la izquierda y el botón que lo abre vive ahí mismo. */
+.barra-movil { justify-content: flex-start; gap: 12px; }
+.barra-boton { order: -1; }
