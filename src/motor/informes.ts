@@ -10,6 +10,7 @@ import { verificarCuadre } from './cuadre';
 import { escaleraDeMiembro, tarjetasDeMiembros } from './miembros';
 import { conteoMision } from './mision';
 import { nombreColaborador, resumenRed } from './red';
+import { resumenManos } from './manosAbiertas';
 
 export type DepartamentoId =
   | 'general'
@@ -256,6 +257,18 @@ export function construirInforme(
       for (const b of datos.beneficiarios) {
         porEstado.set(b.estado, (porEstado.get(b.estado) ?? 0) + 1);
       }
+      const manos = resumenManos(datos);
+      const porCampana: [string, string][] = datos.campanas
+        .map((c) => {
+          const r = manos.porCampana.get(c.id);
+          return {
+            nombre: c.nombre,
+            texto: r
+              ? `${r.entregas} entregas · ${r.totalCantidad} en cantidad · última ${r.ultimaFecha}`
+              : 'sin entregas',
+          };
+        })
+        .map((x): [string, string] => [x.nombre, x.texto]);
       return {
         id,
         titulo: 'Informe de Manos Abiertas',
@@ -265,6 +278,15 @@ export function construirInforme(
             filas: [
               ...[...porEstado.entries()].map(([e, c]): [string, string] => [e, n(c)]),
               ['Total', n(datos.beneficiarios.length)],
+            ],
+          },
+          {
+            titulo: '🎪 Campañas y entregas',
+            filas: [
+              ['Campañas en curso', n(manos.campanasEnCurso)],
+              ['Campañas en total', n(manos.campanasTotal)],
+              ['Entregas registradas', n(manos.entregasTotal)],
+              ...porCampana,
             ],
           },
         ],

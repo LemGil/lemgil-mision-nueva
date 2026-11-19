@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { aDatosMinisterio } from '../datos/aDatosMinisterio';
-import { actualizarColaborador, borrarAporteRed, borrarColaborador, crearColaborador, registrarAporteRed } from '../datos/acciones';
+import { actualizarAporteRed, actualizarColaborador, borrarAporteRed, borrarColaborador, crearColaborador, registrarAporteRed } from '../datos/acciones';
 import type { Repo } from '../datos/repo';
 import type { Colaborador, DatosMinisterio, Periodo } from '../modelo/tipos';
 import { anosConRegistros, mesesConRegistros } from '../motor/periodos';
@@ -356,27 +356,86 @@ export default function RedColaboradores({ repo }: { repo: Repo }) {
               </div>
             </>
           )}
-          <h3>Aportes</h3>
+          <h3>Aportes (editables)</h3>
           {aportesDe.length === 0 ? (
             <p className="tenue">Sin aportes registrados.</p>
           ) : (
-            <ul className="historial">
-              {aportesDe.map((a) => (
-                <li key={a.id}>
-                  {a.fecha} · {a.tipo} · {a.monto}
-                  {a.metodo ? ` · ${a.metodo}` : ''}
-                  {a.referencia ? ` · ref. ${a.referencia}` : ''}{' '}
-                  <BorrarBoton
-                    texto="🗑️"
-                    titulo="Borrar este aporte"
-                    onBorrar={async () => {
-                      await borrarAporteRed(repo, a.id);
-                      recargar();
-                    }}
-                  />
-                </li>
-              ))}
-            </ul>
+            <>
+              <ul className="historial-edit">
+                {aportesDe.map((a) => (
+                  <li key={a.id}>
+                    <input
+                      type="date"
+                      value={a.fecha}
+                      onChange={async (e) => {
+                        await actualizarAporteRed(repo, { ...a, fecha: e.target.value });
+                        recargar();
+                      }}
+                    />
+                    <select
+                      value={a.tipo}
+                      onChange={async (e) => {
+                        await actualizarAporteRed(repo, { ...a, tipo: e.target.value });
+                        recargar();
+                      }}
+                    >
+                      {TIPOS_APORTE.map((t) => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                    </select>
+                    <select
+                      value={a.metodo ?? 'Efectivo'}
+                      onChange={async (e) => {
+                        await actualizarAporteRed(repo, { ...a, metodo: e.target.value });
+                        recargar();
+                      }}
+                    >
+                      {METODOS.map((t) => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                    </select>
+                    <input
+                      type="number"
+                      min="0"
+                      defaultValue={a.monto}
+                      style={{ width: '7em' }}
+                      onBlur={async (e) => {
+                        const v = Number(e.target.value);
+                        if (v > 0 && v !== a.monto) {
+                          await actualizarAporteRed(repo, { ...a, monto: v });
+                          recargar();
+                        }
+                      }}
+                    />
+                    <input
+                      type="text"
+                      defaultValue={a.referencia ?? ''}
+                      placeholder="Referencia"
+                      style={{ width: '8em' }}
+                      onBlur={async (e) => {
+                        const v = e.target.value.trim();
+                        if (v !== (a.referencia ?? '')) {
+                          await actualizarAporteRed(repo, { ...a, referencia: v || undefined });
+                          recargar();
+                        }
+                      }}
+                    />
+                    <BorrarBoton
+                      texto="🗑️"
+                      titulo="Borrar este aporte"
+                      onBorrar={async () => {
+                        await borrarAporteRed(repo, a.id);
+                        recargar();
+                      }}
+                    />
+                  </li>
+                ))}
+              </ul>
+              <p className="tenue">
+                {aportesDe.length} aportes · total {aportesDe.reduce((x, a) => x + a.monto, 0)}.
+                Toca cualquier dato para corregirlo.
+              </p>
+            </>
           )}
           <div className="form-fila">
             <label>Fecha<input type="date" value={fechaAporte} onChange={(e) => setFechaAporte(e.target.value)} /></label>

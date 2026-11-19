@@ -8,10 +8,12 @@ import type {
   AporteRed,
   AsignacionMinisterio,
   Beneficiario,
+  Campana,
   Colaborador,
   Conversion,
   DatosMinisterio,
   Diezmador,
+  Entrega,
   Estudiante,
   Evangelismo,
   Grupo,
@@ -43,6 +45,8 @@ export async function aDatosMinisterio(repo: Repo): Promise<DatosMinisterio> {
     aportes,
     colaboradores,
     aportesRed,
+    campanas,
+    entregas,
     pasos,
   ] = await Promise.all([
     repo.listar<Persona>('personas'),
@@ -58,6 +62,8 @@ export async function aDatosMinisterio(repo: Repo): Promise<DatosMinisterio> {
     repo.listar<Aporte>('aportes'),
     repo.listar<Colaborador>('colaboradores'),
     repo.listar<AporteRed>('aportesRed'),
+    repo.listar<Campana>('campanas'),
+    repo.listar<Entrega>('entregas'),
     repo.listar<Paso>('pasos'),
   ]);
   return {
@@ -74,6 +80,8 @@ export async function aDatosMinisterio(repo: Repo): Promise<DatosMinisterio> {
     aportes,
     colaboradores,
     aportesRed,
+    campanas,
+    entregas,
     pasos: pasos.length > 0 ? pasos : CATALOGO_SEMILLA,
   };
 }

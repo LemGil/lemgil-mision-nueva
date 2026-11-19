@@ -4,6 +4,9 @@ import { actualizarGrupo, borrarGrupo, crearGrupo } from '../datos/acciones';
 import type { Repo } from '../datos/repo';
 import type { DatosMinisterio } from '../modelo/tipos';
 import SelectorPersona from './SelectorPersona';
+import { clasificarPersona } from '../motor/censo';
+import { esBaja } from '../motor/vistas';
+import type { Grupo } from '../modelo/tipos';
 import { agrupar } from '../motor/vistas';
 import BarraVistas, { type Vista } from './BarraVistas';
 
@@ -19,9 +22,6 @@ export default function Grupos({ repo }: { repo: Repo }) {
   const [zona, setZona] = useState('');
   const [liderId, setLiderId] = useState<string | null>(null);
   const [error, setError] = useState('');
-  const [nombreEd, setNombreEd] = useState('');
-  const [zonaEd, setZonaEd] = useState('');
-  const [liderEd, setLiderEd] = useState<string | null>(null);
   const [vista, setVista] = useState<Vista>('lista');
   const [agruparPor, setAgruparPor] = useState('zona');
   const recargar = useCallback(() => setRecargas((x) => x + 1), []);
@@ -36,28 +36,26 @@ export default function Grupos({ repo }: { repo: Repo }) {
     };
   }, [repo, recargas]);
 
-  const grupoSel = datos?.grupos.find((g) => g.id === seleccionado);
-  useEffect(() => {
-    if (grupoSel) {
-      setNombreEd(grupoSel.nombre);
-      setZonaEd(grupoSel.zona ?? '');
-      setLiderEd(grupoSel.liderId ?? null);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [seleccionado]);
-
   if (!datos) return <p className="cargando">Cargando…</p>;
   const personaDe = (id?: string | null) => datos.personas.find((p) => p.id === id);
+  const esPersonaBaja = (personaId: string) =>
+    esBaja(clasificarPersona(datos, personaId).clase);
   const miembrosDe = (grupoId: string) => {
     const ids = new Set<string>();
     for (const m of datos.miembros) if (m.grupoId === grupoId) ids.add(m.personaId);
     for (const p of datos.personas) if (p.grupoId === grupoId) ids.add(p.id);
-    return [...ids].map((id) => personaDe(id)).filter(Boolean);
+    // En el grupo solo salen los que están: apartados, traslados y
+    // fallecidos (las bajas) no se listan ni se cuentan.
+    return [...ids]
+      .filter((id) => !esPersonaBaja(id))
+      .map((id) => personaDe(id))
+      .filter(Boolean);
   };
   const detalle = seleccionado ? datos.grupos.find((g) => g.id === seleccionado) : undefined;
   const conGrupo = new Set<string>();
   for (const m of datos.miembros) if (m.grupoId) conGrupo.add(m.personaId);
   for (const p of datos.personas) if (p.grupoId) conGrupo.add(p.id);
+  for (const id of [...conGrupo]) if (esPersonaBaja(id)) conGrupo.delete(id);
 
   const claveGrupo = (g: (typeof datos.grupos)[number]): string => {
     if (agruparPor === 'lider') {
@@ -177,31 +175,14 @@ export default function Grupos({ repo }: { repo: Repo }) {
             </ul>
           )}
 
-          <h3>✏️ Editar grupo</h3>
-          <div className="form-fila">
-            <label>Nombre<input value={nombreEd} onChange={(e) => setNombreEd(e.target.value)} /></label>
-            <label>Zona<input value={zonaEd} onChange={(e) => setZonaEd(e.target.value)} /></label>
-          </div>
-          <p className="tenue">
-            Líder: {liderEd ? `${personaDe(liderEd)?.nombre} ${personaDe(liderEd)?.apellidos ?? ''}` : 'sin líder'}
-          </p>
-          <SelectorPersona datos={datos} onElegir={setLiderEd} placeholder="🔍 Cambiar el líder…" />
+          <FormEditarGrupo
+            key={detalle.id}
+            repo={repo}
+            datos={datos}
+            grupo={detalle}
+            onGuardado={recargar}
+          />
           <div className="form-acciones">
-            <button
-              className="btn btn-dorado"
-              disabled={!nombreEd.trim()}
-              onClick={async () => {
-                await actualizarGrupo(repo, {
-                  ...detalle,
-                  nombre: nombreEd.trim(),
-                  zona: zonaEd.trim() || undefined,
-                  liderId: liderEd,
-                });
-                recargar();
-              }}
-            >
-              💾 Guardar cambios
-            </button>
             <BorrarBoton
               texto="🗑️ Borrar grupo"
               onBorrar={async () => {
@@ -214,5 +195,77 @@ export default function Grupos({ repo }: { repo: Repo }) {
         </Modal>
       )}
     </div>
+  );
+}
+
+/** El formulario de edición del grupo: nace con los datos del grupo
+ * (el padre lo monta con key = id del grupo, así cada grupo abre con
+ * SUS datos, sin efectos de sincronía) y confirma al guardar. */
+function FormEditarGrupo({
+  repo,
+  datos,
+  grupo,
+  onGuardado,
+}: {
+  repo: Repo;
+  datos: DatosMinisterio;
+  grupo: Grupo;
+  onGuardado: () => void;
+}) {
+  const [nombre, setNombre] = useState(grupo.nombre);
+  const [zona, setZona] = useState(grupo.zona ?? '');
+  const [liderId, setLiderId] = useState<string | null>(grupo.liderId ?? null);
+  const [guardado, setGuardado] = useState(false);
+  const [error, setError] = useState('');
+  const personaDe = (id?: string | null) => datos.personas.find((p) => p.id === id);
+  const tocar = () => setGuardado(false);
+  return (
+    <>
+      <h3>✏️ Editar grupo</h3>
+      {error && <p className="aviso aviso-rojo">{error}</p>}
+      {guardado && <p className="aviso aviso-verde">✓ Cambios guardados.</p>}
+      <div className="form-fila">
+        <label>
+          Nombre
+          <input value={nombre} onChange={(e) => { setNombre(e.target.value); tocar(); }} />
+        </label>
+        <label>
+          Zona
+          <input value={zona} onChange={(e) => { setZona(e.target.value); tocar(); }} />
+        </label>
+      </div>
+      <p className="tenue">
+        Líder: {liderId ? `${personaDe(liderId)?.nombre} ${personaDe(liderId)?.apellidos ?? ''}` : 'sin líder'}
+      </p>
+      <SelectorPersona
+        datos={datos}
+        onElegir={(id) => { setLiderId(id); tocar(); }}
+        placeholder="🔍 Cambiar el líder…"
+      />
+      <div className="form-acciones">
+        <button
+          className="btn btn-dorado"
+          disabled={!nombre.trim()}
+          onClick={async () => {
+            setError('');
+            setGuardado(false);
+            try {
+              await actualizarGrupo(repo, {
+                ...grupo,
+                nombre: nombre.trim(),
+                zona: zona.trim() || undefined,
+                liderId,
+              });
+              setGuardado(true);
+              onGuardado();
+            } catch (e) {
+              setError(e instanceof Error ? e.message : String(e));
+            }
+          }}
+        >
+          💾 Guardar cambios
+        </button>
+      </div>
+    </>
   );
 }

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { aDatosMinisterio } from '../datos/aDatosMinisterio';
-import { borrarAporte, borrarDiezmador, crearDiezmador, registrarAporte } from '../datos/acciones';
+import { actualizarAporte, borrarAporte, borrarDiezmador, crearDiezmador, registrarAporte } from '../datos/acciones';
 import type { Repo } from '../datos/repo';
 import type { DatosMinisterio, Periodo } from '../modelo/tipos';
 import { resumenBienComun } from '../motor/bienComun';
@@ -217,25 +217,61 @@ export default function BienComun({ repo }: { repo: Repo }) {
               recargar();
             }}
           />
-          <h3>Aportes</h3>
+          <h3>Aportes (editables)</h3>
           {aportesDe.length === 0 ? (
             <p className="tenue">Sin aportes registrados.</p>
           ) : (
-            <ul className="historial">
-              {aportesDe.map((a) => (
-                <li key={a.id}>
-                  {a.fecha} · {a.tipo} · {a.monto}{' '}
-                  <BorrarBoton
-                    texto="🗑️"
-                    titulo="Borrar este aporte"
-                    onBorrar={async () => {
-                      await borrarAporte(repo, a.id);
-                      recargar();
-                    }}
-                  />
-                </li>
-              ))}
-            </ul>
+            <>
+              <ul className="historial-edit">
+                {aportesDe.map((a) => (
+                  <li key={a.id}>
+                    <input
+                      type="date"
+                      value={a.fecha}
+                      onChange={async (e) => {
+                        await actualizarAporte(repo, { ...a, fecha: e.target.value });
+                        recargar();
+                      }}
+                    />
+                    <select
+                      value={a.tipo}
+                      onChange={async (e) => {
+                        await actualizarAporte(repo, { ...a, tipo: e.target.value as 'Diezmo' | 'Ofrenda' });
+                        recargar();
+                      }}
+                    >
+                      <option value="Diezmo">Diezmo</option>
+                      <option value="Ofrenda">Ofrenda</option>
+                    </select>
+                    <input
+                      type="number"
+                      min="0"
+                      defaultValue={a.monto}
+                      style={{ width: '7em' }}
+                      onBlur={async (e) => {
+                        const v = Number(e.target.value);
+                        if (v > 0 && v !== a.monto) {
+                          await actualizarAporte(repo, { ...a, monto: v });
+                          recargar();
+                        }
+                      }}
+                    />
+                    <BorrarBoton
+                      texto="🗑️"
+                      titulo="Borrar este aporte"
+                      onBorrar={async () => {
+                        await borrarAporte(repo, a.id);
+                        recargar();
+                      }}
+                    />
+                  </li>
+                ))}
+              </ul>
+              <p className="tenue">
+                {aportesDe.length} aportes · total {aportesDe.reduce((x, a) => x + a.monto, 0)}.
+                Toca la fecha, el tipo o el monto para corregirlos.
+              </p>
+            </>
           )}
           <div className="form-fila">
             <label>Fecha<input type="date" value={fechaAporte} onChange={(e) => setFechaAporte(e.target.value)} /></label>

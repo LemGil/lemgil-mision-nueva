@@ -103,6 +103,37 @@ export interface Beneficiario {
   estado: string;
 }
 
+/** Una campaña de Manos Abiertas (Desayuno con Jesús, Sopa con Jesús…). */
+export interface Campana {
+  id: string;
+  nombre: string;
+  fechaInicio?: string;
+  fechaFin?: string;
+  zona?: string;
+  tipo?: string;
+  metaFamilias?: number;
+  metaTipo?: string;
+  responsable?: string;
+  /** 'Planificada' | 'En curso' | 'Terminada' */
+  estado: string;
+  descripcion?: string;
+}
+
+/** Una entrega hecha dentro de una campaña. El beneficiario puede ser un
+ * registro de Manos Abiertas (beneficiarioId) o un nombre escrito a mano
+ * (beneficiarioNombre), como trabajaba la app anterior. */
+export interface Entrega {
+  id: string;
+  campanaId: string;
+  beneficiarioId?: string;
+  beneficiarioNombre?: string;
+  fecha: string;
+  tipo?: string;
+  cantidad?: number;
+  unidad?: string;
+  notas?: string;
+}
+
 /** Un hito en la ficha del miembro: su historia; de ellos se alimenta la escalera. */
 export interface Hito {
   id: string;
@@ -196,6 +227,8 @@ export interface DatosMinisterio {
   aportes: Aporte[];
   colaboradores: Colaborador[];
   aportesRed: AporteRed[];
+  campanas: Campana[];
+  entregas: Entrega[];
   pasos: Paso[];
 }
 

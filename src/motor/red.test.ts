@@ -11,6 +11,7 @@ const datos: DatosMinisterio = {
     { id: 'c1', nombre: 'CORBAN', apellido: 'MINISTERIO', estado: 'Activo', tipo: 'Ministerio' },
     { id: 'c2', nombre: 'Ana', estado: 'Inactivo', tipo: 'Persona' },
   ],
+  campanas: [], entregas: [],
   aportesRed: [
     { id: 'a1', colaboradorId: 'c1', fecha: '2025-08-10', monto: 210, tipo: 'Diezmo' },
     { id: 'a2', colaboradorId: 'c1', fecha: '2026-01-05', monto: 100, tipo: 'Ofrenda' },

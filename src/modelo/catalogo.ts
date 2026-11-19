@@ -52,10 +52,20 @@ export function pasosDeMision(pasos: Paso[]): Paso[] {
 }
 
 export function pasosDeMiembros(pasos: Paso[]): Paso[] {
-  return pasos
+  const ordenados = pasos
     .filter((p) => p.ambito === 'miembros')
     .slice()
     .sort((a, b) => a.orden - b.orden);
+  // Si el catálogo trae dos pasos con el mismo nombre (pasó con
+  // «Diezmador»: el suyo propio y el de la semilla), la escalera muestra
+  // solo el primero — palabra de LemGil, 2026-11-19.
+  const vistos = new Set<string>();
+  return ordenados.filter((p) => {
+    const clave = p.nombre.trim().toLowerCase();
+    if (vistos.has(clave)) return false;
+    vistos.add(clave);
+    return true;
+  });
 }
 
 export function pasoPorId(pasos: Paso[], id: string): Paso | undefined {

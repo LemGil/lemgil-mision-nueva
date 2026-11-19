@@ -23,10 +23,12 @@ import type {
   AporteRed,
   AsignacionMinisterio,
   Beneficiario,
+  Campana,
   Colaborador,
   Conversion,
   DatosMinisterio,
   Diezmador,
+  Entrega,
   EntradaHistorial,
   Estudiante,
   Evangelismo,
@@ -625,4 +627,58 @@ export async function borrarPersona(
     );
   }
   await repo.borrar('personas', id);
+}
+
+// ── Aportes editables (Bien Común y Red) ──────────────────────────────
+
+export async function actualizarAporte(repo: Repo, aporte: Aporte): Promise<void> {
+  await repo.guardar('aportes', aporte);
+}
+
+export async function actualizarAporteRed(repo: Repo, aporte: AporteRed): Promise<void> {
+  await repo.guardar('aportesRed', aporte);
+}
+
+// ── Manos Abiertas: Campañas y Entregas ───────────────────────────────
+
+export async function crearCampana(
+  repo: Repo,
+  campana: Omit<Campana, 'id'>,
+): Promise<Campana> {
+  const completa: Campana = { ...campana, id: nuevoId() };
+  await repo.guardar('campanas', completa);
+  return completa;
+}
+
+export async function actualizarCampana(repo: Repo, campana: Campana): Promise<void> {
+  await repo.guardar('campanas', campana);
+}
+
+/** Borra la campaña y sus entregas: sin campaña, no tienen dónde colgar. */
+export async function borrarCampana(
+  repo: Repo,
+  datos: DatosMinisterio,
+  id: string,
+): Promise<void> {
+  for (const e of datos.entregas.filter((x) => x.campanaId === id)) {
+    await repo.borrar('entregas', e.id);
+  }
+  await repo.borrar('campanas', id);
+}
+
+export async function registrarEntrega(
+  repo: Repo,
+  entrega: Omit<Entrega, 'id'>,
+): Promise<Entrega> {
+  const completa: Entrega = { ...entrega, id: nuevoId() };
+  await repo.guardar('entregas', completa);
+  return completa;
+}
+
+export async function actualizarEntrega(repo: Repo, entrega: Entrega): Promise<void> {
+  await repo.guardar('entregas', entrega);
+}
+
+export async function borrarEntrega(repo: Repo, id: string): Promise<void> {
+  await repo.borrar('entregas', id);
 }

@@ -10,6 +10,7 @@ import {
   type ResumenCompletar,
 } from '../migracion/completar';
 import { traerRed, vistaPreviaRed, type VistaPreviaRed } from '../migracion/traerRed';
+import { traerManos, vistaPreviaManos, type VistaPreviaManos } from '../migracion/traerManos';
 import { convertirRespaldo, type InformeMigracion, type RespaldoViejo } from '../migracion/convertir';
 import { importarEnRepo, puedeImportar } from '../migracion/importar';
 import GuiaPagina from './GuiaPagina';
@@ -34,6 +35,10 @@ export default function Migrar({ repo }: { repo: Repo }) {
   const [previaRed, setPreviaRed] = useState<VistaPreviaRed | null>(null);
   const [traidaRed, setTraidaRed] = useState<VistaPreviaRed | null>(null);
   const [trayendoRed, setTrayendoRed] = useState(false);
+  const [respaldoManos, setRespaldoManos] = useState<RespaldoViejo | null>(null);
+  const [previaManos, setPreviaManos] = useState<VistaPreviaManos | null>(null);
+  const [traidasManos, setTraidasManos] = useState<VistaPreviaManos | null>(null);
+  const [trayendoManos, setTrayendoManos] = useState(false);
 
   const cargar = useCallback(async () => {
     setActuales(await aDatosMinisterio(repo));
@@ -127,6 +132,38 @@ export default function Migrar({ repo }: { repo: Repo }) {
       setPreviaRed(vistaPreviaRed(respaldo));
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
+    }
+  };
+
+  const leerArchivoManos = async (archivo: File) => {
+    setError('');
+    setPreviaManos(null);
+    setTraidasManos(null);
+    try {
+      const respaldo = JSON.parse(await archivo.text()) as RespaldoViejo;
+      if (!respaldo || typeof respaldo !== 'object' || !Array.isArray(respaldo.campanas)) {
+        throw new Error('Ese archivo no trae las Campañas de Manos Abiertas de la app anterior.');
+      }
+      setRespaldoManos(respaldo);
+      setPreviaManos(vistaPreviaManos(respaldo));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  };
+
+  const traerLasManos = async () => {
+    if (!respaldoManos) return;
+    setTrayendoManos(true);
+    setError('');
+    try {
+      const resumen = await traerManos(repo, respaldoManos);
+      setTraidasManos(resumen);
+      setPreviaManos(null);
+      await cargar();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setTrayendoManos(false);
     }
   };
 
@@ -326,6 +363,56 @@ export default function Migrar({ repo }: { repo: Repo }) {
           <p className="aviso aviso-verde">
             ✓ La Red ya está en la app ({actuales.colaboradores.length} colaboradores). Su mesa
             está en el menú: 🤝 Red de Colaboradores.
+          </p>
+        </section>
+      )}
+
+      {actuales.campanas.length === 0 ? (
+        <section className="tarjeta">
+          <h2>👐 Traer las Campañas y Entregas de Manos Abiertas</h2>
+          <p className="tenue">
+            La migración principal trajo los beneficiarios, pero las campañas (Desayuno con
+            Jesús, Sopa con Jesús…) y sus entregas quedaron en la app anterior. Elige el mismo
+            respaldo y entran tal cual estaban. Solo trabaja si aún no hay campañas aquí:
+            nunca duplica.
+          </p>
+          <input
+            type="file"
+            accept="application/json,.json"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) void leerArchivoManos(f);
+            }}
+          />
+          {previaManos && previaManos.campanas > 0 && (
+            <>
+              <p>
+                Entrarían <strong>{previaManos.campanas} campañas</strong> con{' '}
+                <strong>{previaManos.entregas} entregas</strong>.
+                {previaManos.huerfanas > 0 &&
+                  ` ${previaManos.huerfanas} entrega(s) sin campaña quedan fuera.`}
+              </p>
+              <button className="btn btn-dorado" disabled={trayendoManos} onClick={traerLasManos}>
+                {trayendoManos ? 'Trayendo…' : '👐 Traer Campañas y Entregas'}
+              </button>
+            </>
+          )}
+          {previaManos && previaManos.campanas === 0 && (
+            <p className="aviso aviso-rojo">Ese respaldo no trae campañas de Manos Abiertas.</p>
+          )}
+          {traidasManos && (
+            <p className="aviso aviso-verde">
+              ✓ Entraron {traidasManos.campanas} campañas con {traidasManos.entregas} entregas.
+              Sincroniza para subirlas.
+            </p>
+          )}
+        </section>
+      ) : (
+        <section className="tarjeta">
+          <h2>👐 Campañas de Manos Abiertas</h2>
+          <p className="aviso aviso-verde">
+            ✓ Las campañas ya están en la app ({actuales.campanas.length}). Su mesa está en
+            👐 Manos Abiertas.
           </p>
         </section>
       )}
