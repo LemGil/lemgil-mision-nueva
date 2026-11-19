@@ -142,7 +142,7 @@ export default function RedColaboradores({ repo }: { repo: Repo }) {
 
   return (
     <div className="panel">
-      <header className="panel-cabecera"><h1>🤝 Red de Colaboradores</h1></header>
+      <header className="panel-cabecera"><h1>🌐 Red de Colaboradores</h1></header>
       <GuiaPagina texto="Apoyo externo al Ministerio: personas, iglesias y ministerios que ofrendan. No son miembros: no entran en la ficha única ni en el censo; aquí viven su propio registro y sus aportes." />
       {error && <p className="aviso aviso-rojo">{error}</p>}
 

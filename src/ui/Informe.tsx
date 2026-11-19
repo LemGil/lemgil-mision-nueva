@@ -60,7 +60,7 @@ export default function Informe({ repo }: { repo: Repo }) {
   return (
     <div className="panel">
       <header className="panel-cabecera">
-        <h1>Informe</h1>
+        <h1>📋 Informe</h1>
         <button className="btn" onClick={() => window.print()}>
           🖨️ Imprimir
         </button>

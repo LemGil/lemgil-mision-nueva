@@ -96,7 +96,7 @@ export default function Evangelismos({ repo }: { repo: Repo }) {
   return (
     <div className="panel">
       <header className="panel-cabecera">
-        <h1>📣 Evangelismos</h1>
+        <h1>🔥 Evangelismos</h1>
         <button className="btn btn-dorado" onClick={() => setMostrarForm((v) => !v)}>➕ Nuevo</button>
       </header>
       <GuiaPagina texto="Las salidas evangelísticas: fecha, lugar, líder y participantes." />

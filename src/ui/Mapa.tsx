@@ -121,7 +121,7 @@ export default function Mapa({ repo }: { repo: Repo }) {
   return (
     <div className="panel">
       <header className="panel-cabecera">
-        <h1>🗺️ Mapa</h1>
+        <h1>📍 Mapa</h1>
         <button className="btn" onClick={() => setEditando((v) => !v)}>
           {editando ? '✓ Terminar edición' : '✏️ Editar ubicaciones'}
         </button>

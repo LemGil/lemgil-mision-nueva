@@ -184,7 +184,7 @@ export default function Mision({ repo }: { repo: Repo }) {
   return (
     <div className="panel">
       <header className="panel-cabecera">
-        <h1>🧭 Misión</h1>
+        <h1>📣 Misión</h1>
         <button className="btn btn-dorado" onClick={() => setMostrarNuevo((v) => !v)}>
           ➕ Nuevo Congregado
         </button>

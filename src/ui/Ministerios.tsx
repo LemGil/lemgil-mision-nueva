@@ -51,7 +51,7 @@ export default function Ministerios({ repo }: { repo: Repo }) {
 
   return (
     <div>
-      <h1>🤲 Ministerios</h1>
+      <h1>⛪ Ministerios</h1>
       <GuiaPagina texto="Quién sirve en cada ministerio. Al asignar a un miembro, su escalera marca sola el paso de Sirviendo." />
       <p className="tenue">
         Cada ministerio con su gente. Al asignar a una persona, su escalera de Miembros marca el

@@ -281,7 +281,7 @@ export default function ManosAbiertas({ repo }: { repo: Repo }) {
   return (
     <div className="panel">
       <header className="panel-cabecera">
-        <h1>👐 Manos Abiertas</h1>
+        <h1>🤲 Manos Abiertas</h1>
       </header>
       <GuiaPagina texto="La ayuda organizada en tres mesas: a quién se ayuda (Personas, Familias y Grupos), las campañas (Desayuno con Jesús, Sopa con Jesús…) y cada entrega que se hace." />
       {error && <p className="aviso aviso-rojo">{error}</p>}

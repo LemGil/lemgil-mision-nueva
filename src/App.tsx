@@ -135,22 +135,22 @@ export default function App() {
           <div className="menu-marca">Ministerio LemGil</div>
           <div className="menu-grupo">Secretaría</div>
           <NavLink to="/" end>
-            📊 Panel
+            🏠 Panel
           </NavLink>
-          <NavLink to="/informe">📄 Informe</NavLink>
+          <NavLink to="/informe">📋 Informe</NavLink>
           <NavLink to="/personas">👥 Personas</NavLink>
-          <NavLink to="/migrar">🧳 Migración</NavLink>
+          <NavLink to="/migrar">🔀 Migración</NavLink>
           <div className="menu-grupo">Mesas</div>
-          <NavLink to="/mision">🧭 Misión</NavLink>
-          <NavLink to="/miembros">🏠 Miembros</NavLink>
-          <NavLink to="/ministerios">🤲 Ministerios</NavLink>
+          <NavLink to="/mision">📣 Misión</NavLink>
+          <NavLink to="/miembros">🤝 Miembros</NavLink>
+          <NavLink to="/ministerios">⛪ Ministerios</NavLink>
           <NavLink to="/academia">🎓 Academia</NavLink>
-          <NavLink to="/grupos">👥 Grupos</NavLink>
-          <NavLink to="/evangelismos">📣 Evangelismos</NavLink>
+          <NavLink to="/grupos">🧑‍🤝‍🧑 Grupos</NavLink>
+          <NavLink to="/evangelismos">🔥 Evangelismos</NavLink>
           <NavLink to="/bien-comun">🌾 Bien Común</NavLink>
-          <NavLink to="/red">🤝 Red de Colaboradores</NavLink>
-          <NavLink to="/manos-abiertas">👐 Manos Abiertas</NavLink>
-          <NavLink to="/mapa">🗺️ Mapa</NavLink>
+          <NavLink to="/red">🌐 Red de Colaboradores</NavLink>
+          <NavLink to="/manos-abiertas">🤲 Manos Abiertas</NavLink>
+          <NavLink to="/mapa">📍 Mapa</NavLink>
           {configurada && (
             <button type="button" className="menu-salir" onClick={() => void salir()}>
               🚪 Salir

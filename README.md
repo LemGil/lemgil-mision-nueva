@@ -52,4 +52,19 @@ de un solo motor de conteo (`src/motor/`); el cuadre se verifica solo
   miembro o del diezmador, y reporta huérfanos y no-mapeados sin inventar
   nada; lo convertido pasa el cuadre y se importa entero (48/48 pruebas).
 
+- **Constitución Visual — Fase A (cimientos): APLICADA** (2026-11-19,
+  aprobada por LemGil con la muestra viva). Los tokens de la constitución
+  viven una sola vez en `:root` de `src/index.css` (Colores Madre —
+  petróleo y oro luz incluidos —, escala de letra 11·13·14·15·17·19·24·30,
+  escala de espacio 4·8·12·16·24·32, radios 8·12·16·999, sombras y
+  movimiento) y todo el CSS los usa: ningún color ni radio suelto fuera
+  de la tabla. El botón dorado es gradiente oro → oro luz. **Iconos de
+  página aprobados** en el menú y en el título de cada página: Panel 🏠 ·
+  Informe 📋 · Personas 👥 · Misión 📣 · Miembros 🤝 · Grupos 🧑‍🤝‍🧑 ·
+  Ministerios ⛪ · Academia 🎓 · Evangelismos 🔥 · Bien Común 🌾 · Red
+  🌐 · Manos Abiertas 🤲 · Mapa 📍 · Migración 🔀. Sin tocar datos ni
+  comportamiento (77/77 pruebas). Quedan la Fase B (piezas únicas como
+  componentes) y la Fase C (pantallas, empezando por los dos registros
+  generales).
+
 La app actual (`lemgil-mision-apk`) sigue viva e intacta mientras tanto.

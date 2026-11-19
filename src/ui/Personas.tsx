@@ -336,7 +336,7 @@ export default function Personas({ repo }: { repo: Repo }) {
   return (
     <div className="panel">
       <header className="panel-cabecera">
-        <h1>Personas</h1>
+        <h1>👥 Personas</h1>
         <button className="btn btn-dorado" onClick={() => setMostrarForm((v) => !v)}>
           ➕ Nueva persona
         </button>

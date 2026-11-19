@@ -91,7 +91,7 @@ export default function Grupos({ repo }: { repo: Repo }) {
 
   return (
     <div className="panel">
-      <header className="panel-cabecera"><h1>🏠 Grupos</h1></header>
+      <header className="panel-cabecera"><h1>🧑‍🤝‍🧑 Grupos</h1></header>
       <GuiaPagina texto="Los grupos de la congregación, con su líder y su zona. Cada persona pertenece a un solo grupo." />
       {error && <p className="aviso aviso-rojo">{error}</p>}
       <section className="kpis">

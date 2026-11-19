@@ -135,7 +135,7 @@ export default function Miembros({ repo }: { repo: Repo }) {
   return (
     <div className="panel">
       <header className="panel-cabecera">
-        <h1>🏠 Miembros</h1>
+        <h1>🤝 Miembros</h1>
       </header>
       <GuiaPagina texto="El directorio de los integrados y su escalera: Grupo → Diezmador → Academia → Ministerio → Hermano Mayor → Liderazgo. La Integración es la puerta, no un peldaño." />
       {error && <p className="aviso aviso-rojo">{error}</p>}

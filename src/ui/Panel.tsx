@@ -82,7 +82,7 @@ export default function Panel({ repo, sync, estadoSync, modoLocal }: Props) {
   return (
     <div className="panel">
       <header className="panel-cabecera">
-        <h1>Panel</h1>
+        <h1>🏠 Panel</h1>
         <div className="panel-estados">
           <span className={`chip ${cuadre.verde ? 'chip-verde' : 'chip-rojo'}`}>
             {cuadre.verde ? '🟢 El cuadre' : '🔴 El cuadre no cierra'}
