@@ -32,6 +32,8 @@ export default function BienComun({ repo }: { repo: Repo }) {
   const [monto, setMonto] = useState('');
   const [fechaAporte, setFechaAporte] = useState(hoyIso());
   const [tipoAporte, setTipoAporte] = useState<'Diezmo' | 'Ofrenda'>('Diezmo');
+  const [mostrarAporte, setMostrarAporte] = useState(false);
+  const [seccion, setSeccion] = useState<'diezmadores' | 'registro'>('diezmadores');
 
   const recargar = useCallback(() => setRecargas((x) => x + 1), []);
   useEffect(() => {
@@ -64,6 +66,10 @@ export default function BienComun({ repo }: { repo: Repo }) {
   const aportesDe = detalle
     ? datos.aportes.filter((a) => a.personaId === detalle.personaId).slice().sort((a, b) => (a.fecha < b.fecha ? 1 : -1))
     : [];
+  const registroGeneral = datos.aportes
+    .filter((a) => !periodo || (a.fecha >= periodo.desde && a.fecha <= periodo.hasta))
+    .slice()
+    .sort((a, b) => (a.fecha < b.fecha ? 1 : -1));
   const fechasAportes = datos.aportes.map((a) => a.fecha);
   const mesesDisp = ano === 0 ? [] : mesesConRegistros(fechasAportes, ano);
 
@@ -137,6 +143,47 @@ export default function BienComun({ repo }: { repo: Repo }) {
         <div className="kpi"><span className="kpi-numero">{resumen.cantidadAportes}</span><span className="kpi-titulo">Aportes{periodo ? ' en el período' : ''}</span></div>
       </section>
 
+      <div className="pestanas">
+        <button className={seccion === 'diezmadores' ? 'pestana activa' : 'pestana'} onClick={() => setSeccion('diezmadores')}>
+          🌾 Diezmadores ({datos.diezmadores.length})
+        </button>
+        <button className={seccion === 'registro' ? 'pestana activa' : 'pestana'} onClick={() => setSeccion('registro')}>
+          📋 Registro general ({registroGeneral.length})
+        </button>
+      </div>
+
+      {seccion === 'registro' && (
+        <section className="tarjeta">
+          <h2>📋 Registro general de aportes</h2>
+          <p className="tenue">
+            Todos los aportes registrados{periodo ? ' en el período elegido arriba' : ''}, del más
+            reciente al más viejo. Total: {formatoDinero(registroGeneral.reduce((x, a) => x + a.monto, 0))}.
+            Toca un registro para abrir la ficha de su diezmador.
+          </p>
+          {registroGeneral.length === 0 ? (
+            <p className="tenue">Sin aportes en esta vista.</p>
+          ) : (
+            <ul className="lista-personas">
+              {registroGeneral.map((a) => {
+                const p = personaDe(a.personaId);
+                const d = datos.diezmadores.find((x) => x.personaId === a.personaId);
+                return (
+                  <li key={a.id}>
+                    <button className="persona-fila" onClick={() => { if (d) setSeleccionado(d.id); }}>
+                      <span className="persona-nombre">{p ? `${p.nombre} ${p.apellidos ?? ''}` : 'Persona borrada'}</span>
+                      <span className="persona-meta">{a.fecha} · {a.tipo}</span>
+                      <span>{formatoDinero(a.monto)}</span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+      )}
+
+      {seccion === 'diezmadores' && (
+        <>
       {!mostrarForm && (
         <div className="form-acciones">
           <button className="btn btn-dorado" onClick={() => setMostrarForm(true)}>➕ Nuevo diezmador</button>
@@ -208,6 +255,9 @@ export default function BienComun({ repo }: { repo: Repo }) {
             ))
       )}
 
+        </>
+      )}
+
       {detalle && (
         <Modal onCerrar={() => setSeleccionado(null)}>
           <h2>{personaDe(detalle.personaId)?.nombre} {personaDe(detalle.personaId)?.apellidos ?? ''}</h2>
@@ -229,6 +279,42 @@ export default function BienComun({ repo }: { repo: Repo }) {
               recargar();
             }}
           />
+          <div className="form-acciones">
+            <button className="btn btn-dorado" onClick={() => setMostrarAporte((v) => !v)}>
+              {mostrarAporte ? '➖ Cerrar el registro' : '➕ Registrar aporte'}
+            </button>
+          </div>
+          {mostrarAporte && (
+            <div className="form-fila">
+              <label>Fecha<input type="date" value={fechaAporte} onChange={(e) => setFechaAporte(e.target.value)} /></label>
+              <label>
+                Tipo
+                <select value={tipoAporte} onChange={(e) => setTipoAporte(e.target.value as 'Diezmo' | 'Ofrenda')}>
+                  <option value="Diezmo">Diezmo</option>
+                  <option value="Ofrenda">Ofrenda</option>
+                </select>
+              </label>
+              <label>Monto<input type="number" min="0" value={monto} onChange={(e) => setMonto(e.target.value)} /></label>
+              <div className="form-acciones">
+                <button
+                  className="btn btn-dorado"
+                  disabled={!monto || Number(monto) <= 0}
+                  onClick={async () => {
+                    await registrarAporte(repo, {
+                      personaId: detalle.personaId,
+                      fecha: fechaAporte,
+                      monto: Number(monto),
+                      tipo: tipoAporte,
+                    });
+                    setMonto('');
+                    recargar();
+                  }}
+                >
+                  💾 Registrar aporte
+                </button>
+              </div>
+            </div>
+          )}
           <h3>Aportes (editables)</h3>
           {aportesDe.length === 0 ? (
             <p className="tenue">Sin aportes registrados.</p>
@@ -285,35 +371,6 @@ export default function BienComun({ repo }: { repo: Repo }) {
               </p>
             </>
           )}
-          <div className="form-fila">
-            <label>Fecha<input type="date" value={fechaAporte} onChange={(e) => setFechaAporte(e.target.value)} /></label>
-            <label>
-              Tipo
-              <select value={tipoAporte} onChange={(e) => setTipoAporte(e.target.value as 'Diezmo' | 'Ofrenda')}>
-                <option value="Diezmo">Diezmo</option>
-                <option value="Ofrenda">Ofrenda</option>
-              </select>
-            </label>
-            <label>Monto<input type="number" min="0" value={monto} onChange={(e) => setMonto(e.target.value)} /></label>
-            <div className="form-acciones">
-              <button
-                className="btn btn-dorado"
-                disabled={!monto || Number(monto) <= 0}
-                onClick={async () => {
-                  await registrarAporte(repo, {
-                    personaId: detalle.personaId,
-                    fecha: fechaAporte,
-                    monto: Number(monto),
-                    tipo: tipoAporte,
-                  });
-                  setMonto('');
-                  recargar();
-                }}
-              >
-                💾 Registrar aporte
-              </button>
-            </div>
-          </div>
         </Modal>
       )}
     </div>

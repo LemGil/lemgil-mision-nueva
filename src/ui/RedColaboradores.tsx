@@ -29,6 +29,8 @@ export default function RedColaboradores({ repo }: { repo: Repo }) {
   const [seleccionado, setSeleccionado] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [mostrarForm, setMostrarForm] = useState(false);
+  const [mostrarAporte, setMostrarAporte] = useState(false);
+  const [seccion, setSeccion] = useState<'colaboradores' | 'registro'>('colaboradores');
   // Formulario de nuevo colaborador
   const [nombre, setNombre] = useState('');
   const [apellido, setApellido] = useState('');
@@ -92,6 +94,10 @@ export default function RedColaboradores({ repo }: { repo: Repo }) {
         .slice()
         .sort((a, b) => (a.fecha < b.fecha ? 1 : -1))
     : [];
+  const registroGeneral = datos.aportesRed
+    .filter((a) => !periodo || (a.fecha >= periodo.desde && a.fecha <= periodo.hasta))
+    .slice()
+    .sort((a, b) => (a.fecha < b.fecha ? 1 : -1));
 
   const claveGrupo = (c: Colaborador): string => {
     if (agruparPor === 'estado') return c.estado;
@@ -161,6 +167,47 @@ export default function RedColaboradores({ repo }: { repo: Repo }) {
         <div className="kpi"><span className="kpi-numero">{resumen.cantidadAportes}</span><span className="kpi-titulo">Aportes{periodo ? ' en el período' : ''}</span></div>
       </section>
 
+      <div className="pestanas">
+        <button className={seccion === 'colaboradores' ? 'pestana activa' : 'pestana'} onClick={() => setSeccion('colaboradores')}>
+          🤝 Colaboradores ({datos.colaboradores.length})
+        </button>
+        <button className={seccion === 'registro' ? 'pestana activa' : 'pestana'} onClick={() => setSeccion('registro')}>
+          📋 Registro general ({registroGeneral.length})
+        </button>
+      </div>
+
+      {seccion === 'registro' && (
+        <section className="tarjeta">
+          <h2>📋 Registro general de aportes</h2>
+          <p className="tenue">
+            Todos los aportes de la Red registrados{periodo ? ' en el período elegido arriba' : ''}, del
+            más reciente al más viejo. Total: {formatoDinero(registroGeneral.reduce((x, a) => x + a.monto, 0))}.
+            Toca un registro para abrir la ficha de su colaborador.
+          </p>
+          {registroGeneral.length === 0 ? (
+            <p className="tenue">Sin aportes en esta vista.</p>
+          ) : (
+            <ul className="lista-personas">
+              {registroGeneral.map((a) => (
+                <li key={a.id}>
+                  <button className="persona-fila" onClick={() => setSeleccionado(a.colaboradorId)}>
+                    <span className="persona-nombre">{nombreColaborador(datos.colaboradores.find((c) => c.id === a.colaboradorId) ?? { nombre: 'Colaborador borrado' })}</span>
+                    <span className="persona-meta">
+                      {a.fecha} · {a.tipo}
+                      {a.metodo ? ` · ${a.metodo}` : ''}
+                      {a.referencia ? ` · ref. ${a.referencia}` : ''}
+                    </span>
+                    <span>{formatoDinero(a.monto)}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
+
+      {seccion === 'colaboradores' && (
+        <>
       {!mostrarForm && (
         <div className="form-acciones">
           <button className="btn btn-dorado" onClick={() => setMostrarForm(true)}>➕ Nuevo colaborador</button>
@@ -270,6 +317,9 @@ export default function RedColaboradores({ repo }: { repo: Repo }) {
             ))
       )}
 
+        </>
+      )}
+
       {detalle && (
         <Modal onCerrar={() => setSeleccionado(null)}>
           <h2>{nombreColaborador(detalle)}</h2>
@@ -369,6 +419,55 @@ export default function RedColaboradores({ repo }: { repo: Repo }) {
               </div>
             </>
           )}
+          <div className="form-acciones">
+            <button className="btn btn-dorado" onClick={() => setMostrarAporte((v) => !v)}>
+              {mostrarAporte ? '➖ Cerrar el registro' : '➕ Registrar aporte'}
+            </button>
+          </div>
+          {mostrarAporte && (
+            <div className="form-fila">
+            <label>Fecha<input type="date" value={fechaAporte} onChange={(e) => setFechaAporte(e.target.value)} /></label>
+            <label>
+              Tipo
+              <select value={tipoAporte} onChange={(e) => setTipoAporte(e.target.value)}>
+                {TIPOS_APORTE.map((t) => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Método
+              <select value={metodo} onChange={(e) => setMetodo(e.target.value)}>
+                {METODOS.map((t) => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
+            </label>
+            <label>Monto<input type="number" min="0" value={monto} onChange={(e) => setMonto(e.target.value)} /></label>
+            <label>Referencia<input value={referencia} onChange={(e) => setReferencia(e.target.value)} /></label>
+            <div className="form-acciones">
+              <button
+                className="btn btn-dorado"
+                disabled={!monto || Number(monto) <= 0}
+                onClick={async () => {
+                  await registrarAporteRed(repo, {
+                    colaboradorId: detalle.id,
+                    fecha: fechaAporte,
+                    monto: Number(monto),
+                    tipo: tipoAporte,
+                    metodo,
+                    referencia: referencia.trim() || undefined,
+                  });
+                  setMonto('');
+                  setReferencia('');
+                  recargar();
+                }}
+              >
+                💾 Registrar aporte
+              </button>
+            </div>
+          </div>
+          )}
           <h3>Aportes (editables)</h3>
           {aportesDe.length === 0 ? (
             <p className="tenue">Sin aportes registrados.</p>
@@ -450,48 +549,6 @@ export default function RedColaboradores({ repo }: { repo: Repo }) {
               </p>
             </>
           )}
-          <div className="form-fila">
-            <label>Fecha<input type="date" value={fechaAporte} onChange={(e) => setFechaAporte(e.target.value)} /></label>
-            <label>
-              Tipo
-              <select value={tipoAporte} onChange={(e) => setTipoAporte(e.target.value)}>
-                {TIPOS_APORTE.map((t) => (
-                  <option key={t} value={t}>{t}</option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Método
-              <select value={metodo} onChange={(e) => setMetodo(e.target.value)}>
-                {METODOS.map((t) => (
-                  <option key={t} value={t}>{t}</option>
-                ))}
-              </select>
-            </label>
-            <label>Monto<input type="number" min="0" value={monto} onChange={(e) => setMonto(e.target.value)} /></label>
-            <label>Referencia<input value={referencia} onChange={(e) => setReferencia(e.target.value)} /></label>
-            <div className="form-acciones">
-              <button
-                className="btn btn-dorado"
-                disabled={!monto || Number(monto) <= 0}
-                onClick={async () => {
-                  await registrarAporteRed(repo, {
-                    colaboradorId: detalle.id,
-                    fecha: fechaAporte,
-                    monto: Number(monto),
-                    tipo: tipoAporte,
-                    metodo,
-                    referencia: referencia.trim() || undefined,
-                  });
-                  setMonto('');
-                  setReferencia('');
-                  recargar();
-                }}
-              >
-                💾 Registrar aporte
-              </button>
-            </div>
-          </div>
         </Modal>
       )}
     </div>
