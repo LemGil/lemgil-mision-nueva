@@ -80,3 +80,24 @@ export function siguientePasoEnRuta(datos: DatosMinisterio, pasoId: string): str
   if (i < 0 || i === ruta.length - 1) return null;
   return ruta[i + 1].id;
 }
+
+/** El estado que manda en un historial: el de la entrada más reciente
+ * (a igual fecha, la última escrita). Al editar el historial — corregir
+ * una fecha, quitar una entrada, agregar la que faltaba — el estado del
+ * registro se recalcula desde aquí. */
+export function estadoDesdeHistorial(
+  historial: { fecha: string; estado: string }[],
+): string | null {
+  if (historial.length === 0) return null;
+  const ordenado = historial
+    .slice()
+    .sort((a, b) => (a.fecha < b.fecha ? -1 : a.fecha > b.fecha ? 1 : 0));
+  return ordenado[ordenado.length - 1].estado;
+}
+
+/** El historial ordenado por fecha (estable: a igual fecha manda el orden escrito). */
+export function historialOrdenado<T extends { fecha: string }>(historial: T[]): T[] {
+  return historial
+    .slice()
+    .sort((a, b) => (a.fecha < b.fecha ? -1 : a.fecha > b.fecha ? 1 : 0));
+}

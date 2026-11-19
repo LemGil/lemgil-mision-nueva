@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { aDatosMinisterio } from '../datos/aDatosMinisterio';
-import { actualizarMiembro, crearMiembro, registrarHito } from '../datos/acciones';
+import { actualizarHito, actualizarMiembro, borrarHito, borrarMiembro, crearMiembro, registrarHito } from '../datos/acciones';
 import type { Repo } from '../datos/repo';
 import { pasosDeMiembros } from '../modelo/catalogo';
 import type { DatosMinisterio, EstadoMiembro } from '../modelo/tipos';
@@ -11,6 +11,7 @@ import { agrupar } from '../motor/vistas';
 import { anosConRegistros, mesesConRegistros } from '../motor/periodos';
 
 import BarraVistas, { type Vista } from './BarraVistas';
+import BorrarBoton from './BorrarBoton';
 import SelectorPersona from './SelectorPersona';
 import Modal from './Modal';
 import GuiaPagina from './GuiaPagina';
@@ -284,14 +285,30 @@ export default function Miembros({ repo }: { repo: Repo }) {
             </label>
           </div>
 
-          <h3>Hitos</h3>
+          <h3>Hitos (editables)</h3>
           {hitos.length === 0 ? (
             <p className="tenue">Sin hitos registrados.</p>
           ) : (
-            <ul className="historial">
+            <ul className="historial-edit">
               {hitos.map((h) => (
                 <li key={h.id}>
-                  {h.fecha ?? ''} · {h.tipo ?? datos.pasos.find((p) => p.id === h.pasoId)?.nombre ?? 'Hito'}
+                  <input
+                    type="date"
+                    value={h.fecha ?? ''}
+                    onChange={async (e) => {
+                      await actualizarHito(repo, { ...h, fecha: e.target.value });
+                      recargar();
+                    }}
+                  />
+                  <span>{h.tipo ?? datos.pasos.find((p) => p.id === h.pasoId)?.nombre ?? 'Hito'}</span>
+                  <BorrarBoton
+                    texto="🗑️"
+                    titulo="Borrar este hito"
+                    onBorrar={async () => {
+                      await borrarHito(repo, h.id);
+                      recargar();
+                    }}
+                  />
                 </li>
               ))}
             </ul>
@@ -323,6 +340,17 @@ export default function Miembros({ repo }: { repo: Repo }) {
                 ➕ Registrar hito
               </button>
             </div>
+          </div>
+
+          <div className="form-acciones">
+            <BorrarBoton
+              texto="🗑️ Borrar esta ficha de miembro"
+              onBorrar={async () => {
+                await borrarMiembro(repo, detalle.id);
+                setSeleccionado(null);
+                recargar();
+              }}
+            />
           </div>
         </Modal>
       )}

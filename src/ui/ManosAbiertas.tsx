@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import { aDatosMinisterio } from '../datos/aDatosMinisterio';
-import { crearBeneficiario } from '../datos/acciones';
+import { borrarBeneficiario, crearBeneficiario } from '../datos/acciones';
 import type { Repo } from '../datos/repo';
 import type { DatosMinisterio } from '../modelo/tipos';
 import SelectorPersona from './SelectorPersona';
 import { agrupar } from '../motor/vistas';
 import BarraVistas, { type Vista } from './BarraVistas';
+import BorrarBoton from './BorrarBoton';
 import GuiaPagina from './GuiaPagina';
 
 
@@ -55,6 +56,14 @@ export default function ManosAbiertas({ repo }: { repo: Repo }) {
         <button className="btn" onClick={() => void alternar(b)}>
           {b.estado === 'Activo' ? 'Pasar a Inactivo' : 'Reactivar'}
         </button>
+        <BorrarBoton
+          texto="🗑️ Quitar"
+          titulo="Borrar el registro de beneficiario"
+          onBorrar={async () => {
+            await borrarBeneficiario(repo, b.id);
+            recargar();
+          }}
+        />
       </div>
     </li>
   );
@@ -68,7 +77,15 @@ export default function ManosAbiertas({ repo }: { repo: Repo }) {
         <span>
           <button className="btn" onClick={() => void alternar(b)}>
             {b.estado === 'Activo' ? 'Pasar a Inactivo' : 'Reactivar'}
-          </button>
+          </button>{' '}
+          <BorrarBoton
+            texto="🗑️ Quitar"
+            titulo="Borrar el registro de beneficiario"
+            onBorrar={async () => {
+              await borrarBeneficiario(repo, b.id);
+              recargar();
+            }}
+          />
         </span>
       </div>
     );

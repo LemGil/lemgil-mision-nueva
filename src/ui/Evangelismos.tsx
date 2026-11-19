@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { aDatosMinisterio } from '../datos/aDatosMinisterio';
-import { guardarEvangelismo } from '../datos/acciones';
+import { borrarEvangelismo, guardarEvangelismo } from '../datos/acciones';
 import type { Repo } from '../datos/repo';
 import type { DatosMinisterio } from '../modelo/tipos';
 import SelectorPersona from './SelectorPersona';
+import BorrarBoton from './BorrarBoton';
 import { agrupar } from '../motor/vistas';
 import BarraVistas, { type Vista } from './BarraVistas';
 import GuiaPagina from './GuiaPagina';
@@ -15,6 +16,7 @@ export default function Evangelismos({ repo }: { repo: Repo }) {
   const [datos, setDatos] = useState<DatosMinisterio | null>(null);
   const [recargas, setRecargas] = useState(0);
   const [mostrarForm, setMostrarForm] = useState(false);
+  const [editandoId, setEditandoId] = useState<string | null>(null);
   const [fecha, setFecha] = useState(hoyIso());
   const [lugar, setLugar] = useState('');
   const [liderId, setLiderId] = useState<string | null>(null);
@@ -50,6 +52,14 @@ export default function Evangelismos({ repo }: { repo: Repo }) {
     const m = Number(e.fecha.slice(5, 7));
     return `${MESES_NOM[m - 1] ?? e.fecha.slice(0, 7)} ${e.fecha.slice(0, 4)}`;
   };
+  const comenzarEdicion = (e: (typeof lista)[number]) => {
+    setEditandoId(e.id);
+    setFecha(e.fecha);
+    setLugar(e.lugar ?? '');
+    setLiderId(e.liderId ?? null);
+    setParticipantes(e.participanteIds);
+    setMostrarForm(true);
+  };
   const filaEvangelismo = (e: (typeof lista)[number]) => (
     <li key={e.id}>
       <div className="persona-fila">
@@ -58,6 +68,15 @@ export default function Evangelismos({ repo }: { repo: Repo }) {
           {e.participanteIds.length} participantes
           {e.liderId ? ` · líder ${personaDe(e.liderId)?.nombre ?? ''}` : ''}
         </span>
+        <button className="btn" onClick={() => comenzarEdicion(e)}>✏️</button>
+        <BorrarBoton
+          texto="🗑️"
+          titulo="Borrar este evangelismo"
+          onBorrar={async () => {
+            await borrarEvangelismo(repo, e.id);
+            recargar();
+          }}
+        />
       </div>
     </li>
   );
@@ -90,7 +109,7 @@ export default function Evangelismos({ repo }: { repo: Repo }) {
 
       {mostrarForm && (
         <section className="tarjeta formulario">
-          <h2>➕ Nuevo evangelismo</h2>
+          <h2>{editandoId ? '✏️ Editar evangelismo' : '➕ Nuevo evangelismo'}</h2>
           <div className="form-fila">
             <label>Fecha<input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} /></label>
             <label>Lugar<input value={lugar} onChange={(e) => setLugar(e.target.value)} /></label>
@@ -110,8 +129,9 @@ export default function Evangelismos({ repo }: { repo: Repo }) {
               onClick={async () => {
                 setError('');
                 try {
-                  await guardarEvangelismo(repo, { fecha, lugar: lugar.trim() || undefined, liderId, participanteIds: participantes });
+                  await guardarEvangelismo(repo, { id: editandoId ?? undefined, fecha, lugar: lugar.trim() || undefined, liderId, participanteIds: participantes });
                   setMostrarForm(false);
+                  setEditandoId(null);
                   setLugar(''); setLiderId(null); setParticipantes([]);
                   recargar();
                 } catch (e) {
@@ -121,7 +141,7 @@ export default function Evangelismos({ repo }: { repo: Repo }) {
             >
               💾 Guardar
             </button>
-            <button className="btn" onClick={() => setMostrarForm(false)}>Cancelar</button>
+            <button className="btn" onClick={() => { setMostrarForm(false); setEditandoId(null); }}>Cancelar</button>
           </div>
         </section>
       )}

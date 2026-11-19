@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { aDatosMinisterio } from '../datos/aDatosMinisterio';
-import { crearDiezmador, registrarAporte } from '../datos/acciones';
+import { borrarAporte, borrarDiezmador, crearDiezmador, registrarAporte } from '../datos/acciones';
 import type { Repo } from '../datos/repo';
 import type { DatosMinisterio, Periodo } from '../modelo/tipos';
 import { resumenBienComun } from '../motor/bienComun';
@@ -9,6 +9,7 @@ import { anosConRegistros, mesesConRegistros } from '../motor/periodos';
 
 import { agrupar } from '../motor/vistas';
 import BarraVistas, { type Vista } from './BarraVistas';
+import BorrarBoton from './BorrarBoton';
 
 import Modal from './Modal';
 import GuiaPagina from './GuiaPagina';
@@ -206,14 +207,33 @@ export default function BienComun({ repo }: { repo: Repo }) {
             }}
           >
             {detalle.activo ? 'Pasar a Inactivo' : 'Reactivar'}
-          </button>
+          </button>{' '}
+          <BorrarBoton
+            texto="🗑️ Quitar diezmador"
+            titulo="Borrar el registro de diezmador (sus aportes quedan en la historia)"
+            onBorrar={async () => {
+              await borrarDiezmador(repo, detalle.id);
+              setSeleccionado(null);
+              recargar();
+            }}
+          />
           <h3>Aportes</h3>
           {aportesDe.length === 0 ? (
             <p className="tenue">Sin aportes registrados.</p>
           ) : (
             <ul className="historial">
               {aportesDe.map((a) => (
-                <li key={a.id}>{a.fecha} · {a.tipo} · {a.monto}</li>
+                <li key={a.id}>
+                  {a.fecha} · {a.tipo} · {a.monto}{' '}
+                  <BorrarBoton
+                    texto="🗑️"
+                    titulo="Borrar este aporte"
+                    onBorrar={async () => {
+                      await borrarAporte(repo, a.id);
+                      recargar();
+                    }}
+                  />
+                </li>
               ))}
             </ul>
           )}

@@ -117,6 +117,8 @@ export interface AsignacionMinisterio {
   id: string;
   personaId: string;
   ministerio: string;
+  /** Quién está al frente del ministerio (uno por ministerio). */
+  responsable?: boolean;
 }
 
 /** Un grupo de la iglesia. Sus miembros son las personas/miembros con su grupoId. */

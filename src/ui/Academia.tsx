@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import { aDatosMinisterio } from '../datos/aDatosMinisterio';
-import { crearEstudiante } from '../datos/acciones';
+import { borrarEstudiante, crearEstudiante } from '../datos/acciones';
 import type { Repo } from '../datos/repo';
 import type { DatosMinisterio } from '../modelo/tipos';
 import SelectorPersona from './SelectorPersona';
 import { agrupar } from '../motor/vistas';
 import BarraVistas, { type Vista } from './BarraVistas';
+import BorrarBoton from './BorrarBoton';
 import GuiaPagina from './GuiaPagina';
 
 
@@ -57,6 +58,14 @@ export default function Academia({ repo }: { repo: Repo }) {
           <button className="btn" onClick={() => void alternar(e)}>
             {e.estado === 'Activo' ? 'Pasar a Inactivo' : 'Reactivar'}
           </button>
+          <BorrarBoton
+            texto="🗑️ Quitar"
+            titulo="Borrar el registro de estudiante"
+            onBorrar={async () => {
+              await borrarEstudiante(repo, e.id);
+              recargar();
+            }}
+          />
         </div>
       </li>
     );
@@ -72,7 +81,15 @@ export default function Academia({ repo }: { repo: Repo }) {
         <span>
           <button className="btn" onClick={() => void alternar(e)}>
             {e.estado === 'Activo' ? 'Pasar a Inactivo' : 'Reactivar'}
-          </button>
+          </button>{' '}
+          <BorrarBoton
+            texto="🗑️ Quitar"
+            titulo="Borrar el registro de estudiante"
+            onBorrar={async () => {
+              await borrarEstudiante(repo, e.id);
+              recargar();
+            }}
+          />
         </span>
       </div>
     );

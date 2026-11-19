@@ -35,6 +35,19 @@ describe('resumenMinisterios', () => {
     expect(r[1].miembros).toHaveLength(1);
   });
 
+  it('marca a quien está al frente del ministerio', () => {
+    const conFrente = {
+      ...base,
+      asignaciones: base.asignaciones.map((a, i) =>
+        i === 0 ? { ...a, responsable: true } : a,
+      ),
+    };
+    const r = resumenMinisterios(conFrente);
+    const conResponsable = r.find((m) => m.responsable);
+    expect(conResponsable).toBeDefined();
+    expect(conResponsable!.miembros.some((m) => m.responsable)).toBe(true);
+  });
+
   it('sin asignaciones, no hay ministerios', () => {
     expect(resumenMinisterios({ ...base, asignaciones: [] })).toEqual([]);
   });

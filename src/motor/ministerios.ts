@@ -9,11 +9,14 @@ export interface MiembroDeMinisterio {
   asignacionId: string;
   personaId: string;
   nombre: string;
+  responsable: boolean;
 }
 
 export interface MinisterioVista {
   nombre: string;
   miembros: MiembroDeMinisterio[];
+  /** Nombre de quien está al frente, si el ministerio lo tiene marcado. */
+  responsable?: string;
 }
 
 export function resumenMinisterios(datos: DatosMinisterio): MinisterioVista[] {
@@ -25,13 +28,18 @@ export function resumenMinisterios(datos: DatosMinisterio): MinisterioVista[] {
       asignacionId: a.id,
       personaId: a.personaId,
       nombre: nombreDe.get(a.personaId) ?? '—',
+      responsable: a.responsable === true,
     });
     porNombre.set(a.ministerio, lista);
   }
   return [...porNombre.entries()]
-    .map(([nombre, miembros]) => ({
-      nombre,
-      miembros: miembros.sort((x, y) => x.nombre.localeCompare(y.nombre)),
-    }))
+    .map(([nombre, miembros]) => {
+      const ordenados = miembros.sort((x, y) => x.nombre.localeCompare(y.nombre));
+      return {
+        nombre,
+        miembros: ordenados,
+        responsable: ordenados.find((m) => m.responsable)?.nombre,
+      };
+    })
     .sort((x, y) => x.nombre.localeCompare(y.nombre));
 }

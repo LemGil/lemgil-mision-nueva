@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { aDatosMinisterio } from '../datos/aDatosMinisterio';
-import { asignarMinisterio, quitarDeMinisterio } from '../datos/acciones';
+import { asignarMinisterio, borrarMinisterio, marcarResponsableMinisterio, quitarDeMinisterio, renombrarMinisterio } from '../datos/acciones';
 import type { Repo } from '../datos/repo';
 import type { DatosMinisterio } from '../modelo/tipos';
 import { resumenMinisterios } from '../motor/ministerios';
 import BarraVistas, { type Vista } from './BarraVistas';
 import Modal from './Modal';
+import BorrarBoton from './BorrarBoton';
 import SelectorPersona from './SelectorPersona';
 import GuiaPagina from './GuiaPagina';
 
@@ -16,6 +17,7 @@ export default function Ministerios({ repo }: { repo: Repo }) {
   const [personaNueva, setPersonaNueva] = useState('');
   const [error, setError] = useState('');
   const [vista, setVista] = useState<Vista>('lista');
+  const [nuevoNombreMin, setNuevoNombreMin] = useState('');
   const [agruparPor, setAgruparPor] = useState('ministerio');
 
   const recargar = async () => setDatos(await aDatosMinisterio(repo));
@@ -27,6 +29,9 @@ export default function Ministerios({ repo }: { repo: Repo }) {
   if (!datos) return <p className="cargando">Cargando…</p>;
   const ministerios = resumenMinisterios(datos);
   const detalleMin = abierto ? ministerios.find((m) => m.nombre === abierto) : undefined;
+  useEffect(() => {
+    setNuevoNombreMin(abierto ?? '');
+  }, [abierto]);
   const sirviendo = new Set(datos.asignaciones.map((a) => a.personaId));
   const nombreDe = (id: string) => {
     const p = datos.personas.find((x) => x.id === id);
@@ -98,6 +103,9 @@ export default function Ministerios({ repo }: { repo: Repo }) {
                   <span className="persona-meta">
                     {m.miembros.length} {m.miembros.length === 1 ? 'persona' : 'personas'}
                   </span>
+                  {m.responsable && (
+                    <span className="persona-meta">⭐ al frente: {m.responsable}</span>
+                  )}
                   <span className="persona-meta">
                     {m.miembros.slice(0, 3).map((p) => p.nombre).join(', ')}
                     {m.miembros.length > 3 ? '…' : ''}
@@ -157,10 +165,55 @@ export default function Ministerios({ repo }: { repo: Repo }) {
         <Modal onCerrar={() => setAbierto(null)}>
           <h2>🤲 {detalleMin.nombre}</h2>
           {error && <p className="aviso aviso-rojo">{error}</p>}
+          <p className="tenue">
+            {detalleMin.miembros.length} en el ministerio
+            {detalleMin.responsable ? ` · ⭐ al frente: ${detalleMin.responsable}` : ' · sin nadie al frente'}
+          </p>
+          <div className="form-fila">
+            <label>
+              Nombre del ministerio
+              <input value={nuevoNombreMin} onChange={(e) => setNuevoNombreMin(e.target.value)} />
+            </label>
+            <div className="form-acciones">
+              <button
+                type="button"
+                className="btn"
+                disabled={!nuevoNombreMin.trim() || nuevoNombreMin.trim() === detalleMin.nombre}
+                onClick={async () => {
+                  setError('');
+                  try {
+                    await renombrarMinisterio(repo, datos, detalleMin.nombre, nuevoNombreMin);
+                    setAbierto(nuevoNombreMin.trim());
+                    await recargar();
+                  } catch (e) {
+                    setError(e instanceof Error ? e.message : String(e));
+                  }
+                }}
+              >
+                ✏️ Renombrar
+              </button>
+            </div>
+          </div>
           <ul className="lista-personas">
             {detalleMin.miembros.map((p) => (
               <li key={p.asignacionId} className="persona-fila">
                 <span className="persona-nombre">{p.nombre}</span>
+                <button
+                  type="button"
+                  className="btn"
+                  title={p.responsable ? 'Quitar del frente' : 'Poner al frente del ministerio'}
+                  onClick={async () => {
+                    await marcarResponsableMinisterio(
+                      repo,
+                      datos,
+                      detalleMin.nombre,
+                      p.responsable ? null : p.asignacionId,
+                    );
+                    await recargar();
+                  }}
+                >
+                  {p.responsable ? '⭐ Al frente' : '☆ Al frente'}
+                </button>
                 <button
                   type="button"
                   className="btn"
@@ -182,6 +235,18 @@ export default function Ministerios({ repo }: { repo: Repo }) {
             onElegir={(id) => void asignar(detalleMin.nombre, id)}
           />
           <p className="tenue">Toca una persona de la lista para agregarla al momento.</p>
+
+          <div className="form-acciones">
+            <BorrarBoton
+              texto="🗑️ Borrar este ministerio"
+              titulo="Quita a toda su gente del ministerio"
+              onBorrar={async () => {
+                await borrarMinisterio(repo, datos, detalleMin.nombre);
+                setAbierto(null);
+                await recargar();
+              }}
+            />
+          </div>
         </Modal>
       )}
     </div>

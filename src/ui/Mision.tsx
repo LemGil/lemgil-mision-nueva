@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { aDatosMinisterio } from '../datos/aDatosMinisterio';
-import { avanzarConversion, crearConversion, type EntradaMision } from '../datos/acciones';
+import { avanzarConversion, borrarConversion, crearConversion, guardarHistorial, type EntradaMision } from '../datos/acciones';
 import type { Repo } from '../datos/repo';
 import { esSalida, pasosDeMision } from '../modelo/catalogo';
 import type { DatosMinisterio, Periodo } from '../modelo/tipos';
@@ -11,6 +11,7 @@ import { agrupar } from '../motor/vistas';
 import { anosConRegistros, mesesConRegistros } from '../motor/periodos';
 
 import BarraVistas, { type Vista } from './BarraVistas';
+import BorrarBoton from './BorrarBoton';
 import Modal from './Modal';
 import GuiaPagina from './GuiaPagina';
 
@@ -26,6 +27,8 @@ export default function Mision({ repo }: { repo: Repo }) {
   const [busqueda, setBusqueda] = useState('');
   const [seleccionada, setSeleccionada] = useState<string | null>(null);
   const [errorAccion, setErrorAccion] = useState('');
+  const [nuevoPasoHist, setNuevoPasoHist] = useState('');
+  const [nuevaFechaHist, setNuevaFechaHist] = useState(hoyIso());
   const [vista, setVista] = useState<Vista>('lista');
   const [agruparPor, setAgruparPor] = useState('paso');
 
@@ -83,6 +86,17 @@ export default function Mision({ repo }: { repo: Repo }) {
     setErrorAccion('');
     try {
       await avanzarConversion(repo, datos, conversionId, pasoId, hoy, nota);
+      recargar();
+    } catch (e) {
+      setErrorAccion(e instanceof Error ? e.message : String(e));
+    }
+  };
+
+  const guardarHist = async (historial: import('../modelo/tipos').EntradaHistorial[]) => {
+    if (!detalle) return;
+    setErrorAccion('');
+    try {
+      await guardarHistorial(repo, datos, detalle.id, historial);
       recargar();
     } catch (e) {
       setErrorAccion(e instanceof Error ? e.message : String(e));
@@ -376,19 +390,87 @@ export default function Mision({ repo }: { repo: Repo }) {
             a Integrado se llega desde aquí, guardando.
           </p>
 
-          {(detalle.historial ?? []).length > 0 && (
-            <>
-              <h3>Historial</h3>
-              <ul className="historial">
-                {detalle.historial.map((h, i) => (
-                  <li key={i}>
-                    {h.fecha} · {datos.pasos.find((p) => p.id === h.estado)?.nombre ?? h.estado}
-                    {h.nota ? ` · ${h.nota}` : ''}
-                  </li>
+          <h3>Historial (editable)</h3>
+          {errorAccion && <p className="aviso aviso-rojo">{errorAccion}</p>}
+          <ul className="historial-edit">
+            {(detalle.historial ?? []).map((h, i, arr) => {
+              const pasoH = datos.pasos.find((p) => p.id === h.estado);
+              const esActual = i === arr.length - 1 && h.estado === detalle.estado;
+              return (
+                <li key={i}>
+                  <input
+                    type="date"
+                    value={h.fecha}
+                    onChange={(e) => {
+                      const copia = (detalle.historial ?? []).map((x, j) =>
+                        j === i ? { ...x, fecha: e.target.value } : x,
+                      );
+                      void guardarHist(copia);
+                    }}
+                  />
+                  <span className={esActual ? 'actual' : ''}>
+                    {pasoH?.emoji} {pasoH?.nombre ?? h.estado}
+                    {esActual ? ' · paso actual' : ''}
+                  </span>
+                  {h.nota && <span className="tenue">{h.nota}</span>}
+                  {arr.length > 1 && (
+                    <BorrarBoton
+                      texto="🗑️"
+                      titulo="Quitar esta entrada del historial"
+                      onBorrar={() =>
+                        void guardarHist((detalle.historial ?? []).filter((_, j) => j !== i))
+                      }
+                    />
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+          <div className="form-fila">
+            <label>
+              Paso que falta en el historial
+              <select value={nuevoPasoHist} onChange={(e) => setNuevoPasoHist(e.target.value)}>
+                <option value="">Elegir…</option>
+                {ruta.map((p) => (
+                  <option key={p.id} value={p.id}>{p.emoji} {p.nombre}</option>
                 ))}
-              </ul>
-            </>
-          )}
+              </select>
+            </label>
+            <label>
+              Fecha
+              <input type="date" value={nuevaFechaHist} onChange={(e) => setNuevaFechaHist(e.target.value)} />
+            </label>
+            <div className="form-acciones">
+              <button
+                className="btn"
+                disabled={!nuevoPasoHist}
+                onClick={() => {
+                  void guardarHist([
+                    ...(detalle.historial ?? []),
+                    { fecha: nuevaFechaHist, estado: nuevoPasoHist, nota: 'Corrección del historial' },
+                  ]);
+                  setNuevoPasoHist('');
+                }}
+              >
+                ➕ Agregar al historial
+              </button>
+            </div>
+          </div>
+          <p className="tenue">
+            Al corregir el historial, el estado del registro se recalcula solo: manda la
+            entrada de fecha más reciente.
+          </p>
+
+          <div className="form-acciones">
+            <BorrarBoton
+              texto="🗑️ Borrar este registro de Misión"
+              onBorrar={async () => {
+                await borrarConversion(repo, detalle.id);
+                setSeleccionada(null);
+                recargar();
+              }}
+            />
+          </div>
         </Modal>
       )}
     </div>

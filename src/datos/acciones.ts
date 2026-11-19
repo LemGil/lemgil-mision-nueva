@@ -17,6 +17,7 @@ import {
   esGozne,
   pasoPorId,
 } from '../modelo/catalogo';
+import { historialOrdenado } from '../motor/mision';
 import type {
   Aporte,
   AporteRed,
@@ -26,6 +27,7 @@ import type {
   Conversion,
   DatosMinisterio,
   Diezmador,
+  EntradaHistorial,
   Estudiante,
   Evangelismo,
   Grupo,
@@ -397,4 +399,230 @@ export async function actualizarPersona(
     }
   }
   await repo.guardar('personas', persona);
+}
+
+// ── Editar y borrar registros (pedido de LemGil, 2026-11-18) ──────────
+// Toda mesa da ahora la opción de corregir y de borrar su registro.
+// Borrar es blando (tumba): sale de todas las vistas y del conteo, y la
+// sincronización lo respeta en todos los equipos.
+
+/** Guarda el historial editado de una conversión y recalcula su estado
+ * (manda la entrada más reciente), aplicando las consecuencias del paso
+ * resultante: el gozne hace nacer el miembro y las salidas se reflejan. */
+export async function guardarHistorial(
+  repo: Repo,
+  datos: DatosMinisterio,
+  conversionId: string,
+  historialNuevo: EntradaHistorial[],
+): Promise<void> {
+  const conversion = datos.conversiones.find((c) => c.id === conversionId);
+  if (!conversion) throw new Error('Ese registro de Misión ya no existe.');
+  if (historialNuevo.length === 0) {
+    throw new Error('El historial no puede quedar vacío: todo registro guarda al menos su entrada inicial.');
+  }
+  const ordenado = historialOrdenado(historialNuevo);
+  const nuevoEstado = ordenado[ordenado.length - 1].estado;
+  const actualizada: Conversion = {
+    ...conversion,
+    historial: ordenado,
+    estado: nuevoEstado,
+    bautizado:
+      conversion.bautizado || ordenado.some((h) => h.estado === PS_BAUTIZADO) || undefined,
+  };
+  await repo.guardar('conversiones', actualizada);
+  if (nuevoEstado === conversion.estado) return;
+
+  const miembro = datos.miembros.find((m) => m.personaId === conversion.personaId);
+  if (esGozne(datos.pasos, nuevoEstado)) {
+    if (!miembro) {
+      await crearMiembroInterno(
+        repo,
+        conversion.personaId,
+        conversion.id,
+        ordenado[ordenado.length - 1].fecha,
+      );
+    }
+    return;
+  }
+  const rol = pasoPorId(datos.pasos, nuevoEstado)?.rol;
+  if (rol === 'salida' && miembro) {
+    let estado: Miembro['estado'] | null = null;
+    if (nuevoEstado === PS_TRASLADO && miembro.estado !== 'Fallecido') estado = 'Trasladado';
+    else if (nuevoEstado === PS_FALLECIDO) estado = 'Fallecido';
+    else if (miembro.estado === 'Activo') estado = 'Inactivo';
+    if (estado && estado !== miembro.estado) {
+      await repo.guardar('miembros', { ...miembro, estado });
+    }
+  }
+}
+
+export async function borrarConversion(repo: Repo, id: string): Promise<void> {
+  await repo.borrar('conversiones', id);
+}
+
+export async function borrarMiembro(repo: Repo, id: string): Promise<void> {
+  await repo.borrar('miembros', id);
+}
+
+export async function actualizarHito(repo: Repo, hito: Hito): Promise<void> {
+  await repo.guardar('hitos', hito);
+}
+
+export async function borrarHito(repo: Repo, id: string): Promise<void> {
+  await repo.borrar('hitos', id);
+}
+
+export async function borrarEstudiante(repo: Repo, id: string): Promise<void> {
+  await repo.borrar('estudiantes', id);
+}
+
+export async function borrarDiezmador(repo: Repo, id: string): Promise<void> {
+  await repo.borrar('diezmadores', id);
+}
+
+export async function borrarBeneficiario(repo: Repo, id: string): Promise<void> {
+  await repo.borrar('beneficiarios', id);
+}
+
+export async function borrarAporte(repo: Repo, id: string): Promise<void> {
+  await repo.borrar('aportes', id);
+}
+
+export async function borrarAporteRed(repo: Repo, id: string): Promise<void> {
+  await repo.borrar('aportesRed', id);
+}
+
+/** Borra al colaborador y sus aportes: sin colaborador, sus aportes no
+ * tienen a quién colgar (la Red no guarda fotos históricas). */
+export async function borrarColaborador(
+  repo: Repo,
+  datos: DatosMinisterio,
+  id: string,
+): Promise<void> {
+  for (const a of datos.aportesRed.filter((x) => x.colaboradorId === id)) {
+    await repo.borrar('aportesRed', a.id);
+  }
+  await repo.borrar('colaboradores', id);
+}
+
+export async function actualizarGrupo(repo: Repo, grupo: Grupo): Promise<void> {
+  await repo.guardar('grupos', grupo);
+}
+
+/** Borra el grupo y lo quita de las fichas que lo tenían. */
+export async function borrarGrupo(
+  repo: Repo,
+  datos: DatosMinisterio,
+  id: string,
+): Promise<void> {
+  for (const p of datos.personas.filter((x) => x.grupoId === id)) {
+    await repo.guardar('personas', { ...p, grupoId: null });
+  }
+  for (const m of datos.miembros.filter((x) => x.grupoId === id)) {
+    await repo.guardar('miembros', { ...m, grupoId: null });
+  }
+  await repo.borrar('grupos', id);
+}
+
+export async function borrarEvangelismo(repo: Repo, id: string): Promise<void> {
+  await repo.borrar('evangelismos', id);
+}
+
+// ── Ministerios: renombrar, borrar y quién está al frente ─────────────
+
+export async function renombrarMinisterio(
+  repo: Repo,
+  datos: DatosMinisterio,
+  viejo: string,
+  nuevo: string,
+): Promise<void> {
+  const limpio = nuevo.trim();
+  if (!limpio) throw new Error('El nombre no puede quedar vacío.');
+  const existe = datos.asignaciones.some(
+    (a) => a.ministerio !== viejo && a.ministerio.trim().toLowerCase() === limpio.toLowerCase(),
+  );
+  if (existe) throw new Error(`Ya hay otro ministerio llamado «${limpio}».`);
+  for (const a of datos.asignaciones.filter((x) => x.ministerio === viejo)) {
+    await repo.guardar('asignaciones', { ...a, ministerio: limpio });
+  }
+}
+
+/** Borrar un ministerio = quitar a toda su gente de él. */
+export async function borrarMinisterio(
+  repo: Repo,
+  datos: DatosMinisterio,
+  nombre: string,
+): Promise<void> {
+  for (const a of datos.asignaciones.filter((x) => x.ministerio === nombre)) {
+    await repo.borrar('asignaciones', a.id);
+  }
+}
+
+/** Marca quién está al frente (uno solo por ministerio; null = nadie). */
+export async function marcarResponsableMinisterio(
+  repo: Repo,
+  datos: DatosMinisterio,
+  ministerio: string,
+  asignacionId: string | null,
+): Promise<void> {
+  for (const a of datos.asignaciones.filter((x) => x.ministerio === ministerio)) {
+    const responsable = a.id === asignacionId ? true : undefined;
+    if ((a.responsable === true) !== (responsable === true)) {
+      await repo.guardar('asignaciones', { ...a, responsable });
+    }
+  }
+}
+
+// ── Zonas: la lista sale de las fichas; se corrige en bloque ──────────
+
+export async function renombrarZona(
+  repo: Repo,
+  datos: DatosMinisterio,
+  vieja: string,
+  nueva: string,
+): Promise<void> {
+  const limpia = nueva.trim();
+  if (!limpia) throw new Error('La zona no puede quedar vacía.');
+  for (const p of datos.personas.filter((x) => x.zona === vieja)) {
+    await repo.guardar('personas', { ...p, zona: limpia });
+  }
+  for (const g of datos.grupos.filter((x) => x.zona === vieja)) {
+    await repo.guardar('grupos', { ...g, zona: limpia });
+  }
+}
+
+/** Quitar una zona = dejar sin zona a las fichas y grupos que la tenían. */
+export async function quitarZona(
+  repo: Repo,
+  datos: DatosMinisterio,
+  zona: string,
+): Promise<void> {
+  for (const p of datos.personas.filter((x) => x.zona === zona)) {
+    await repo.guardar('personas', { ...p, zona: undefined });
+  }
+  for (const g of datos.grupos.filter((x) => x.zona === zona)) {
+    await repo.guardar('grupos', { ...g, zona: undefined });
+  }
+}
+
+/** Borra la ficha única SOLO si la persona no tiene ningún proceso:
+ * primero se borran sus registros en cada mesa. */
+export async function borrarPersona(
+  repo: Repo,
+  datos: DatosMinisterio,
+  id: string,
+): Promise<void> {
+  const procesos: string[] = [];
+  if (datos.conversiones.some((c) => c.personaId === id)) procesos.push('Misión');
+  if (datos.miembros.some((m) => m.personaId === id)) procesos.push('Miembros');
+  if (datos.estudiantes.some((e) => e.personaId === id)) procesos.push('Academia');
+  if (datos.diezmadores.some((d) => d.personaId === id)) procesos.push('Bien Común');
+  if (datos.beneficiarios.some((b) => b.personaId === id)) procesos.push('Manos Abiertas');
+  if (datos.asignaciones.some((a) => a.personaId === id)) procesos.push('Ministerios');
+  if (procesos.length > 0) {
+    throw new Error(
+      `Esta persona tiene registros en: ${procesos.join(', ')}. Borra primero esos registros y luego su ficha.`,
+    );
+  }
+  await repo.borrar('personas', id);
 }

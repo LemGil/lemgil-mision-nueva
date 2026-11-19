@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { aDatosMinisterio } from '../datos/aDatosMinisterio';
-import { crearGrupo } from '../datos/acciones';
+import { actualizarGrupo, borrarGrupo, crearGrupo } from '../datos/acciones';
 import type { Repo } from '../datos/repo';
 import type { DatosMinisterio } from '../modelo/tipos';
 import SelectorPersona from './SelectorPersona';
@@ -8,6 +8,7 @@ import { agrupar } from '../motor/vistas';
 import BarraVistas, { type Vista } from './BarraVistas';
 
 import Modal from './Modal';
+import BorrarBoton from './BorrarBoton';
 import GuiaPagina from './GuiaPagina';
 
 export default function Grupos({ repo }: { repo: Repo }) {
@@ -18,6 +19,9 @@ export default function Grupos({ repo }: { repo: Repo }) {
   const [zona, setZona] = useState('');
   const [liderId, setLiderId] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [nombreEd, setNombreEd] = useState('');
+  const [zonaEd, setZonaEd] = useState('');
+  const [liderEd, setLiderEd] = useState<string | null>(null);
   const [vista, setVista] = useState<Vista>('lista');
   const [agruparPor, setAgruparPor] = useState('zona');
   const recargar = useCallback(() => setRecargas((x) => x + 1), []);
@@ -31,6 +35,16 @@ export default function Grupos({ repo }: { repo: Repo }) {
       vivo = false;
     };
   }, [repo, recargas]);
+
+  const grupoSel = datos?.grupos.find((g) => g.id === seleccionado);
+  useEffect(() => {
+    if (grupoSel) {
+      setNombreEd(grupoSel.nombre);
+      setZonaEd(grupoSel.zona ?? '');
+      setLiderEd(grupoSel.liderId ?? null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seleccionado]);
 
   if (!datos) return <p className="cargando">Cargando…</p>;
   const personaDe = (id?: string | null) => datos.personas.find((p) => p.id === id);
@@ -162,6 +176,41 @@ export default function Grupos({ repo }: { repo: Repo }) {
               ))}
             </ul>
           )}
+
+          <h3>✏️ Editar grupo</h3>
+          <div className="form-fila">
+            <label>Nombre<input value={nombreEd} onChange={(e) => setNombreEd(e.target.value)} /></label>
+            <label>Zona<input value={zonaEd} onChange={(e) => setZonaEd(e.target.value)} /></label>
+          </div>
+          <p className="tenue">
+            Líder: {liderEd ? `${personaDe(liderEd)?.nombre} ${personaDe(liderEd)?.apellidos ?? ''}` : 'sin líder'}
+          </p>
+          <SelectorPersona datos={datos} onElegir={setLiderEd} placeholder="🔍 Cambiar el líder…" />
+          <div className="form-acciones">
+            <button
+              className="btn btn-dorado"
+              disabled={!nombreEd.trim()}
+              onClick={async () => {
+                await actualizarGrupo(repo, {
+                  ...detalle,
+                  nombre: nombreEd.trim(),
+                  zona: zonaEd.trim() || undefined,
+                  liderId: liderEd,
+                });
+                recargar();
+              }}
+            >
+              💾 Guardar cambios
+            </button>
+            <BorrarBoton
+              texto="🗑️ Borrar grupo"
+              onBorrar={async () => {
+                await borrarGrupo(repo, datos, detalle.id);
+                setSeleccionado(null);
+                recargar();
+              }}
+            />
+          </div>
         </Modal>
       )}
     </div>

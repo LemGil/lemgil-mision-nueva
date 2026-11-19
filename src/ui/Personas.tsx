@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { aDatosMinisterio } from '../datos/aDatosMinisterio';
-import { actualizarPersona, registrarPersona, type EntradaMision } from '../datos/acciones';
+import { actualizarPersona, borrarPersona, quitarZona, registrarPersona, renombrarZona, type EntradaMision } from '../datos/acciones';
 import type { Repo } from '../datos/repo';
 import type { DatosMinisterio, Persona, Sexo } from '../modelo/tipos';
 import { buscarPersonas, fichaDePersona, situacionDe } from '../motor/personaVista';
@@ -8,6 +8,7 @@ import { clasificarPersona } from '../motor/censo';
 import { agrupar, visibleSegunVer, type VerPersonas } from '../motor/vistas';
 import BarraVistas, { type Vista } from './BarraVistas';
 import Modal from './Modal';
+import BorrarBoton from './BorrarBoton';
 import GuiaPagina from './GuiaPagina';
 
 const hoyIso = () => new Date().toISOString().slice(0, 10);
@@ -181,6 +182,9 @@ export default function Personas({ repo }: { repo: Repo }) {
   const [ver, setVer] = useState<VerPersonas>('activos');
   const [vista, setVista] = useState<Vista>('lista');
   const [agruparPor, setAgruparPor] = useState('paso');
+  const [zonaEditando, setZonaEditando] = useState<string | null>(null);
+  const [zonaNombre, setZonaNombre] = useState('');
+  const [errorZonas, setErrorZonas] = useState('');
 
   const recargar = useCallback(() => setRecargas((x) => x + 1), []);
 
@@ -269,6 +273,25 @@ export default function Personas({ repo }: { repo: Repo }) {
         ] as [string, string | undefined][]
       ).filter((f): f is [string, string] => !!f[1])
     : [];
+
+  const zonas = (() => {
+    const mapa = new Map<string, { nombre: string; cantidad: number; grupos: number }>();
+    for (const per of datos.personas) {
+      const z = per.zona?.trim();
+      if (!z) continue;
+      const e = mapa.get(z) ?? { nombre: z, cantidad: 0, grupos: 0 };
+      e.cantidad++;
+      mapa.set(z, e);
+    }
+    for (const g of datos.grupos) {
+      const z = g.zona?.trim();
+      if (!z) continue;
+      const e = mapa.get(z) ?? { nombre: z, cantidad: 0, grupos: 0 };
+      e.grupos++;
+      mapa.set(z, e);
+    }
+    return [...mapa.values()].sort((a, b) => a.nombre.localeCompare(b.nombre));
+  })();
 
   const claveGrupo = (per: Persona): string => {
     if (agruparPor === 'zona') return per.zona?.trim() || 'Sin zona';
@@ -497,8 +520,84 @@ export default function Personas({ repo }: { repo: Repo }) {
           {ficha.mision.length === 0 && ficha.miembros.length === 0 && !ficha.estudiante && !ficha.diezmador && !ficha.beneficiario && (
             <p className="tenue">Sin procesos todavía.</p>
           )}
+
+          <div className="form-acciones">
+            <BorrarBoton
+              texto="🗑️ Borrar esta ficha"
+              onBorrar={async () => {
+                setErrorEdicion('');
+                try {
+                  await borrarPersona(repo, datos, p.id);
+                  setSeleccionada(null);
+                  recargar();
+                } catch (e) {
+                  setErrorEdicion(e instanceof Error ? e.message : String(e));
+                }
+              }}
+            />
+          </div>
+          {errorEdicion && !editando && <p className="aviso aviso-rojo">{errorEdicion}</p>}
         </Modal>
       )}
+
+      <section className="tarjeta">
+        <h2>🗺️ Zonas</h2>
+        <p className="tenue">
+          La lista de zonas sale de las fichas y los grupos. Renombrar corrige la zona en
+          todas partes a la vez; quitarla deja esas fichas sin zona.
+        </p>
+        {errorZonas && <p className="aviso aviso-rojo">{errorZonas}</p>}
+        <ul className="lista-personas">
+          {zonas.map((z) => (
+            <li key={z.nombre}>
+              <div className="persona-fila">
+                <span className="persona-nombre">{z.nombre}</span>
+                <span className="persona-meta">{z.cantidad} fichas{z.grupos > 0 ? ` · ${z.grupos} grupos` : ''}</span>
+                {zonaEditando === z.nombre ? (
+                  <>
+                    <input value={zonaNombre} onChange={(e) => setZonaNombre(e.target.value)} />
+                    <button
+                      className="btn btn-dorado"
+                      onClick={async () => {
+                        setErrorZonas('');
+                        try {
+                          await renombrarZona(repo, datos, z.nombre, zonaNombre);
+                          setZonaEditando(null);
+                          recargar();
+                        } catch (e) {
+                          setErrorZonas(e instanceof Error ? e.message : String(e));
+                        }
+                      }}
+                    >
+                      💾 Guardar
+                    </button>
+                    <button className="btn" onClick={() => setZonaEditando(null)}>Cancelar</button>
+                  </>
+                ) : (
+                  <button
+                    className="btn"
+                    onClick={() => {
+                      setZonaEditando(z.nombre);
+                      setZonaNombre(z.nombre);
+                    }}
+                  >
+                    ✏️ Renombrar
+                  </button>
+                )}
+                <BorrarBoton
+                  texto="🗑️"
+                  titulo="Quitar esta zona de todas las fichas"
+                  onBorrar={async () => {
+                    await quitarZona(repo, datos, z.nombre);
+                    recargar();
+                  }}
+                />
+              </div>
+            </li>
+          ))}
+          {zonas.length === 0 && <li className="tenue">Todavía no hay zonas en las fichas.</li>}
+        </ul>
+      </section>
     </div>
   );
 }

@@ -38,9 +38,11 @@ export default function Mapa({ repo }: { repo: Repo }) {
     };
   }, [repo, recargas]);
 
-  // Crear el mapa una sola vez.
+  // Crear el mapa cuando el contenedor ya existe (los datos cargaron).
+  // Antes corría solo al montar, con la pantalla en «Cargando…»: el
+  // contenedor aún no estaba y el mapa nunca nacía.
   useEffect(() => {
-    if (!contenedorRef.current || mapaRef.current) return;
+    if (!datos || !contenedorRef.current || mapaRef.current) return;
     const centroGuardado = localStorage.getItem('mision-nueva-mapa-centro');
     const centro = centroGuardado ? (JSON.parse(centroGuardado) as [number, number]) : CENTRO_DEFECTO;
     const mapa = L.map(contenedorRef.current).setView(centro, 13);
@@ -63,11 +65,12 @@ export default function Mapa({ repo }: { repo: Repo }) {
       localStorage.setItem('mision-nueva-mapa-centro', JSON.stringify([c.lat, c.lng]));
     });
     mapaRef.current = mapa;
+    mapa.invalidateSize();
     return () => {
       mapa.remove();
       mapaRef.current = null;
     };
-  }, [repo, recargar]);
+  }, [repo, recargar, datos]);
 
   const puntos: PuntoMapa[] = datos ? puntosDelMapa(datos) : [];
 

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { aDatosMinisterio } from '../datos/aDatosMinisterio';
-import { actualizarColaborador, crearColaborador, registrarAporteRed } from '../datos/acciones';
+import { actualizarColaborador, borrarAporteRed, borrarColaborador, crearColaborador, registrarAporteRed } from '../datos/acciones';
 import type { Repo } from '../datos/repo';
 import type { Colaborador, DatosMinisterio, Periodo } from '../modelo/tipos';
 import { anosConRegistros, mesesConRegistros } from '../motor/periodos';
@@ -9,6 +9,7 @@ import { agrupar } from '../motor/vistas';
 import BarraVistas, { type Vista } from './BarraVistas';
 import GuiaPagina from './GuiaPagina';
 import Modal from './Modal';
+import BorrarBoton from './BorrarBoton';
 
 const hoyIso = () => new Date().toISOString().slice(0, 10);
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
@@ -41,6 +42,16 @@ export default function RedColaboradores({ repo }: { repo: Repo }) {
   const [tipoAporte, setTipoAporte] = useState('Ofrenda');
   const [metodo, setMetodo] = useState('Efectivo');
   const [referencia, setReferencia] = useState('');
+  // Edición del colaborador
+  const [editandoColab, setEditandoColab] = useState(false);
+  const [nombreE, setNombreE] = useState('');
+  const [apellidoE, setApellidoE] = useState('');
+  const [tipoE, setTipoE] = useState('Persona');
+  const [telefonoE, setTelefonoE] = useState('');
+  const [emailE, setEmailE] = useState('');
+  const [planTipoE, setPlanTipoE] = useState('');
+  const [planMontoE, setPlanMontoE] = useState('');
+  const [notasE, setNotasE] = useState('');
 
   const recargar = useCallback(() => setRecargas((x) => x + 1), []);
   useEffect(() => {
@@ -271,7 +282,80 @@ export default function RedColaboradores({ repo }: { repo: Repo }) {
             }}
           >
             {detalle.estado === 'Activo' ? 'Pasar a Inactivo' : 'Reactivar'}
-          </button>
+          </button>{' '}
+          <button
+            className="btn"
+            onClick={() => {
+              setNombreE(detalle.nombre);
+              setApellidoE(detalle.apellido ?? '');
+              setTipoE(detalle.tipo ?? 'Persona');
+              setTelefonoE(detalle.telefono ?? '');
+              setEmailE(detalle.email ?? '');
+              setPlanTipoE(detalle.planOfrendaTipo ?? '');
+              setPlanMontoE(detalle.planOfrendaMonto ? String(detalle.planOfrendaMonto) : '');
+              setNotasE(detalle.notas ?? '');
+              setEditandoColab((v) => !v);
+            }}
+          >
+            ✏️ Editar datos
+          </button>{' '}
+          <BorrarBoton
+            texto="🗑️ Borrar colaborador"
+            titulo="Borra al colaborador y todos sus aportes"
+            onBorrar={async () => {
+              await borrarColaborador(repo, datos, detalle.id);
+              setSeleccionado(null);
+              recargar();
+            }}
+          />
+          {editandoColab && (
+            <>
+              <div className="form-fila">
+                <label>Nombre *<input value={nombreE} onChange={(e) => setNombreE(e.target.value)} /></label>
+                <label>Apellido<input value={apellidoE} onChange={(e) => setApellidoE(e.target.value)} /></label>
+                <label>
+                  Tipo
+                  <select value={tipoE} onChange={(e) => setTipoE(e.target.value)}>
+                    {TIPOS_COLABORADOR.map((t) => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              <div className="form-fila">
+                <label>Teléfono<input value={telefonoE} onChange={(e) => setTelefonoE(e.target.value)} /></label>
+                <label>Correo<input value={emailE} onChange={(e) => setEmailE(e.target.value)} /></label>
+              </div>
+              <div className="form-fila">
+                <label>Plan de ofrenda (tipo)<input value={planTipoE} onChange={(e) => setPlanTipoE(e.target.value)} /></label>
+                <label>Plan (monto)<input type="number" min="0" value={planMontoE} onChange={(e) => setPlanMontoE(e.target.value)} /></label>
+                <label>Notas<input value={notasE} onChange={(e) => setNotasE(e.target.value)} /></label>
+              </div>
+              <div className="form-acciones">
+                <button
+                  className="btn btn-dorado"
+                  disabled={!nombreE.trim()}
+                  onClick={async () => {
+                    await actualizarColaborador(repo, {
+                      ...detalle,
+                      nombre: nombreE.trim(),
+                      apellido: apellidoE.trim() || undefined,
+                      tipo: tipoE,
+                      telefono: telefonoE.trim() || undefined,
+                      email: emailE.trim() || undefined,
+                      planOfrendaTipo: planTipoE.trim() || undefined,
+                      planOfrendaMonto: planMontoE ? Number(planMontoE) : undefined,
+                      notas: notasE.trim() || undefined,
+                    });
+                    setEditandoColab(false);
+                    recargar();
+                  }}
+                >
+                  💾 Guardar cambios
+                </button>
+              </div>
+            </>
+          )}
           <h3>Aportes</h3>
           {aportesDe.length === 0 ? (
             <p className="tenue">Sin aportes registrados.</p>
@@ -281,7 +365,15 @@ export default function RedColaboradores({ repo }: { repo: Repo }) {
                 <li key={a.id}>
                   {a.fecha} · {a.tipo} · {a.monto}
                   {a.metodo ? ` · ${a.metodo}` : ''}
-                  {a.referencia ? ` · ref. ${a.referencia}` : ''}
+                  {a.referencia ? ` · ref. ${a.referencia}` : ''}{' '}
+                  <BorrarBoton
+                    texto="🗑️"
+                    titulo="Borrar este aporte"
+                    onBorrar={async () => {
+                      await borrarAporteRed(repo, a.id);
+                      recargar();
+                    }}
+                  />
                 </li>
               ))}
             </ul>
