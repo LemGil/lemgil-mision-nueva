@@ -9,6 +9,7 @@ import { formatoDinero } from '../motor/dinero';
 import { agrupar } from '../motor/vistas';
 import BarraVistas, { type Vista } from './BarraVistas';
 import GuiaPagina from './GuiaPagina';
+import { FilaPersona, FilaRegistro, Pestanas } from './Piezas';
 import Modal from './Modal';
 import BorrarBoton from './BorrarBoton';
 
@@ -114,14 +115,13 @@ export default function RedColaboradores({ repo }: { repo: Repo }) {
 
   const filaColaborador = (c: Colaborador) => (
     <li key={c.id}>
-      <button className={`persona-fila ${seleccionado === c.id ? 'activa' : ''}`} onClick={() => setSeleccionado(c.id)}>
-        <span className="persona-nombre">{nombreColaborador(c)}</span>
-        <span className="persona-meta">
-          {c.tipo ?? 'Sin tipo'} · aportó {formatoDinero(resumen.porColaborador.get(c.id) ?? 0)}
-          {periodo ? ' en el período' : ''}
-        </span>
-        <span className={`chip ${c.estado === 'Activo' ? 'chip-verde' : 'chip-gris'}`}>{c.estado}</span>
-      </button>
+      <FilaPersona
+        nombre={nombreColaborador(c)}
+        meta={<>{c.tipo ?? 'Sin tipo'} · aportó {formatoDinero(resumen.porColaborador.get(c.id) ?? 0)}{periodo ? ' en el período' : ''}</>}
+        derecha={<span className={`chip ${c.estado === 'Activo' ? 'chip-verde' : 'chip-gris'}`}>{c.estado}</span>}
+        activa={seleccionado === c.id}
+        onClick={() => setSeleccionado(c.id)}
+      />
     </li>
   );
 
@@ -175,14 +175,14 @@ export default function RedColaboradores({ repo }: { repo: Repo }) {
         <div className="kpi"><span className="kpi-numero">{resumen.cantidadAportes}</span><span className="kpi-titulo">Aportes{periodo ? ' en el período' : ''}</span></div>
       </section>
 
-      <div className="pestanas">
-        <button className={seccion === 'colaboradores' ? 'pestana activa' : 'pestana'} onClick={() => setSeccion('colaboradores')}>
-          🤝 Colaboradores ({datos.colaboradores.length})
-        </button>
-        <button className={seccion === 'registro' ? 'pestana activa' : 'pestana'} onClick={() => setSeccion('registro')}>
-          📋 Registro general ({registroGeneral.length})
-        </button>
-      </div>
+      <Pestanas
+        opciones={[
+          { id: 'colaboradores', etiqueta: `🤝 Colaboradores (${datos.colaboradores.length})` },
+          { id: 'registro', etiqueta: `📋 Registro general (${registroGeneral.length})` },
+        ]}
+        activa={seccion}
+        onCambiar={setSeccion}
+      />
 
       {seccion === 'registro' && (
         <section className="tarjeta">
@@ -262,15 +262,12 @@ export default function RedColaboradores({ repo }: { repo: Repo }) {
             <ul className="lista-personas">
               {registroGeneral.map((a) => (
                 <li key={a.id}>
-                  <button className="persona-fila" onClick={() => setSeleccionado(a.colaboradorId)}>
-                    <span className="persona-nombre">{nombreColaborador(datos.colaboradores.find((c) => c.id === a.colaboradorId) ?? { nombre: 'Colaborador borrado' })}</span>
-                    <span className="persona-meta">
-                      {a.fecha} · {a.tipo}
-                      {a.metodo ? ` · ${a.metodo}` : ''}
-                      {a.referencia ? ` · ref. ${a.referencia}` : ''}
-                    </span>
-                    <span>{formatoDinero(a.monto)}</span>
-                  </button>
+                  <FilaRegistro
+                    nombre={nombreColaborador(datos.colaboradores.find((c) => c.id === a.colaboradorId) ?? { nombre: 'Colaborador borrado' })}
+                    meta={<>{a.fecha} · {a.tipo}{a.metodo ? ` · ${a.metodo}` : ''}{a.referencia ? ` · ref. ${a.referencia}` : ''}</>}
+                    valor={formatoDinero(a.monto)}
+                    onClick={() => setSeleccionado(a.colaboradorId)}
+                  />
                 </li>
               ))}
             </ul>

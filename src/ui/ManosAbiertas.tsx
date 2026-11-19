@@ -19,6 +19,7 @@ import { agrupar } from '../motor/vistas';
 import BarraVistas, { type Vista } from './BarraVistas';
 import BorrarBoton from './BorrarBoton';
 import GuiaPagina from './GuiaPagina';
+import { Pestanas } from './Piezas';
 import Modal from './Modal';
 import { InputNombre, InputZona } from './CamposLista';
 import { nombreDeEntrega, resumenManos } from '../motor/manosAbiertas';
@@ -293,17 +294,15 @@ export default function ManosAbiertas({ repo }: { repo: Repo }) {
         <div className="kpi"><span className="kpi-numero">{datos.beneficiarios.length}</span><span className="kpi-titulo">Beneficiarios en total</span></div>
       </section>
 
-      <div className="pestanas">
-        <button className={pestana === 'beneficiarios' ? 'pestana activa' : 'pestana'} onClick={() => setPestana('beneficiarios')}>
-          🧑 Beneficiarios ({datos.beneficiarios.length})
-        </button>
-        <button className={pestana === 'campanas' ? 'pestana activa' : 'pestana'} onClick={() => setPestana('campanas')}>
-          🎪 Campañas ({datos.campanas.length})
-        </button>
-        <button className={pestana === 'entregas' ? 'pestana activa' : 'pestana'} onClick={() => setPestana('entregas')}>
-          📦 Entregas ({datos.entregas.length})
-        </button>
-      </div>
+      <Pestanas
+        opciones={[
+          { id: 'beneficiarios', etiqueta: `🧑 Beneficiarios (${datos.beneficiarios.length})` },
+          { id: 'campanas', etiqueta: `🎪 Campañas (${datos.campanas.length})` },
+          { id: 'entregas', etiqueta: `📦 Entregas (${datos.entregas.length})` },
+        ]}
+        activa={pestana}
+        onCambiar={setPestana}
+      />
 
       {pestana === 'beneficiarios' && (
         <>

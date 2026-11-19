@@ -480,3 +480,6 @@ button.persona-fila:hover, .persona-fila.activa { border-color: var(--dorado); }
 .btn, .pestana, .persona-fila, .persona-card, .chip-boton, .menu a, .menu-salir {
   transition: background var(--mov) ease, border-color var(--mov) ease, color var(--mov) ease;
 }
+
+/* La fila de registro de la constitución: el valor, a la derecha en negrita. */
+.fila-valor { font-weight: 700; margin-left: auto; white-space: nowrap; }

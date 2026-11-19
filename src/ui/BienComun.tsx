@@ -14,6 +14,7 @@ import BorrarBoton from './BorrarBoton';
 
 import Modal from './Modal';
 import GuiaPagina from './GuiaPagina';
+import { FilaPersona, FilaRegistro, Pestanas } from './Piezas';
 
 const hoyIso = () => new Date().toISOString().slice(0, 10);
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
@@ -92,11 +93,13 @@ export default function BienComun({ repo }: { repo: Repo }) {
     const p = personaDe(d.personaId);
     return (
       <li key={d.id}>
-        <button className={`persona-fila ${seleccionado === d.id ? 'activa' : ''}`} onClick={() => setSeleccionado(d.id)}>
-          <span className="persona-nombre">{p?.nombre} {p?.apellidos ?? ''}</span>
-          <span className="persona-meta">aportó {formatoDinero(resumen.porPersona.get(d.personaId) ?? 0)}{periodo ? ' en el período' : ''}</span>
-          <span className={`chip ${d.activo ? 'chip-verde' : 'chip-gris'}`}>{d.activo ? 'Activo' : 'Inactivo'}</span>
-        </button>
+        <FilaPersona
+          nombre={`${p?.nombre ?? ''} ${p?.apellidos ?? ''}`}
+          meta={<>aportó {formatoDinero(resumen.porPersona.get(d.personaId) ?? 0)}{periodo ? ' en el período' : ''}</>}
+          derecha={<span className={`chip ${d.activo ? 'chip-verde' : 'chip-gris'}`}>{d.activo ? 'Activo' : 'Inactivo'}</span>}
+          activa={seleccionado === d.id}
+          onClick={() => setSeleccionado(d.id)}
+        />
       </li>
     );
   };
@@ -149,14 +152,14 @@ export default function BienComun({ repo }: { repo: Repo }) {
         <div className="kpi"><span className="kpi-numero">{resumen.cantidadAportes}</span><span className="kpi-titulo">Aportes{periodo ? ' en el período' : ''}</span></div>
       </section>
 
-      <div className="pestanas">
-        <button className={seccion === 'diezmadores' ? 'pestana activa' : 'pestana'} onClick={() => setSeccion('diezmadores')}>
-          🌾 Diezmadores ({datos.diezmadores.length})
-        </button>
-        <button className={seccion === 'registro' ? 'pestana activa' : 'pestana'} onClick={() => setSeccion('registro')}>
-          📋 Registro general ({registroGeneral.length})
-        </button>
-      </div>
+      <Pestanas
+        opciones={[
+          { id: 'diezmadores', etiqueta: `🌾 Diezmadores (${datos.diezmadores.length})` },
+          { id: 'registro', etiqueta: `📋 Registro general (${registroGeneral.length})` },
+        ]}
+        activa={seccion}
+        onCambiar={setSeccion}
+      />
 
       {seccion === 'registro' && (
         <section className="tarjeta">
@@ -229,11 +232,12 @@ export default function BienComun({ repo }: { repo: Repo }) {
                 const d = datos.diezmadores.find((x) => x.personaId === a.personaId);
                 return (
                   <li key={a.id}>
-                    <button className="persona-fila" onClick={() => { if (d) setSeleccionado(d.id); }}>
-                      <span className="persona-nombre">{p ? `${p.nombre} ${p.apellidos ?? ''}` : 'Persona borrada'}</span>
-                      <span className="persona-meta">{a.fecha} · {a.tipo}</span>
-                      <span>{formatoDinero(a.monto)}</span>
-                    </button>
+                    <FilaRegistro
+                      nombre={p ? `${p.nombre} ${p.apellidos ?? ''}` : 'Persona borrada'}
+                      meta={`${a.fecha} · ${a.tipo}`}
+                      valor={formatoDinero(a.monto)}
+                      onClick={() => { if (d) setSeleccionado(d.id); }}
+                    />
                   </li>
                 );
               })}

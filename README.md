@@ -63,8 +63,15 @@ de un solo motor de conteo (`src/motor/`); el cuadre se verifica solo
   Informe 📋 · Personas 👥 · Misión 📣 · Miembros 🤝 · Grupos 🧑‍🤝‍🧑 ·
   Ministerios ⛪ · Academia 🎓 · Evangelismos 🔥 · Bien Común 🌾 · Red
   🌐 · Manos Abiertas 🤲 · Mapa 📍 · Migración 🔀. Sin tocar datos ni
-  comportamiento (77/77 pruebas). Quedan la Fase B (piezas únicas como
-  componentes) y la Fase C (pantallas, empezando por los dos registros
-  generales).
+  comportamiento (77/77 pruebas).
+- **Constitución Visual — Fase B (piezas únicas): APLICADA** (2026-11-19).
+  `src/ui/Piezas.tsx` trae **FilaPersona** (la Lista, una sola: nombre +
+  meta en columna y chip/valor a la derecha), **FilaRegistro** (fecha ·
+  concepto, valor a la derecha en negrita — `.fila-valor`) y **Pestanas**.
+  Adoptadas ya: FilaPersona en Personas, Miembros, Bien Común y Red;
+  FilaRegistro en los **dos registros generales** (Bien Común y Red),
+  que quedan idénticos entre sí y a las listas personales; Pestanas en
+  Bien Común, Red y Manos Abiertas. Queda la Fase C: vestir el resto de
+  pantallas con las piezas, una a una, verificando en vivo.
 
 La app actual (`lemgil-mision-apk`) sigue viva e intacta mientras tanto.

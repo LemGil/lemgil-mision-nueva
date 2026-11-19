@@ -11,6 +11,7 @@ import Modal from './Modal';
 import BorrarBoton from './BorrarBoton';
 import { InputZona } from './CamposLista';
 import GuiaPagina from './GuiaPagina';
+import { FilaPersona } from './Piezas';
 
 const hoyIso = () => new Date().toISOString().slice(0, 10);
 const txt = (v: string) => v.trim() || undefined;
@@ -305,16 +306,22 @@ export default function Personas({ repo }: { repo: Repo }) {
     const fichaP = fichaDePersona(datos, per.id);
     return (
       <li key={per.id}>
-        <button className={`persona-fila ${seleccionada === per.id ? 'activa' : ''}`} onClick={() => setSeleccionada(per.id)}>
-          <span className="persona-nombre">{per.nombre} {per.apellidos ?? ''}</span>
-          <span className="persona-meta">{per.telefono ?? 'Sin teléfono'}{per.numeroIdentidad ? ` · ${per.numeroIdentidad}` : ''}</span>
-          <span className={`chip chip-${sit.tono}`}>{sit.texto}</span>
-          {fichaP && fichaP.repetidos.length > 0 && (
-            <span className="chip chip-rojo">
-              ⚠ {fichaP.repetidos.map((r) => `${r.cantidad} en ${r.proceso}`).join(' · ')}
-            </span>
+        <FilaPersona
+          nombre={`${per.nombre} ${per.apellidos ?? ''}`}
+          meta={<>{per.telefono ?? 'Sin teléfono'}{per.numeroIdentidad ? ` · ${per.numeroIdentidad}` : ''}</>}
+          derecha={(
+            <>
+              <span className={`chip chip-${sit.tono}`}>{sit.texto}</span>
+              {fichaP && fichaP.repetidos.length > 0 && (
+                <span className="chip chip-rojo">
+                  ⚠ {fichaP.repetidos.map((r) => `${r.cantidad} en ${r.proceso}`).join(' · ')}
+                </span>
+              )}
+            </>
           )}
-        </button>
+          activa={seleccionada === per.id}
+          onClick={() => setSeleccionada(per.id)}
+        />
       </li>
     );
   };

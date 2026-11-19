@@ -15,6 +15,7 @@ import BorrarBoton from './BorrarBoton';
 import SelectorPersona from './SelectorPersona';
 import Modal from './Modal';
 import GuiaPagina from './GuiaPagina';
+import { FilaPersona } from './Piezas';
 
 const hoyIso = () => new Date().toISOString().slice(0, 10);
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
@@ -99,13 +100,12 @@ export default function Miembros({ repo }: { repo: Repo }) {
     const esc = escaleraDeMiembro(datos, m);
     return (
       <li key={m.id}>
-        <button className={`persona-fila ${seleccionado === m.id ? 'activa' : ''}`} onClick={() => setSeleccionado(m.id)}>
-          <span className="persona-nombre">{p?.nombre} {p?.apellidos ?? ''}</span>
-          <span className="persona-meta">
-            {m.estado} · escalera {esc.cumplidos}/{esc.total}
-            {esc.actual ? ` · le falta ${esc.actual.nombre}` : ' · completa'}
-          </span>
-        </button>
+        <FilaPersona
+          nombre={`${p?.nombre ?? ''} ${p?.apellidos ?? ''}`}
+          meta={<>{m.estado} · escalera {esc.cumplidos}/{esc.total}{esc.actual ? ` · le falta ${esc.actual.nombre}` : ' · completa'}</>}
+          activa={seleccionado === m.id}
+          onClick={() => setSeleccionado(m.id)}
+        />
       </li>
     );
   };
