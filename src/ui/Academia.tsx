@@ -14,6 +14,7 @@ export default function Academia({ repo }: { repo: Repo }) {
   const [datos, setDatos] = useState<DatosMinisterio | null>(null);
   const [recargas, setRecargas] = useState(0);
   const [error, setError] = useState('');
+  const [mostrarForm, setMostrarForm] = useState(false);
   const [ver, setVer] = useState('activos');
   const [vista, setVista] = useState<Vista>('lista');
   const [agruparPor, setAgruparPor] = useState('zona');
@@ -105,6 +106,12 @@ export default function Academia({ repo }: { repo: Repo }) {
         <div className="kpi"><span className="kpi-numero">{datos.estudiantes.length - activos}</span><span className="kpi-titulo">Inactivos</span></div>
         <div className="kpi"><span className="kpi-numero">{datos.estudiantes.length}</span><span className="kpi-titulo">Total</span></div>
       </section>
+      {!mostrarForm && (
+        <div className="form-acciones">
+          <button className="btn btn-dorado" onClick={() => setMostrarForm(true)}>➕ Nuevo estudiante</button>
+        </div>
+      )}
+      {mostrarForm && (
       <section className="tarjeta">
         <h2>➕ Nuevo estudiante</h2>
         <SelectorPersona
@@ -115,12 +122,17 @@ export default function Academia({ repo }: { repo: Repo }) {
             try {
               await crearEstudiante(repo, datos, personaId);
               recargar();
+              setMostrarForm(false);
             } catch (e) {
               setError(e instanceof Error ? e.message : String(e));
             }
           }}
         />
+              <div className="form-acciones">
+          <button className="btn" onClick={() => setMostrarForm(false)}>Cerrar</button>
+        </div>
       </section>
+      )}
       <div className="vista-barra">
         <label>
           Ver{' '}

@@ -11,6 +11,7 @@ import {
 } from '../migracion/completar';
 import { traerRed, vistaPreviaRed, type VistaPreviaRed } from '../migracion/traerRed';
 import { traerManos, vistaPreviaManos, type VistaPreviaManos } from '../migracion/traerManos';
+import { completarBeneficiarios, vistaPreviaCompletarBeneficiarios, type ResumenCompletarBeneficiarios } from '../migracion/completarBeneficiarios';
 import { convertirRespaldo, type InformeMigracion, type RespaldoViejo } from '../migracion/convertir';
 import { importarEnRepo, puedeImportar } from '../migracion/importar';
 import GuiaPagina from './GuiaPagina';
@@ -39,6 +40,10 @@ export default function Migrar({ repo }: { repo: Repo }) {
   const [previaManos, setPreviaManos] = useState<VistaPreviaManos | null>(null);
   const [traidasManos, setTraidasManos] = useState<VistaPreviaManos | null>(null);
   const [trayendoManos, setTrayendoManos] = useState(false);
+  const [respaldoBenef, setRespaldoBenef] = useState<RespaldoViejo | null>(null);
+  const [previaBenef, setPreviaBenef] = useState<ResumenCompletarBeneficiarios | null>(null);
+  const [traidosBenef, setTraidosBenef] = useState<ResumenCompletarBeneficiarios | null>(null);
+  const [completandoBenef, setCompletandoBenef] = useState(false);
 
   const cargar = useCallback(async () => {
     setActuales(await aDatosMinisterio(repo));
@@ -164,6 +169,38 @@ export default function Migrar({ repo }: { repo: Repo }) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
       setTrayendoManos(false);
+    }
+  };
+
+  const leerArchivoBenef = async (archivo: File) => {
+    setError('');
+    setPreviaBenef(null);
+    setTraidosBenef(null);
+    try {
+      const respaldo = JSON.parse(await archivo.text()) as RespaldoViejo;
+      if (!respaldo || typeof respaldo !== 'object' || !Array.isArray(respaldo.beneficiarios)) {
+        throw new Error('Ese archivo no es un respaldo de la app anterior.');
+      }
+      setRespaldoBenef(respaldo);
+      setPreviaBenef(vistaPreviaCompletarBeneficiarios(actuales.beneficiarios, respaldo));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  };
+
+  const completarLosBeneficiarios = async () => {
+    if (!respaldoBenef) return;
+    setCompletandoBenef(true);
+    setError('');
+    try {
+      const resumen = await completarBeneficiarios(repo, respaldoBenef, actuales.beneficiarios);
+      setTraidosBenef(resumen);
+      setPreviaBenef(null);
+      await cargar();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setCompletandoBenef(false);
     }
   };
 
@@ -416,6 +453,45 @@ export default function Migrar({ repo }: { repo: Repo }) {
           </p>
         </section>
       )}
+
+      <section className="tarjeta">
+        <h2>👐 Completar los datos de los beneficiarios</h2>
+        <p className="tenue">
+          La primera migración trajo a los beneficiarios sin su tipo (Persona, Familia o
+          Grupo), su nombre propio, su representante, el tamaño de la familia, el teléfono y
+          la zona. Elige el mismo respaldo y se rellenan SOLO los huecos: lo que ya esté
+          puesto no se toca.
+        </p>
+        <input
+          type="file"
+          accept="application/json,.json"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) void leerArchivoBenef(f);
+          }}
+        />
+        {previaBenef && previaBenef.beneficiarios > 0 && (
+          <>
+            <p>
+              <strong>{previaBenef.beneficiarios} beneficiarios</strong> ganarían datos:{' '}
+              {Object.entries(previaBenef.campos)
+                .map(([campo, n]) => `${campo}: ${n}`)
+                .join(' · ')}
+            </p>
+            <button className="btn btn-dorado" disabled={completandoBenef} onClick={completarLosBeneficiarios}>
+              {completandoBenef ? 'Completando…' : '👐 Completar beneficiarios'}
+            </button>
+          </>
+        )}
+        {previaBenef && previaBenef.beneficiarios === 0 && (
+          <p className="aviso aviso-verde">✓ Los beneficiarios ya tienen todos sus datos.</p>
+        )}
+        {traidosBenef && (
+          <p className="aviso aviso-verde">
+            ✓ Se completaron {traidosBenef.beneficiarios} beneficiarios. Sincroniza para subirlos.
+          </p>
+        )}
+      </section>
     </div>
   );
 }

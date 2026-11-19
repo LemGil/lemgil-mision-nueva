@@ -9,6 +9,7 @@ import { agrupar, visibleSegunVer, type VerPersonas } from '../motor/vistas';
 import BarraVistas, { type Vista } from './BarraVistas';
 import Modal from './Modal';
 import BorrarBoton from './BorrarBoton';
+import { InputZona } from './CamposLista';
 import GuiaPagina from './GuiaPagina';
 
 const hoyIso = () => new Date().toISOString().slice(0, 10);
@@ -114,7 +115,7 @@ function FormularioCampos({
       </div>
       <div className="form-fila">
         <label>Dirección<input value={campos.direccion} onChange={(e) => u({ direccion: e.target.value })} /></label>
-        <label>Zona<input value={campos.zona} onChange={(e) => u({ zona: e.target.value })} /></label>
+        <label>Zona<InputZona datos={datos} value={campos.zona} onChange={(v) => u({ zona: v })} /></label>
       </div>
       <div className="form-fila">
         <label>Profesión<input value={campos.profesion} onChange={(e) => u({ profesion: e.target.value })} /></label>

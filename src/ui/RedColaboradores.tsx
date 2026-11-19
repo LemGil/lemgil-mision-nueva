@@ -5,6 +5,7 @@ import type { Repo } from '../datos/repo';
 import type { Colaborador, DatosMinisterio, Periodo } from '../modelo/tipos';
 import { anosConRegistros, mesesConRegistros } from '../motor/periodos';
 import { nombreColaborador, resumenRed } from '../motor/red';
+import { formatoDinero } from '../motor/dinero';
 import { agrupar } from '../motor/vistas';
 import BarraVistas, { type Vista } from './BarraVistas';
 import GuiaPagina from './GuiaPagina';
@@ -27,6 +28,7 @@ export default function RedColaboradores({ repo }: { repo: Repo }) {
   const [agruparPor, setAgruparPor] = useState('tipo');
   const [seleccionado, setSeleccionado] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [mostrarForm, setMostrarForm] = useState(false);
   // Formulario de nuevo colaborador
   const [nombre, setNombre] = useState('');
   const [apellido, setApellido] = useState('');
@@ -101,7 +103,7 @@ export default function RedColaboradores({ repo }: { repo: Repo }) {
       <button className={`persona-fila ${seleccionado === c.id ? 'activa' : ''}`} onClick={() => setSeleccionado(c.id)}>
         <span className="persona-nombre">{nombreColaborador(c)}</span>
         <span className="persona-meta">
-          {c.tipo ?? 'Sin tipo'} · aportó {resumen.porColaborador.get(c.id) ?? 0}
+          {c.tipo ?? 'Sin tipo'} · aportó {formatoDinero(resumen.porColaborador.get(c.id) ?? 0)}
           {periodo ? ' en el período' : ''}
         </span>
         <span className={`chip ${c.estado === 'Activo' ? 'chip-verde' : 'chip-gris'}`}>{c.estado}</span>
@@ -117,7 +119,7 @@ export default function RedColaboradores({ repo }: { repo: Repo }) {
         <span className="chip chip-gris">{c.tipo ?? 'Sin tipo'}</span>
       </span>
       <span className="persona-meta">
-        aportó {resumen.porColaborador.get(c.id) ?? 0}
+        aportó {formatoDinero(resumen.porColaborador.get(c.id) ?? 0)}
         {periodo ? ' en el período' : ''}
       </span>
       <span className="persona-meta">{c.telefono ?? c.email ?? 'Sin contacto'}</span>
@@ -155,10 +157,16 @@ export default function RedColaboradores({ repo }: { repo: Repo }) {
       <section className="kpis">
         <div className="kpi kpi-principal"><span className="kpi-numero">{resumen.activos}</span><span className="kpi-titulo">Colaboradores activos</span></div>
         <div className="kpi"><span className="kpi-numero">{resumen.inactivos}</span><span className="kpi-titulo">Inactivos</span></div>
-        <div className="kpi"><span className="kpi-numero">{resumen.totalAportes}</span><span className="kpi-titulo">Total aportado{periodo ? ' en el período' : ''}</span></div>
+        <div className="kpi"><span className="kpi-numero">{formatoDinero(resumen.totalAportes)}</span><span className="kpi-titulo">Total aportado{periodo ? ' en el período' : ''}</span></div>
         <div className="kpi"><span className="kpi-numero">{resumen.cantidadAportes}</span><span className="kpi-titulo">Aportes{periodo ? ' en el período' : ''}</span></div>
       </section>
 
+      {!mostrarForm && (
+        <div className="form-acciones">
+          <button className="btn btn-dorado" onClick={() => setMostrarForm(true)}>➕ Nuevo colaborador</button>
+        </div>
+      )}
+      {mostrarForm && (
       <section className="tarjeta formulario">
         <h2>➕ Nuevo colaborador</h2>
         <div className="form-fila">
@@ -203,6 +211,7 @@ export default function RedColaboradores({ repo }: { repo: Repo }) {
                 setNombre(''); setApellido(''); setTelefono(''); setEmail('');
                 setPlanTipo(''); setPlanMonto(''); setNotas('');
                 recargar();
+              setMostrarForm(false);
               } catch (e) {
                 setError(e instanceof Error ? e.message : String(e));
               }
@@ -211,7 +220,11 @@ export default function RedColaboradores({ repo }: { repo: Repo }) {
             💾 Crear colaborador
           </button>
         </div>
+              <div className="form-acciones">
+          <button className="btn" onClick={() => setMostrarForm(false)}>Cerrar</button>
+        </div>
       </section>
+      )}
 
       <div className="vista-barra">
         <label>
@@ -267,7 +280,7 @@ export default function RedColaboradores({ repo }: { repo: Repo }) {
           </p>
           {(detalle.planOfrendaTipo || detalle.planOfrendaMonto) && (
             <p className="tenue">
-              Plan: {detalle.planOfrendaTipo ?? ''} {detalle.planOfrendaMonto ?? ''}
+              Plan: {detalle.planOfrendaTipo ?? ''} {detalle.planOfrendaMonto ? formatoDinero(detalle.planOfrendaMonto) : ''}
             </p>
           )}
           {detalle.notas && <p className="tenue">📝 {detalle.notas}</p>}
@@ -432,7 +445,7 @@ export default function RedColaboradores({ repo }: { repo: Repo }) {
                 ))}
               </ul>
               <p className="tenue">
-                {aportesDe.length} aportes · total {aportesDe.reduce((x, a) => x + a.monto, 0)}.
+                {aportesDe.length} aportes · total {formatoDinero(aportesDe.reduce((x, a) => x + a.monto, 0))}.
                 Toca cualquier dato para corregirlo.
               </p>
             </>

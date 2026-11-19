@@ -100,6 +100,16 @@ export interface Diezmador {
 export interface Beneficiario {
   id: string;
   personaId?: string | null;
+  /** 'Persona' | 'Familia' | 'Grupo' — a quién se ayuda. */
+  tipo?: string;
+  /** Nombre propio cuando es Familia o Grupo (una casa, un comedor…). */
+  nombre?: string;
+  /** Quién responde por la familia o el grupo. */
+  representante?: string;
+  /** Cuántas personas forman la familia o el grupo. */
+  familia?: number;
+  telefono?: string;
+  zona?: string;
   estado: string;
 }
 

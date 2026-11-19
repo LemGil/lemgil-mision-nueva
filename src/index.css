@@ -412,3 +412,26 @@ button.persona-fila:hover, .persona-fila.activa { border-color: var(--dorado); }
   color: var(--texto); padding: 4px 6px; font-size: 13.5px;
 }
 .historial-edit .actual { font-weight: 700; }
+
+/* Pestañas (Manos Abiertas): tres mesas en una página. */
+.pestanas {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 4px 0 14px;
+}
+.pestana {
+  border: 1px solid var(--borde);
+  background: var(--superficie);
+  color: var(--texto);
+  border-radius: 999px;
+  padding: 8px 16px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.pestana.activa {
+  background: linear-gradient(135deg, var(--oro), var(--oro-luz));
+  border-color: var(--oro);
+  color: #1c1c1c;
+}

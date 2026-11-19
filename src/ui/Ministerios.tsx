@@ -14,6 +14,7 @@ export default function Ministerios({ repo }: { repo: Repo }) {
   const [datos, setDatos] = useState<DatosMinisterio | null>(null);
   const [abierto, setAbierto] = useState<string | null>(null);
   const [nuevoNombre, setNuevoNombre] = useState('');
+  const [mostrarForm, setMostrarForm] = useState(false);
   const [personaNueva, setPersonaNueva] = useState('');
   const [error, setError] = useState('');
   const [vista, setVista] = useState<Vista>('lista');
@@ -134,6 +135,12 @@ export default function Ministerios({ repo }: { repo: Repo }) {
             ))
       )}
 
+      {!mostrarForm && (
+        <div className="form-acciones">
+          <button className="btn btn-dorado" onClick={() => setMostrarForm(true)}>➕ Nuevo ministerio</button>
+        </div>
+      )}
+      {mostrarForm && (
       <section className="tarjeta formulario">
         <h2>Nuevo ministerio</h2>
         <div className="form-fila">
@@ -153,13 +160,18 @@ export default function Ministerios({ repo }: { repo: Repo }) {
               await asignar(nuevoNombre, personaNueva);
               setNuevoNombre('');
               setPersonaNueva('');
+              setMostrarForm(false);
             }}
           >
             Crear y asignar
           </button>
         </div>
         <p className="tenue">Un ministerio nace con su primera persona; el resto se agrega dentro.</p>
+              <div className="form-acciones">
+          <button className="btn" onClick={() => setMostrarForm(false)}>Cerrar</button>
+        </div>
       </section>
+      )}
 
       {detalleMin && (
         <Modal onCerrar={() => setAbierto(null)}>

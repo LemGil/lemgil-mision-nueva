@@ -11,6 +11,7 @@ import { escaleraDeMiembro, tarjetasDeMiembros } from './miembros';
 import { conteoMision } from './mision';
 import { nombreColaborador, resumenRed } from './red';
 import { resumenManos } from './manosAbiertas';
+import { formatoDinero } from './dinero';
 
 export type DepartamentoId =
   | 'general'
@@ -210,7 +211,7 @@ export function construirInforme(
           {
             titulo: opts.periodo ? '💰 Aportes del período' : '💰 Aportes',
             filas: [
-              ['Total aportado', n(resumen.totalAportes)],
+              ['Total aportado', formatoDinero(resumen.totalAportes)],
               ['Cantidad de aportes', n(resumen.cantidadAportes)],
             ],
           },
@@ -226,7 +227,7 @@ export function construirInforme(
         }))
         .filter((x) => x.total > 0)
         .sort((a, b) => b.total - a.total)
-        .map((x): [string, string] => [x.nombre, n(x.total)]);
+        .map((x): [string, string] => [x.nombre, formatoDinero(x.total)]);
       return {
         id,
         titulo: 'Informe de la Red de Colaboradores',
@@ -242,7 +243,7 @@ export function construirInforme(
           {
             titulo: opts.periodo ? '💰 Aportes del período' : '💰 Aportes',
             filas: [
-              ['Total aportado', n(resumen.totalAportes)],
+              ['Total aportado', formatoDinero(resumen.totalAportes)],
               ['Cantidad de aportes', n(resumen.cantidadAportes)],
             ],
           },

@@ -7,6 +7,7 @@ import SelectorPersona from './SelectorPersona';
 import { clasificarPersona } from '../motor/censo';
 import { esBaja } from '../motor/vistas';
 import type { Grupo } from '../modelo/tipos';
+import { InputZona } from './CamposLista';
 import { agrupar } from '../motor/vistas';
 import BarraVistas, { type Vista } from './BarraVistas';
 
@@ -21,6 +22,7 @@ export default function Grupos({ repo }: { repo: Repo }) {
   const [nombre, setNombre] = useState('');
   const [zona, setZona] = useState('');
   const [liderId, setLiderId] = useState<string | null>(null);
+  const [mostrarForm, setMostrarForm] = useState(false);
   const [error, setError] = useState('');
   const [vista, setVista] = useState<Vista>('lista');
   const [agruparPor, setAgruparPor] = useState('zona');
@@ -97,11 +99,17 @@ export default function Grupos({ repo }: { repo: Repo }) {
         <div className="kpi"><span className="kpi-numero">{conGrupo.size}</span><span className="kpi-titulo">Personas en grupos</span></div>
       </section>
 
+      {!mostrarForm && (
+        <div className="form-acciones">
+          <button className="btn btn-dorado" onClick={() => setMostrarForm(true)}>➕ Nuevo grupo</button>
+        </div>
+      )}
+      {mostrarForm && (
       <section className="tarjeta formulario">
         <h2>➕ Nuevo grupo</h2>
         <div className="form-fila">
           <label>Nombre<input value={nombre} onChange={(e) => setNombre(e.target.value)} /></label>
-          <label>Zona<input value={zona} onChange={(e) => setZona(e.target.value)} /></label>
+          <label>Zona<InputZona datos={datos} value={zona} onChange={setZona} /></label>
         </div>
         <p className="tenue">Líder: {liderId ? `${personaDe(liderId)?.nombre} ${personaDe(liderId)?.apellidos ?? ''}` : 'sin elegir'}</p>
         <SelectorPersona datos={datos} onElegir={setLiderId} placeholder="🔍 Buscar al líder…" />
@@ -114,6 +122,7 @@ export default function Grupos({ repo }: { repo: Repo }) {
               try {
                 await crearGrupo(repo, { nombre: nombre.trim(), zona: zona.trim() || undefined, liderId });
                 setNombre(''); setZona(''); setLiderId(null);
+              setMostrarForm(false);
                 recargar();
               } catch (e) {
                 setError(e instanceof Error ? e.message : String(e));
@@ -123,7 +132,11 @@ export default function Grupos({ repo }: { repo: Repo }) {
             💾 Crear grupo
           </button>
         </div>
+              <div className="form-acciones">
+          <button className="btn" onClick={() => setMostrarForm(false)}>Cerrar</button>
+        </div>
       </section>
+      )}
 
       <BarraVistas
         vista={vista}
@@ -231,7 +244,7 @@ function FormEditarGrupo({
         </label>
         <label>
           Zona
-          <input value={zona} onChange={(e) => { setZona(e.target.value); tocar(); }} />
+          <InputZona datos={datos} value={zona} onChange={(v) => { setZona(v); tocar(); }} />
         </label>
       </div>
       <p className="tenue">

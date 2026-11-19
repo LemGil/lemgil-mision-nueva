@@ -314,9 +314,32 @@ export async function crearBeneficiario(
   if (datos.beneficiarios.some((b) => b.personaId === personaId)) {
     throw new Error('Esta persona ya es beneficiaria en Manos Abiertas.');
   }
-  const beneficiario: Beneficiario = { id: nuevoId(), personaId, estado: 'Activo' };
+  const beneficiario: Beneficiario = { id: nuevoId(), personaId, tipo: 'Persona', estado: 'Activo' };
   await repo.guardar('beneficiarios', beneficiario);
   return beneficiario;
+}
+
+/** Un beneficiario Familia o Grupo: no cuelga de la ficha única, tiene
+ * su propio nombre (la casa, el comedor, la familia). */
+export async function crearBeneficiarioManual(
+  repo: Repo,
+  datos: Omit<Beneficiario, 'id' | 'personaId' | 'estado'>,
+): Promise<Beneficiario> {
+  const beneficiario: Beneficiario = {
+    ...datos,
+    id: nuevoId(),
+    personaId: null,
+    estado: 'Activo',
+  };
+  await repo.guardar('beneficiarios', beneficiario);
+  return beneficiario;
+}
+
+export async function actualizarBeneficiario(
+  repo: Repo,
+  beneficiario: Beneficiario,
+): Promise<void> {
+  await repo.guardar('beneficiarios', beneficiario);
 }
 
 export async function crearGrupo(

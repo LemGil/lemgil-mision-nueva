@@ -6,6 +6,7 @@ import type { DatosMinisterio, Periodo } from '../modelo/tipos';
 import { resumenBienComun } from '../motor/bienComun';
 import SelectorPersona from './SelectorPersona';
 import { anosConRegistros, mesesConRegistros } from '../motor/periodos';
+import { formatoDinero } from '../motor/dinero';
 
 import { agrupar } from '../motor/vistas';
 import BarraVistas, { type Vista } from './BarraVistas';
@@ -24,6 +25,7 @@ export default function BienComun({ repo }: { repo: Repo }) {
   const [mes, setMes] = useState(0);
   const [seleccionado, setSeleccionado] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [mostrarForm, setMostrarForm] = useState(false);
   const [ver, setVer] = useState('activos');
   const [vista, setVista] = useState<Vista>('lista');
   const [agruparPor, setAgruparPor] = useState('zona');
@@ -80,7 +82,7 @@ export default function BienComun({ repo }: { repo: Repo }) {
       <li key={d.id}>
         <button className={`persona-fila ${seleccionado === d.id ? 'activa' : ''}`} onClick={() => setSeleccionado(d.id)}>
           <span className="persona-nombre">{p?.nombre} {p?.apellidos ?? ''}</span>
-          <span className="persona-meta">aportó {resumen.porPersona.get(d.personaId) ?? 0}{periodo ? ' en el período' : ''}</span>
+          <span className="persona-meta">aportó {formatoDinero(resumen.porPersona.get(d.personaId) ?? 0)}{periodo ? ' en el período' : ''}</span>
           <span className={`chip ${d.activo ? 'chip-verde' : 'chip-gris'}`}>{d.activo ? 'Activo' : 'Inactivo'}</span>
         </button>
       </li>
@@ -92,7 +94,7 @@ export default function BienComun({ repo }: { repo: Repo }) {
       <button key={d.id} className="persona-card" onClick={() => setSeleccionado(d.id)}>
         <span className="persona-nombre">{p?.nombre} {p?.apellidos ?? ''}</span>
         <span><span className={`chip ${d.activo ? 'chip-verde' : 'chip-gris'}`}>{d.activo ? 'Activo' : 'Inactivo'}</span></span>
-        <span className="persona-meta">aportó {resumen.porPersona.get(d.personaId) ?? 0}{periodo ? ' en el período' : ''}</span>
+        <span className="persona-meta">aportó {formatoDinero(resumen.porPersona.get(d.personaId) ?? 0)}{periodo ? ' en el período' : ''}</span>
         <span className="persona-meta">{p?.zona ?? 'Sin zona'}</span>
       </button>
     );
@@ -131,10 +133,16 @@ export default function BienComun({ repo }: { repo: Repo }) {
       <section className="kpis">
         <div className="kpi kpi-principal"><span className="kpi-numero">{resumen.diezmadoresActivos}</span><span className="kpi-titulo">Diezmadores activos</span></div>
         <div className="kpi"><span className="kpi-numero">{resumen.diezmadoresInactivos}</span><span className="kpi-titulo">Inactivos</span></div>
-        <div className="kpi"><span className="kpi-numero">{resumen.totalAportes}</span><span className="kpi-titulo">Total aportado{periodo ? ' en el período' : ''}</span></div>
+        <div className="kpi"><span className="kpi-numero">{formatoDinero(resumen.totalAportes)}</span><span className="kpi-titulo">Total aportado{periodo ? ' en el período' : ''}</span></div>
         <div className="kpi"><span className="kpi-numero">{resumen.cantidadAportes}</span><span className="kpi-titulo">Aportes{periodo ? ' en el período' : ''}</span></div>
       </section>
 
+      {!mostrarForm && (
+        <div className="form-acciones">
+          <button className="btn btn-dorado" onClick={() => setMostrarForm(true)}>➕ Nuevo diezmador</button>
+        </div>
+      )}
+      {mostrarForm && (
       <section className="tarjeta">
         <h2>➕ Nuevo diezmador</h2>
         <SelectorPersona
@@ -150,7 +158,11 @@ export default function BienComun({ repo }: { repo: Repo }) {
             }
           }}
         />
+              <div className="form-acciones">
+          <button className="btn" onClick={() => setMostrarForm(false)}>Cerrar</button>
+        </div>
       </section>
+      )}
 
       <div className="vista-barra">
         <label>
@@ -268,7 +280,7 @@ export default function BienComun({ repo }: { repo: Repo }) {
                 ))}
               </ul>
               <p className="tenue">
-                {aportesDe.length} aportes · total {aportesDe.reduce((x, a) => x + a.monto, 0)}.
+                {aportesDe.length} aportes · total {formatoDinero(aportesDe.reduce((x, a) => x + a.monto, 0))}.
                 Toca la fecha, el tipo o el monto para corregirlos.
               </p>
             </>

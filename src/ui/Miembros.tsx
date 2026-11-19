@@ -30,6 +30,7 @@ export default function Miembros({ repo }: { repo: Repo }) {
   const [filtroPaso, setFiltroPaso] = useState('');
   const [seleccionado, setSeleccionado] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [mostrarForm, setMostrarForm] = useState(false);
   const [hitoPaso, setHitoPaso] = useState('');
   const [hitoFecha, setHitoFecha] = useState(hoyIso());
   const [vista, setVista] = useState<Vista>('lista');
@@ -139,6 +140,12 @@ export default function Miembros({ repo }: { repo: Repo }) {
       <GuiaPagina texto="El directorio de los integrados y su escalera: Grupo → Diezmador → Academia → Ministerio → Hermano Mayor → Liderazgo. La Integración es la puerta, no un peldaño." />
       {error && <p className="aviso aviso-rojo">{error}</p>}
 
+      {!mostrarForm && (
+        <div className="form-acciones">
+          <button className="btn btn-dorado" onClick={() => setMostrarForm(true)}>➕ Nuevo miembro</button>
+        </div>
+      )}
+      {mostrarForm && (
       <section className="tarjeta">
         <h2>➕ Nuevo miembro</h2>
         <p className="tenue">Solo personas registradas y que aún no sean miembros (bloqueo duro).</p>
@@ -150,12 +157,17 @@ export default function Miembros({ repo }: { repo: Repo }) {
             try {
               await crearMiembro(repo, datos, personaId, hoyIso());
               recargar();
+              setMostrarForm(false);
             } catch (e) {
               setError(e instanceof Error ? e.message : String(e));
             }
           }}
         />
+              <div className="form-acciones">
+          <button className="btn" onClick={() => setMostrarForm(false)}>Cerrar</button>
+        </div>
       </section>
+      )}
 
       <div className="selector-periodo">
         <label>

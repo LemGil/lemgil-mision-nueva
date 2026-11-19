@@ -217,6 +217,13 @@ export function convertirRespaldo(respaldo: RespaldoViejo): {
     .map((r) => ({
       id: idDe(r),
       personaId: textoONulo(r.personaId),
+      tipo: texto(r.tipo) ?? (texto(r.personaId) ? 'Persona' : 'Grupo'),
+      nombre:
+        [texto(r.nombre), texto(r.apellido)].filter(Boolean).join(' ') || undefined,
+      representante: texto(r.representativeName) ?? texto(r.representante),
+      familia: numero(r.familia),
+      telefono: texto(r.telefono),
+      zona: texto(r.zona),
       estado: texto(r.estado) === 'Inactivo' ? 'Inactivo' : 'Activo',
     }));
 
