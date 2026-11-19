@@ -31,6 +31,14 @@ export default function RedColaboradores({ repo }: { repo: Repo }) {
   const [mostrarForm, setMostrarForm] = useState(false);
   const [mostrarAporte, setMostrarAporte] = useState(false);
   const [seccion, setSeccion] = useState<'colaboradores' | 'registro'>('colaboradores');
+  // Formulario general de aportes (para cualquier colaborador, sin abrir su ficha)
+  const [mostrarGeneral, setMostrarGeneral] = useState(false);
+  const [colaboradorG, setColaboradorG] = useState('');
+  const [fechaG, setFechaG] = useState(() => new Date().toISOString().slice(0, 10));
+  const [tipoG, setTipoG] = useState('Ofrenda');
+  const [metodoG, setMetodoG] = useState('Efectivo');
+  const [montoG, setMontoG] = useState('');
+  const [referenciaG, setReferenciaG] = useState('');
   // Formulario de nuevo colaborador
   const [nombre, setNombre] = useState('');
   const [apellido, setApellido] = useState('');
@@ -184,6 +192,70 @@ export default function RedColaboradores({ repo }: { repo: Repo }) {
             más reciente al más viejo. Total: {formatoDinero(registroGeneral.reduce((x, a) => x + a.monto, 0))}.
             Toca un registro para abrir la ficha de su colaborador.
           </p>
+          {!mostrarGeneral && (
+            <div className="form-acciones">
+              <button className="btn btn-dorado" onClick={() => setMostrarGeneral(true)}>➕ Registrar aporte (general)</button>
+            </div>
+          )}
+          {mostrarGeneral && (
+            <>
+              <div className="form-fila">
+                <label>
+                  Colaborador *
+                  <select value={colaboradorG} onChange={(e) => setColaboradorG(e.target.value)}>
+                    <option value="">— Elige quién aporta —</option>
+                    {datos.colaboradores.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {nombreColaborador(c)}{c.estado === 'Activo' ? '' : ' (Inactivo)'}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>Fecha<input type="date" value={fechaG} onChange={(e) => setFechaG(e.target.value)} /></label>
+                <label>
+                  Tipo
+                  <select value={tipoG} onChange={(e) => setTipoG(e.target.value)}>
+                    {TIPOS_APORTE.map((t) => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Método
+                  <select value={metodoG} onChange={(e) => setMetodoG(e.target.value)}>
+                    {METODOS.map((t) => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
+                </label>
+                <label>Monto<input type="number" min="0" value={montoG} onChange={(e) => setMontoG(e.target.value)} /></label>
+                <label>Referencia<input value={referenciaG} onChange={(e) => setReferenciaG(e.target.value)} /></label>
+                <div className="form-acciones">
+                  <button
+                    className="btn btn-dorado"
+                    disabled={!colaboradorG || !montoG || Number(montoG) <= 0}
+                    onClick={async () => {
+                      await registrarAporteRed(repo, {
+                        colaboradorId: colaboradorG,
+                        fecha: fechaG,
+                        monto: Number(montoG),
+                        tipo: tipoG,
+                        metodo: metodoG,
+                        referencia: referenciaG.trim() || undefined,
+                      });
+                      setMontoG('');
+                      setReferenciaG('');
+                      recargar();
+                    }}
+                  >
+                    💾 Registrar aporte
+                  </button>
+                  <button className="btn" onClick={() => setMostrarGeneral(false)}>Cerrar</button>
+                </div>
+              </div>
+              <p className="tenue">El formulario queda abierto y con el colaborador elegido: puedes registrar varios aportes seguidos sin abrir ficha por ficha.</p>
+            </>
+          )}
           {registroGeneral.length === 0 ? (
             <p className="tenue">Sin aportes en esta vista.</p>
           ) : (

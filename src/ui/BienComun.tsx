@@ -34,6 +34,12 @@ export default function BienComun({ repo }: { repo: Repo }) {
   const [tipoAporte, setTipoAporte] = useState<'Diezmo' | 'Ofrenda'>('Diezmo');
   const [mostrarAporte, setMostrarAporte] = useState(false);
   const [seccion, setSeccion] = useState<'diezmadores' | 'registro'>('diezmadores');
+  // Formulario general de aportes (para cualquier diezmador, sin abrir su ficha)
+  const [mostrarGeneral, setMostrarGeneral] = useState(false);
+  const [personaG, setPersonaG] = useState('');
+  const [fechaG, setFechaG] = useState(hoyIso());
+  const [tipoG, setTipoG] = useState<'Diezmo' | 'Ofrenda'>('Diezmo');
+  const [montoG, setMontoG] = useState('');
 
   const recargar = useCallback(() => setRecargas((x) => x + 1), []);
   useEffect(() => {
@@ -160,6 +166,60 @@ export default function BienComun({ repo }: { repo: Repo }) {
             reciente al más viejo. Total: {formatoDinero(registroGeneral.reduce((x, a) => x + a.monto, 0))}.
             Toca un registro para abrir la ficha de su diezmador.
           </p>
+          {!mostrarGeneral && (
+            <div className="form-acciones">
+              <button className="btn btn-dorado" onClick={() => setMostrarGeneral(true)}>➕ Registrar aporte (general)</button>
+            </div>
+          )}
+          {mostrarGeneral && (
+            <>
+              <div className="form-fila">
+                <label>
+                  Diezmador *
+                  <select value={personaG} onChange={(e) => setPersonaG(e.target.value)}>
+                    <option value="">— Elige quién aporta —</option>
+                    {datos.diezmadores.map((d) => {
+                      const p = personaDe(d.personaId);
+                      return (
+                        <option key={d.id} value={d.personaId}>
+                          {p ? `${p.nombre} ${p.apellidos ?? ''}` : 'Persona borrada'}{d.activo ? '' : ' (Inactivo)'}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </label>
+                <label>Fecha<input type="date" value={fechaG} onChange={(e) => setFechaG(e.target.value)} /></label>
+                <label>
+                  Tipo
+                  <select value={tipoG} onChange={(e) => setTipoG(e.target.value as 'Diezmo' | 'Ofrenda')}>
+                    <option value="Diezmo">Diezmo</option>
+                    <option value="Ofrenda">Ofrenda</option>
+                  </select>
+                </label>
+                <label>Monto<input type="number" min="0" value={montoG} onChange={(e) => setMontoG(e.target.value)} /></label>
+                <div className="form-acciones">
+                  <button
+                    className="btn btn-dorado"
+                    disabled={!personaG || !montoG || Number(montoG) <= 0}
+                    onClick={async () => {
+                      await registrarAporte(repo, {
+                        personaId: personaG,
+                        fecha: fechaG,
+                        monto: Number(montoG),
+                        tipo: tipoG,
+                      });
+                      setMontoG('');
+                      recargar();
+                    }}
+                  >
+                    💾 Registrar aporte
+                  </button>
+                  <button className="btn" onClick={() => setMostrarGeneral(false)}>Cerrar</button>
+                </div>
+              </div>
+              <p className="tenue">El formulario queda abierto y con la persona elegida: puedes registrar varios aportes seguidos sin abrir ficha por ficha.</p>
+            </>
+          )}
           {registroGeneral.length === 0 ? (
             <p className="tenue">Sin aportes en esta vista.</p>
           ) : (
