@@ -27,12 +27,16 @@ export default function Ministerios({ repo }: { repo: Repo }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (!datos) return <p className="cargando">Cargando…</p>;
-  const ministerios = resumenMinisterios(datos);
-  const detalleMin = abierto ? ministerios.find((m) => m.nombre === abierto) : undefined;
+  // Todos los hooks van antes del retorno temprano: si este useEffect
+  // quedara tras el «if (!datos)», React contaria un hook mas al cargar
+  // los datos y la pagina entera caeria (error #310).
   useEffect(() => {
     setNuevoNombreMin(abierto ?? '');
   }, [abierto]);
+
+  if (!datos) return <p className="cargando">Cargando…</p>;
+  const ministerios = resumenMinisterios(datos);
+  const detalleMin = abierto ? ministerios.find((m) => m.nombre === abierto) : undefined;
   const sirviendo = new Set(datos.asignaciones.map((a) => a.personaId));
   const nombreDe = (id: string) => {
     const p = datos.personas.find((x) => x.id === id);
