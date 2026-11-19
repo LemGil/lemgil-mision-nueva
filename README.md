@@ -71,7 +71,15 @@ de un solo motor de conteo (`src/motor/`); el cuadre se verifica solo
   Adoptadas ya: FilaPersona en Personas, Miembros, Bien Común y Red;
   FilaRegistro en los **dos registros generales** (Bien Común y Red),
   que quedan idénticos entre sí y a las listas personales; Pestanas en
-  Bien Común, Red y Manos Abiertas. Queda la Fase C: vestir el resto de
-  pantallas con las piezas, una a una, verificando en vivo.
+  Bien Común, Red y Manos Abiertas.
+- **Constitución Visual — Fase C (pantallas): APLICADA** (2026-11-19).
+  FilaPersona viste también las filas de Grupos, Manos Abiertas
+  (beneficiarios y campañas), Ministerios (lista y agrupada), Mapa
+  (sin chincheta) y el SelectorPersona: **toda fila sencilla de lista de
+  la app pasa ya por la pieza única**. Quedan con su traje propio, a
+  propósito, las filas que llevan botones de acción dentro (Academia,
+  Evangelismos, Misión y la ventana de Ministerios). Con esto la
+  constitución queda aplicada entera: tokens (A), piezas (B) y
+  pantallas (C).
 
 La app actual (`lemgil-mision-apk`) sigue viva e intacta mientras tanto.

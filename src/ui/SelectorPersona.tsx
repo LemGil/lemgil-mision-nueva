@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { DatosMinisterio } from '../modelo/tipos';
 import { buscarPersonas } from '../motor/personaVista';
+import { FilaPersona } from './Piezas';
 
 interface Props {
   datos: DatosMinisterio;
@@ -34,20 +35,15 @@ export default function SelectorPersona({ datos, excluir, onElegir, placeholder 
         <ul className="lista-personas">
           {candidatas.map((p) => (
             <li key={p.id}>
-              <button
-                type="button"
-                className="persona-fila"
+              <FilaPersona
+                nombre={`${p.nombre} ${p.apellidos ?? ''}`}
+                meta={p.telefono ?? 'Sin teléfono'}
                 onClick={() => {
                   onElegir(p.id);
                   setTexto('');
                   setAbierto(false);
                 }}
-              >
-                <span className="persona-nombre">
-                  {p.nombre} {p.apellidos ?? ''}
-                </span>
-                <span className="persona-meta">{p.telefono ?? 'Sin teléfono'}</span>
-              </button>
+              />
             </li>
           ))}
           {candidatas.length === 0 && <li className="tenue">Sin personas disponibles.</li>}

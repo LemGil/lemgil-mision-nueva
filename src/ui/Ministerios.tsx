@@ -9,6 +9,7 @@ import Modal from './Modal';
 import BorrarBoton from './BorrarBoton';
 import SelectorPersona from './SelectorPersona';
 import GuiaPagina from './GuiaPagina';
+import { FilaPersona } from './Piezas';
 
 export default function Ministerios({ repo }: { repo: Repo }) {
   const [datos, setDatos] = useState<DatosMinisterio | null>(null);
@@ -86,12 +87,11 @@ export default function Ministerios({ repo }: { repo: Repo }) {
         <ul className="lista-personas">
           {ministerios.map((m) => (
             <li key={m.nombre}>
-              <button className="persona-fila" onClick={() => setAbierto(m.nombre)}>
-                <span className="persona-nombre">🤲 {m.nombre}</span>
-                <span className="tenue">
-                  {m.miembros.length} {m.miembros.length === 1 ? 'persona' : 'personas'}
-                </span>
-              </button>
+              <FilaPersona
+                nombre={`🤲 ${m.nombre}`}
+                meta={`${m.miembros.length} ${m.miembros.length === 1 ? 'persona' : 'personas'}`}
+                onClick={() => setAbierto(m.nombre)}
+              />
             </li>
           ))}
           {ministerios.length === 0 && <li className="tenue">Aún no hay ministerios con gente.</li>}
@@ -129,9 +129,7 @@ export default function Ministerios({ repo }: { repo: Repo }) {
                 <ul className="lista-personas">
                   {m.miembros.map((p) => (
                     <li key={p.asignacionId}>
-                      <button className="persona-fila" onClick={() => setAbierto(m.nombre)}>
-                        <span className="persona-nombre">{p.nombre}</span>
-                      </button>
+                      <FilaPersona nombre={p.nombre} onClick={() => setAbierto(m.nombre)} />
                     </li>
                   ))}
                 </ul>

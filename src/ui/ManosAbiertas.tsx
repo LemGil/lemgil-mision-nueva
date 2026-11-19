@@ -19,7 +19,7 @@ import { agrupar } from '../motor/vistas';
 import BarraVistas, { type Vista } from './BarraVistas';
 import BorrarBoton from './BorrarBoton';
 import GuiaPagina from './GuiaPagina';
-import { Pestanas } from './Piezas';
+import { FilaPersona, Pestanas } from './Piezas';
 import Modal from './Modal';
 import { InputNombre, InputZona } from './CamposLista';
 import { nombreDeEntrega, resumenManos } from '../motor/manosAbiertas';
@@ -141,16 +141,12 @@ export default function ManosAbiertas({ repo }: { repo: Repo }) {
   const benefDetalle = benefSel ? datos.beneficiarios.find((b) => b.id === benefSel) : undefined;
   const filaBeneficiario = (b: Beneficiario) => (
     <li key={b.id}>
-      <button className="persona-fila" onClick={() => abrirBenef(b)}>
-        <span className="persona-nombre">{nombreBeneficiario(b)}</span>
-        <span className="persona-meta">
-          {tipoDe(b)}
-          {b.familia ? ` · ${b.familia} personas` : ''}
-          {` · ${zonaDe(b)}`}
-          {b.representante ? ` · Resp.: ${b.representante}` : ''}
-        </span>
-        <span className={`chip ${b.estado === 'Activo' ? 'chip-verde' : 'chip-gris'}`}>{b.estado}</span>
-      </button>
+      <FilaPersona
+        nombre={nombreBeneficiario(b)}
+        meta={<>{tipoDe(b)}{b.familia ? ` · ${b.familia} personas` : ''}{` · ${zonaDe(b)}`}{b.representante ? ` · Resp.: ${b.representante}` : ''}</>}
+        derecha={<span className={`chip ${b.estado === 'Activo' ? 'chip-verde' : 'chip-gris'}`}>{b.estado}</span>}
+        onClick={() => abrirBenef(b)}
+      />
     </li>
   );
   const tarjetaBeneficiario = (b: Beneficiario) => (
@@ -492,15 +488,12 @@ export default function ManosAbiertas({ repo }: { repo: Repo }) {
               const r = manos.porCampana.get(c.id);
               return (
                 <li key={c.id}>
-                  <button className="persona-fila" onClick={() => { setCampanaSel(c.id); setEditandoCamp(false); }}>
-                    <span className="persona-nombre">{c.nombre}</span>
-                    <span className="persona-meta">
-                      {c.zona ?? 'Sin zona'}
-                      {c.responsable ? ` · ${c.responsable}` : ''}
-                      {r ? ` · ${r.entregas} entregas (${r.totalCantidad})` : ' · sin entregas'}
-                    </span>
-                    <span className={`chip ${c.estado === 'En curso' ? 'chip-verde' : 'chip-gris'}`}>{c.estado}</span>
-                  </button>
+                  <FilaPersona
+                    nombre={c.nombre}
+                    meta={<>{c.zona ?? 'Sin zona'}{c.responsable ? ` · ${c.responsable}` : ''}{r ? ` · ${r.entregas} entregas (${r.totalCantidad})` : ' · sin entregas'}</>}
+                    derecha={<span className={`chip ${c.estado === 'En curso' ? 'chip-verde' : 'chip-gris'}`}>{c.estado}</span>}
+                    onClick={() => { setCampanaSel(c.id); setEditandoCamp(false); }}
+                  />
                 </li>
               );
             })}

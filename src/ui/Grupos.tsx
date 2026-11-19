@@ -12,6 +12,7 @@ import { agrupar } from '../motor/vistas';
 import BarraVistas, { type Vista } from './BarraVistas';
 
 import Modal from './Modal';
+import { FilaPersona } from './Piezas';
 import BorrarBoton from './BorrarBoton';
 import GuiaPagina from './GuiaPagina';
 
@@ -68,14 +69,12 @@ export default function Grupos({ repo }: { repo: Repo }) {
   };
   const filaGrupo = (g: (typeof datos.grupos)[number]) => (
     <li key={g.id}>
-      <button className={`persona-fila ${seleccionado === g.id ? 'activa' : ''}`} onClick={() => setSeleccionado(g.id)}>
-        <span className="persona-nombre">🏠 {g.nombre}</span>
-        <span className="persona-meta">
-          {miembrosDe(g.id).length} personas
-          {g.liderId ? ` · líder ${personaDe(g.liderId)?.nombre ?? ''}` : ''}
-          {g.lat != null ? ' · 📍 en el mapa' : ''}
-        </span>
-      </button>
+      <FilaPersona
+        nombre={`🏠 ${g.nombre}`}
+        meta={<>{miembrosDe(g.id).length} personas{g.liderId ? ` · líder ${personaDe(g.liderId)?.nombre ?? ''}` : ''}{g.lat != null ? ' · 📍 en el mapa' : ''}</>}
+        activa={seleccionado === g.id}
+        onClick={() => setSeleccionado(g.id)}
+      />
     </li>
   );
   const tarjetaGrupo = (g: (typeof datos.grupos)[number]) => (
