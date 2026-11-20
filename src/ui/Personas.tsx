@@ -390,11 +390,11 @@ export default function Personas({ repo }: { repo: Repo }) {
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
         />
-        <select value={ver} onChange={(e) => setVer(e.target.value as VerPersonas)}>
-          <option value="activos">Solo activos</option>
-          <option value="bajas">Bajas (apartados, traslados, fallecidos)</option>
-          <option value="todos">Todos</option>
-        </select>
+        <span className="seg" role="group" aria-label="Ver">
+          <button type="button" aria-pressed={ver === 'activos'} onClick={() => setVer('activos')}>Activos</button>
+          <button type="button" aria-pressed={ver === 'bajas'} onClick={() => setVer('bajas')}>Bajas</button>
+          <button type="button" aria-pressed={ver === 'todos'} onClick={() => setVer('todos')}>Todos</button>
+        </span>
         <span className="tenue">Mostrando {lista.length} de {datos.personas.length}</span>
       </Buscador>
 

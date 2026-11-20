@@ -91,12 +91,23 @@ export default function BienComun({ repo }: { repo: Repo }) {
   };
   const filaDiezmador = (d: (typeof visibles)[number]) => {
     const p = personaDe(d.personaId);
+    const g = p?.grupoId ? datos.grupos.find((x) => x.id === p.grupoId) : undefined;
+    const meta = [
+      p?.zona ?? 'Sin zona',
+      g?.nombre,
+      `${resumen.porPersonaCantidad.get(d.personaId) ?? 0} aportes`,
+    ].filter(Boolean).join(' · ');
     return (
       <li key={d.id}>
         <FilaPersona
           nombre={`${p?.nombre ?? ''} ${p?.apellidos ?? ''}`}
-          meta={<>aportó {formatoDinero(resumen.porPersona.get(d.personaId) ?? 0)}{periodo ? ' en el período' : ''}</>}
-          derecha={<span className={`chip ${d.activo ? 'chip-verde' : 'chip-gris'}`}>{d.activo ? 'Activo' : 'Inactivo'}</span>}
+          meta={meta}
+          derecha={(
+            <span className="fila-lado">
+              <span className="fila-valor">{formatoDinero(resumen.porPersona.get(d.personaId) ?? 0)}</span>
+              <span className={`chip ${d.activo ? 'chip-verde' : 'chip-gris'}`}>{d.activo ? '● Activo' : '○ Inactivo'}</span>
+            </span>
+          )}
           activa={seleccionado === d.id}
           onClick={() => setSeleccionado(d.id)}
         />
@@ -107,9 +118,11 @@ export default function BienComun({ repo }: { repo: Repo }) {
     const p = personaDe(d.personaId);
     return (
       <TarjetaPersona key={d.id} nombre={`${p?.nombre ?? ''} ${p?.apellidos ?? ''}`} onClick={() => setSeleccionado(d.id)}>
-        <span><span className={`chip ${d.activo ? 'chip-verde' : 'chip-gris'}`}>{d.activo ? 'Activo' : 'Inactivo'}</span></span>
-        <span className="persona-meta">aportó {formatoDinero(resumen.porPersona.get(d.personaId) ?? 0)}{periodo ? ' en el período' : ''}</span>
-        <span className="persona-meta">{p?.zona ?? 'Sin zona'}</span>
+        <span className="persona-meta">
+          {[p?.zona ?? 'Sin zona', p?.grupoId ? datos.grupos.find((x) => x.id === p.grupoId)?.nombre : undefined, `${resumen.porPersonaCantidad.get(d.personaId) ?? 0} aportes`].filter(Boolean).join(' · ')}
+        </span>
+        <span className="tarjeta-valor">{formatoDinero(resumen.porPersona.get(d.personaId) ?? 0)}</span>
+        <span><span className={`chip ${d.activo ? 'chip-verde' : 'chip-gris'}`}>{d.activo ? '● Activo' : '○ Inactivo'}</span></span>
       </TarjetaPersona>
     );
   };
@@ -145,10 +158,10 @@ export default function BienComun({ repo }: { repo: Repo }) {
       </div>
 
       <section className="kpis">
-        <Kpi principal numero={resumen.diezmadoresActivos} titulo="Diezmadores activos" />
-        <Kpi numero={resumen.diezmadoresInactivos} titulo="Inactivos" />
-        <Kpi numero={formatoDinero(resumen.totalAportes)} titulo={<>Total aportado{periodo ? ' en el período' : ''}</>} />
-        <Kpi numero={resumen.cantidadAportes} titulo={<>Aportes{periodo ? ' en el período' : ''}</>} />
+        <Kpi principal icono="👥" numero={resumen.diezmadoresActivos} titulo="Diezmadores activos" />
+        <Kpi icono="○" numero={resumen.diezmadoresInactivos} titulo="Inactivos" />
+        <Kpi icono="🌾" dinero numero={formatoDinero(resumen.totalAportes)} titulo={<>Total aportado{periodo ? ' en el período' : ''}</>} />
+        <Kpi icono="🧾" numero={resumen.cantidadAportes} titulo={<>Aportes{periodo ? ' en el período' : ''}</>} />
       </section>
 
       <Pestanas
@@ -232,8 +245,9 @@ export default function BienComun({ repo }: { repo: Repo }) {
                 return (
                   <li key={a.id}>
                     <FilaRegistro
+                      fecha={a.fecha}
                       nombre={p ? `${p.nombre} ${p.apellidos ?? ''}` : 'Persona borrada'}
-                      meta={`${a.fecha} · ${a.tipo}`}
+                      meta={a.tipo}
                       valor={formatoDinero(a.monto)}
                       onClick={() => { if (d) setSeleccionado(d.id); }}
                     />
@@ -275,14 +289,11 @@ export default function BienComun({ repo }: { repo: Repo }) {
       )}
 
       <div className="vista-barra">
-        <label>
-          Ver{' '}
-          <select value={ver} onChange={(e) => setVer(e.target.value)}>
-            <option value="activos">Solo activos</option>
-            <option value="inactivos">Inactivos</option>
-            <option value="todos">Todos</option>
-          </select>
-        </label>
+        <span className="seg" role="group" aria-label="Ver">
+          <button type="button" aria-pressed={ver === 'activos'} onClick={() => setVer('activos')}>Activos</button>
+          <button type="button" aria-pressed={ver === 'inactivos'} onClick={() => setVer('inactivos')}>Inactivos</button>
+          <button type="button" aria-pressed={ver === 'todos'} onClick={() => setVer('todos')}>Todos</button>
+        </span>
         <span className="tenue">{visibles.length} en la lista</span>
       </div>
       <BarraVistas

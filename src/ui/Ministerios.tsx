@@ -65,8 +65,8 @@ export default function Ministerios({ repo }: { repo: Repo }) {
       {error && <p className="aviso aviso-rojo">{error}</p>}
 
       <section className="kpis">
-        <Kpi numero={ministerios.length} titulo="Ministerios" />
-        <Kpi numero={sirviendo.size} titulo="Personas sirviendo" />
+        <Kpi icono="⛪" numero={ministerios.length} titulo="Ministerios" />
+        <Kpi icono="🤝" numero={sirviendo.size} titulo="Personas sirviendo" />
       </section>
 
       <BarraVistas

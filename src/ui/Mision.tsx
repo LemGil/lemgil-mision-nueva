@@ -284,6 +284,7 @@ export default function Mision({ repo }: { repo: Repo }) {
       <section className="kpis">
         <Kpi
           principal
+          icono="🧭"
           numero={periodo ? (conteo.enProcesoPeriodo ?? 0) : conteo.enProceso}
           titulo="En proceso"
           sub={periodo ? 'entraron en el período y siguen en la ruta' : 'registros en la ruta de Misión'}
@@ -291,8 +292,9 @@ export default function Mision({ repo }: { repo: Repo }) {
         {conteo.pasos.map((t) => (
           <Kpi
             key={t.pasoId}
+            icono={t.emoji}
             numero={periodo ? (t.periodo ?? 0) : t.foto}
-            titulo={<>{t.emoji} {t.nombre}</>}
+            titulo={t.nombre}
             sub={periodo ? `${t.foto} hoy` : undefined}
           />
         ))}
@@ -301,8 +303,9 @@ export default function Mision({ repo }: { repo: Repo }) {
           .map((t) => (
             <Kpi
               key={t.pasoId}
+              icono={t.emoji}
               numero={periodo ? (t.periodo ?? 0) : t.foto}
-              titulo={<>{t.emoji} {t.nombre}</>}
+              titulo={t.nombre}
               sub={periodo ? `${t.foto} hoy` : undefined}
             />
           ))}

@@ -8,23 +8,26 @@
   --superficie: #ffffff;
   --superficie-2: #faf7f0;
   --petroleo: #1a3a4a;
+  --petroleo-2: #22485c;
   --dorado: #c9a24a;
   --oro: #c9a24a;
   --oro-luz: #f5d77a;
-  --oro-tenue: var(--oro-tenue);
-  --guia-fondo: var(--guia-fondo);
+  --oro-suave: #fbf3d9;
+  --oro-tenue: #fbf3d9;
+  --guia-fondo: #fbf3d9;
   --texto: #1c1c1c;
   --tenue: #8a7a60;
-  --borde: var(--borde);
-  --borde-petroleo: var(--borde-petroleo);
-  --borde-petroleo-fuerte: var(--borde-petroleo-fuerte);
+  --borde: #e7dfce;
+  --borde-fuerte: #d8ccaf;
+  --borde-petroleo: rgba(245, 215, 122, 0.35);
+  --borde-petroleo-fuerte: rgba(245, 215, 122, 0.55);
   --verde: #3d7a4f;
-  --verde-suave: #edf4ee;
+  --verde-suave: #e6f0e8;
   --rojo: #b04040;
-  --rojo-suave: #f9ecec;
+  --rojo-suave: #f7e8e8;
   --rojo-borde: rgba(176, 64, 64, 0.4);
   --ambar: #c9a24a;
-  --velo: rgba(28, 28, 28, 0.45);
+  --velo: rgba(12, 26, 34, 0.62);
   /* Escala de letra: 11 menu · 13 meta · 14 cuerpo · 15 subtitulo ·
    * 17 tarjeta · 19 informe · 24 pagina · 30 KPI */
   --letra-menu: 11px;
@@ -47,8 +50,8 @@
   --radio-tarjeta: 12px;
   --radio-ventana: 16px;
   --radio-pildora: 999px;
-  --sombra-tarjeta: 0 1px 4px rgba(28, 28, 28, 0.07);
-  --sombra-ventana: 0 18px 50px rgba(0, 0, 0, 0.5);
+  --sombra-tarjeta: 0 2px 10px rgba(26, 58, 74, 0.08);
+  --sombra-ventana: 0 24px 60px rgba(0, 0, 0, 0.35), 0 4px 16px rgba(0, 0, 0, 0.2);
   --sombra-cajon: 8px 0 30px rgba(0, 0, 0, 0.35);
   /* Movimiento: todo cambio de estado, suave */
   --mov: 0.25s;
@@ -58,6 +61,8 @@
 
 body {
   margin: 0;
+  font-size: 15px;
+  line-height: 1.55;
   background: var(--fondo);
   color: var(--texto);
   font-family: 'Nunito', system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -100,35 +105,42 @@ h1, h2, .menu-marca {
 .panel-estados { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 
 .chip {
-  font-size: var(--letra-meta); padding: 4px 10px; border-radius: var(--radio-pildora);
-  background: var(--superficie-2); border: 1px solid var(--borde);
+  display: inline-flex; align-items: center; white-space: nowrap;
+  font-size: var(--letra-menu); font-weight: 800; letter-spacing: 0.03em;
+  padding: 3px 10px; border-radius: var(--radio-pildora);
+  background: var(--superficie-2); color: var(--tenue); border: 1px solid var(--borde);
 }
-.chip-verde { border-color: var(--verde); }
-.chip-rojo { border-color: var(--rojo); }
-.chip-ambar { border-color: var(--ambar); }
-.chip-gris { color: var(--tenue); }
+.chip-verde { background: var(--verde-suave); color: var(--verde); border-color: transparent; }
+.chip-rojo { background: var(--rojo-suave); color: var(--rojo); border-color: transparent; }
+.chip-ambar { background: var(--oro-suave); color: #7a5e1e; border: 1px solid var(--borde-fuerte); }
+.chip-gris { background: var(--superficie-2); color: var(--tenue); }
 
 .btn {
-  background: var(--superficie-2); color: var(--texto);
-  border: 1px solid var(--borde); border-radius: var(--radio);
-  padding: 7px 14px; cursor: pointer; font-size: var(--letra);
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  background: var(--superficie); color: var(--texto);
+  border: 1px solid var(--borde-fuerte); border-radius: var(--radio);
+  padding: 10px 18px; cursor: pointer; font-size: var(--letra); font-weight: 800;
+  min-height: 44px; font-family: inherit;
 }
 .btn:hover { border-color: var(--dorado); }
+.btn:active { transform: scale(0.98); }
 .btn:disabled { opacity: 0.6; cursor: default; }
-.btn-dorado { background: linear-gradient(135deg, var(--dorado), var(--oro-luz)); color: var(--texto); border-color: var(--dorado); font-weight: 600; }
+.btn-dorado { background: linear-gradient(180deg, #d9b45c, var(--oro)); color: #241c05; border-color: #a8853a; box-shadow: 0 2px 8px rgba(201, 162, 74, 0.35); }
+.btn-petroleo { background: var(--petroleo); color: #ffffff; border-color: var(--petroleo); }
 
 .kpis {
   display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: var(--esp-3); margin: var(--esp-4) 0;
+  gap: var(--esp-2); margin: var(--esp-4) 0;
 }
 .kpi {
   background: var(--superficie); border: 1px solid var(--borde); border-radius: var(--radio-tarjeta);
-  padding: var(--esp-4); display: flex; flex-direction: column; gap: 2px;
+  padding: var(--esp-3); display: flex; flex-direction: column;
 }
-.kpi-principal { border-color: var(--dorado); }
-.kpi-numero { font-size: var(--letra-kpi); font-weight: 700; }
-.kpi-titulo { font-size: var(--letra); }
-.kpi-sub { font-size: var(--letra-meta); color: var(--tenue); }
+.kpi-icono { font-size: 18px; line-height: 1; display: block; margin-bottom: 6px; }
+.kpi-numero { font-size: var(--letra-kpi); font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+.kpi-dinero .kpi-numero { font-size: 22px; color: var(--petroleo); }
+.kpi-titulo { font-size: var(--letra-menu); font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--tenue); margin-top: 6px; display: block; }
+.kpi-sub { font-size: var(--letra-meta); color: var(--tenue); margin-top: 4px; }
 
 .tarjeta {
   background: var(--superficie); border: 1px solid var(--borde); border-radius: var(--radio-tarjeta);
@@ -172,29 +184,29 @@ h1, h2, .menu-marca {
 .alerta-lista li { margin: 2px 0; }
 
 .tenue { color: var(--tenue); font-size: var(--letra-meta); }
-.chip-verde { border-color: var(--verde); }
-.chip-ambar { border-color: var(--ambar); }
-.chip-rojo { border-color: var(--rojo); }
-.chip-gris { color: var(--tenue); }
 .chip-info { border-color: var(--dorado); }
 
 .buscador { display: flex; gap: var(--esp-2); align-items: center; flex-wrap: wrap; margin: var(--esp-4) 0; }
-.buscador input, .buscador select, .formulario input, .formulario select {
+.buscador input, .buscador select, .formulario input, .formulario select, .form-fila input, .form-fila select, .form-grid input, .form-grid select {
   background: var(--superficie); color: var(--texto);
-  border: 1px solid var(--borde); border-radius: var(--radio); padding: var(--esp-2) var(--esp-3); font-size: var(--letra);
+  border: 1px solid var(--borde-fuerte); border-radius: var(--radio); padding: 10px 12px; font-size: 15px; min-height: 44px; font-family: inherit;
 }
+.buscador input:focus, .buscador select:focus, .formulario input:focus, .formulario select:focus, .form-fila input:focus, .form-fila select:focus, .form-grid input:focus, .form-grid select:focus {
+  outline: 2px solid var(--oro); outline-offset: 1px; border-color: var(--oro);
+}
+.formulario input[type="checkbox"], .form-fila input[type="checkbox"], .form-grid input[type="checkbox"] { min-height: 0; padding: 0; }
 .buscador input { flex: 1; min-width: 200px; }
 
 .lista-personas { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 .persona-fila {
-  width: 100%; display: flex; gap: var(--esp-2); align-items: center; flex-wrap: wrap;
+  width: 100%; display: flex; gap: var(--esp-3); align-items: center; flex-wrap: wrap;
   background: var(--superficie); border: 1px solid var(--borde); border-radius: var(--radio-tarjeta);
-  padding: var(--esp-2) var(--esp-3); color: var(--texto); text-align: left; font-size: var(--letra);
+  padding: var(--esp-3) 14px; color: var(--texto); text-align: left; font-size: var(--letra);
 }
 button.persona-fila { cursor: pointer; }
 button.persona-fila:hover, .persona-fila.activa { border-color: var(--dorado); }
 .persona-main { flex: 1; display: flex; flex-direction: column; gap: 2px; background: none; border: none; color: var(--texto); text-align: left; cursor: pointer; padding: 0; }
-.persona-nombre { font-weight: 600; }
+.persona-nombre { font-weight: 800; font-size: 15px; }
 .persona-meta { color: var(--tenue); font-size: var(--letra-meta); }
 .btn-avance { font-size: var(--letra-tarjeta); padding: 4px 13px; }
 
@@ -327,7 +339,7 @@ button.persona-fila:hover, .persona-fila.activa { border-color: var(--dorado); }
 }
 .modal-box {
   background: var(--superficie);
-  border: 1.5px solid var(--dorado);
+  border: 2px solid var(--dorado);
   border-radius: var(--radio-ventana);
   padding: var(--esp-5);
   width: min(680px, 100%);
@@ -351,9 +363,10 @@ button.persona-fila:hover, .persona-fila.activa { border-color: var(--dorado); }
 .tarjeta, .kpi {
   box-shadow: var(--sombra-tarjeta);
 }
-.tabla-datos { border-collapse: collapse; margin: 6px 0 4px; }
-.tabla-datos td { padding: 3px 14px 3px 0; vertical-align: top; }
-.tabla-datos td:first-child { white-space: nowrap; }
+.datos-lista { margin: 6px 0 4px; }
+.dato { display: flex; justify-content: space-between; gap: var(--esp-4); padding: 9px 0; border-bottom: 1px dashed var(--borde); font-size: var(--letra); }
+.dato span { color: var(--tenue); }
+.dato b { text-align: right; }
 
 /* La combinación de la app original: menú petróleo oscuro (#1A3A4A, el de
  * su barra lateral) con letras claras y oro, y el contenido en marfil. */
@@ -411,7 +424,7 @@ button.persona-fila:hover, .persona-fila.activa { border-color: var(--dorado); }
   background: var(--superficie);
   border: 1px solid var(--borde);
   border-radius: var(--radio-tarjeta);
-  padding: 14px;
+  padding: var(--esp-3) 14px;
   text-align: left;
   cursor: pointer;
   font: inherit;
@@ -421,24 +434,23 @@ button.persona-fila:hover, .persona-fila.activa { border-color: var(--dorado); }
   gap: 5px;
   box-shadow: var(--sombra-tarjeta);
 }
-.persona-card:hover { border-color: var(--dorado); }
+.persona-card:hover { border-color: var(--oro); }
 .persona-card .persona-meta { display: block; }
-.grupo-titulo { margin: var(--esp-4) 0 var(--esp-1); font-size: var(--letra-sub); }
+.grupo-titulo { margin: 14px 0 6px; font-size: var(--letra-menu); font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--tenue); }
 
 .guia-pagina {
   background: var(--guia-fondo);
-  border: 1px solid var(--borde);
-  border-left: 4px solid var(--dorado);
+  border: 1px solid var(--borde-fuerte);
   border-radius: var(--radio-tarjeta);
-  padding: var(--esp-2) var(--esp-3);
+  padding: var(--esp-3) 14px;
   margin: 0 0 14px;
-  font-size: var(--letra);
+  font-size: 13.5px;
   line-height: 1.45;
   color: var(--texto);
 }
 
 /* Borrar con confirmación */
-.btn-borrar { color: var(--rojo); border-color: var(--rojo-borde); }
+.btn-borrar { background: var(--superficie); color: var(--rojo); border-color: #d9a8a8; }
 .btn-borrar-firme { background: var(--rojo); color: var(--superficie); border-color: var(--rojo); }
 .confirmar-borrado { display: inline-flex; gap: 6px; align-items: center; flex-wrap: wrap; }
 .historial-edit { display: flex; flex-direction: column; gap: 6px; list-style: none; padding: 0; margin: 8px 0; }
@@ -461,19 +473,21 @@ button.persona-fila:hover, .persona-fila.activa { border-color: var(--dorado); }
   margin: 4px 0 14px;
 }
 .pestana {
-  border: 1px solid var(--borde);
+  border: 1px solid var(--borde-fuerte);
   background: var(--superficie);
   color: var(--texto);
   border-radius: var(--radio-pildora);
   padding: 8px 16px;
   font: inherit;
-  font-weight: 700;
+  font-size: var(--letra);
+  font-weight: 800;
   cursor: pointer;
+  min-height: 40px;
 }
 .pestana.activa {
-  background: linear-gradient(135deg, var(--oro), var(--oro-luz));
-  border-color: var(--oro);
-  color: var(--texto);
+  background: var(--petroleo);
+  border-color: var(--petroleo);
+  color: #ffffff;
 }
 
 /* Movimiento de la constitucion: todo cambio de estado se mueve suave. */
@@ -482,7 +496,7 @@ button.persona-fila:hover, .persona-fila.activa { border-color: var(--dorado); }
 }
 
 /* La fila de registro de la constitución: el valor, a la derecha en negrita. */
-.fila-valor { font-weight: 700; margin-left: auto; white-space: nowrap; }
+.fila-valor { font-weight: 800; font-size: 15px; margin-left: auto; white-space: nowrap; font-variant-numeric: tabular-nums; }
 
 /* — Editor de pasos (2026-11-20): la fila de edición del catálogo. — */
 .pasos-lista {
@@ -545,3 +559,16 @@ button.persona-fila:hover, .persona-fila.activa { border-color: var(--dorado); }
   background: linear-gradient(90deg, var(--oro), var(--oro-luz));
   border-radius: var(--radio-pildora);
 }
+
+/* Fase E — como la muestra viva: el control segmentado de vista, el
+ * lado de la fila con el valor y su chip, la fecha de la fila de
+ * registro y el valor grande de la tarjeta de dinero. */
+.seg { display: inline-flex; background: var(--superficie-2); border: 1px solid var(--borde); border-radius: var(--radio-pildora); padding: 4px; gap: 4px; flex-wrap: wrap; }
+.seg button { border: 1px solid transparent; background: transparent; border-radius: var(--radio-pildora); padding: 6px 14px; font-weight: 800; font-size: var(--letra-meta); color: var(--tenue); min-height: 36px; cursor: pointer; font-family: inherit; }
+.seg button[aria-pressed="true"] { background: var(--superficie); color: var(--texto); box-shadow: var(--sombra-tarjeta); border-color: var(--borde); }
+.fila-lado { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; margin-left: auto; }
+.fila-lado .fila-valor { margin-left: 0; }
+.fila-fecha { display: flex; flex-direction: column; align-items: center; min-width: 34px; text-align: center; font-size: var(--letra-meta); color: var(--tenue); font-weight: 700; line-height: 1.25; }
+.fila-fecha b { font-size: 15px; color: var(--texto); }
+.tarjeta-valor { font-size: var(--letra-tarjeta); font-weight: 800; font-variant-numeric: tabular-nums; }
+.tarjeta.formulario { border: 1px solid var(--oro); }

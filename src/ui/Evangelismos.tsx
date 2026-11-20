@@ -101,9 +101,9 @@ export default function Evangelismos({ repo }: { repo: Repo }) {
       <GuiaPagina texto="Las salidas evangelísticas: fecha, lugar, líder y participantes." />
       {error && <p className="aviso aviso-rojo">{error}</p>}
       <section className="kpis">
-        <Kpi principal numero={datos.evangelismos.length} titulo="Evangelismos" />
-        <Kpi numero={esteMes} titulo="Este mes" />
-        <Kpi numero={participantesUnicos} titulo="Participantes (personas)" />
+        <Kpi principal icono="🔥" numero={datos.evangelismos.length} titulo="Evangelismos" />
+        <Kpi icono="📅" numero={esteMes} titulo="Este mes" />
+        <Kpi icono="👥" numero={participantesUnicos} titulo="Participantes (personas)" />
       </section>
 
       {mostrarForm && (

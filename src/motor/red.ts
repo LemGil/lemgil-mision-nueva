@@ -13,11 +13,14 @@ export interface ResumenRed {
   cantidadAportes: number;
   /** colaboradorId → total aportado en el período. */
   porColaborador: Map<string, number>;
+  /** colaboradorId → cantidad de aportes en el período. */
+  porColaboradorCantidad: Map<string, number>;
 }
 
 export function resumenRed(datos: DatosMinisterio, periodo?: Periodo): ResumenRed {
   const enPeriodo = (f: string) => !periodo || (f >= periodo.desde && f <= periodo.hasta);
   const porColaborador = new Map<string, number>();
+  const porColaboradorCantidad = new Map<string, number>();
   let total = 0;
   let cantidad = 0;
   for (const a of datos.aportesRed) {
@@ -25,6 +28,7 @@ export function resumenRed(datos: DatosMinisterio, periodo?: Periodo): ResumenRe
     total += a.monto;
     cantidad++;
     porColaborador.set(a.colaboradorId, (porColaborador.get(a.colaboradorId) ?? 0) + a.monto);
+    porColaboradorCantidad.set(a.colaboradorId, (porColaboradorCantidad.get(a.colaboradorId) ?? 0) + 1);
   }
   return {
     activos: datos.colaboradores.filter((c) => c.estado === 'Activo').length,
@@ -32,6 +36,7 @@ export function resumenRed(datos: DatosMinisterio, periodo?: Periodo): ResumenRe
     totalAportes: total,
     cantidadAportes: cantidad,
     porColaborador,
+    porColaboradorCantidad,
   };
 }
 

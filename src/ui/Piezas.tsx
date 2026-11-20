@@ -35,24 +35,34 @@ export function FilaPersona({
   );
 }
 
-/**
- * La Fila de registro, una sola: fecha · concepto en la meta, y el valor
- * a la derecha en negrita. La misma en la ficha personal y en el registro
- * general: quien aprende una, aprendió todas.
- */
+const MESES_CORTO = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+
+/** La fila de registro única (constitución §4), como en la
+ * muestra: la fecha en su columna —el día en negrita y el mes—,
+ * el nombre y el concepto, y el valor a la derecha en negrita.
+ * Idéntica en la ficha personal y en el registro general: si un
+ * día mejora, mejoran los dos sitios a la vez. */
 export function FilaRegistro({
+  fecha,
   nombre,
   meta,
   valor,
   onClick,
 }: {
+  fecha: string;
   nombre: ReactNode;
   meta: ReactNode;
   valor: string;
   onClick: () => void;
 }) {
+  const dia = fecha.slice(8, 10);
+  const mes = MESES_CORTO[Number(fecha.slice(5, 7)) - 1] ?? '';
   return (
     <button type="button" className="persona-fila" onClick={onClick}>
+      <span className="fila-fecha">
+        <b>{dia}</b>
+        {mes}
+      </span>
       <span className="persona-main">
         <span className="persona-nombre">{nombre}</span>
         <span className="persona-meta">{meta}</span>
@@ -62,7 +72,7 @@ export function FilaRegistro({
   );
 }
 
-/** Las Pestañas: píldoras; la activa, en gradiente oro. */
+/** Las Pestañas: píldoras; la activa, en petróleo. */
 export function Pestanas<T extends string>({
   opciones,
   activa,
@@ -128,20 +138,29 @@ export function Tarjeta({ nombre, children }: { nombre: ReactNode; children?: Re
   );
 }
 
-/** El KPI único de las cabeceras: número grande, título y sub. */
+/** El KPI único de las cabeceras, como en la muestra: su icono,
+ * el número grande (el dinero, más pequeño y en petróleo), la
+ * etiqueta en mayúsculas tenues y el sub si lo lleva. */
 export function Kpi({
   numero,
   titulo,
   sub,
   principal,
+  icono,
+  dinero,
 }: {
   numero: ReactNode;
   titulo: ReactNode;
   sub?: ReactNode;
   principal?: boolean;
+  icono?: ReactNode;
+  dinero?: boolean;
 }) {
   return (
-    <div className={`kpi${principal ? ' kpi-principal' : ''}`}>
+    <div className={`kpi${principal ? ' kpi-principal' : ''}${dinero ? ' kpi-dinero' : ''}`}>
+      {icono !== undefined && (
+        <span className="kpi-icono" aria-hidden="true">{icono}</span>
+      )}
       <span className="kpi-numero">{numero}</span>
       <span className="kpi-titulo">{titulo}</span>
       {sub !== undefined && <span className="kpi-sub">{sub}</span>}
@@ -161,20 +180,19 @@ export function FilaEdicion({ children }: { children: ReactNode }) {
   return <li>{children}</li>;
 }
 
-/** Los datos de una ficha en ventana: etiqueta tenue y valor, en la
- * tabla única de datos. */
+/** Los datos de una ficha en ventana, como en la muestra: cada
+ * dato en su fila —la etiqueta tenue a la izquierda y el valor en
+ * negrita a la derecha, separados por la línea punteada. */
 export function DatosLista({ filas }: { filas: [string, string][] }) {
   return (
-    <table className="tabla-datos">
-      <tbody>
-        {filas.map(([etiqueta, valor]) => (
-          <tr key={etiqueta}>
-            <td className="tenue">{etiqueta}</td>
-            <td>{valor}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
+    <div className="datos-lista">
+      {filas.map(([etiqueta, valor]) => (
+        <div className="dato" key={etiqueta}>
+          <span>{etiqueta}</span>
+          <b>{valor}</b>
+        </div>
+      ))}
+    </div>
   );
 }
 

@@ -5,8 +5,10 @@ export interface OpcionAgrupar {
   etiqueta: string;
 }
 
-/** El selector de vista de las listas: Lista, Tarjetas o Agrupada
- * (por paso, por zona o por grupo, según la mesa). */
+/** El selector de vista de las listas: la barra segmentada de la
+ * constitución — ☰ Lista · ▦ Tarjetas · ≣ Agrupada — y, en la
+ * vista agrupada, el criterio (por paso, por zona o por grupo,
+ * según la mesa). */
 export default function BarraVistas({
   vista,
   setVista,
@@ -22,14 +24,17 @@ export default function BarraVistas({
 }) {
   return (
     <div className="vista-barra">
-      <label>
-        Vista{' '}
-        <select value={vista} onChange={(e) => setVista(e.target.value as Vista)}>
-          <option value="lista">📋 Lista</option>
-          <option value="tarjetas">🃏 Tarjetas</option>
-          <option value="agrupada">🗂️ Agrupada</option>
-        </select>
-      </label>
+      <div className="seg" role="group" aria-label="Vista de la lista">
+        <button type="button" aria-pressed={vista === 'lista'} onClick={() => setVista('lista')}>
+          ☰ Lista
+        </button>
+        <button type="button" aria-pressed={vista === 'tarjetas'} onClick={() => setVista('tarjetas')}>
+          ▦ Tarjetas
+        </button>
+        <button type="button" aria-pressed={vista === 'agrupada'} onClick={() => setVista('agrupada')}>
+          ≣ Agrupada
+        </button>
+      </div>
       {vista === 'agrupada' && (
         <label>
           Agrupar por{' '}

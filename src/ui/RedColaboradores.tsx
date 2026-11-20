@@ -117,8 +117,13 @@ export default function RedColaboradores({ repo }: { repo: Repo }) {
     <li key={c.id}>
       <FilaPersona
         nombre={nombreColaborador(c)}
-        meta={<>{c.tipo ?? 'Sin tipo'} · aportó {formatoDinero(resumen.porColaborador.get(c.id) ?? 0)}{periodo ? ' en el período' : ''}</>}
-        derecha={<span className={`chip ${c.estado === 'Activo' ? 'chip-verde' : 'chip-gris'}`}>{c.estado}</span>}
+        meta={`${c.tipo ?? 'Sin tipo'} · ${resumen.porColaboradorCantidad.get(c.id) ?? 0} aportes`}
+        derecha={(
+          <span className="fila-lado">
+            <span className="fila-valor">{formatoDinero(resumen.porColaborador.get(c.id) ?? 0)}</span>
+            <span className={`chip ${c.estado === 'Activo' ? 'chip-verde' : 'chip-gris'}`}>{c.estado === 'Activo' ? '● Activo' : '○ Inactivo'}</span>
+          </span>
+        )}
         activa={seleccionado === c.id}
         onClick={() => setSeleccionado(c.id)}
       />
@@ -127,13 +132,13 @@ export default function RedColaboradores({ repo }: { repo: Repo }) {
 
   const tarjetaColaborador = (c: Colaborador) => (
     <TarjetaPersona key={c.id} nombre={nombreColaborador(c)} onClick={() => setSeleccionado(c.id)}>
-      <span>
-        <span className={`chip ${c.estado === 'Activo' ? 'chip-verde' : 'chip-gris'}`}>{c.estado}</span>{' '}
-        <span className="chip chip-gris">{c.tipo ?? 'Sin tipo'}</span>
-      </span>
       <span className="persona-meta">
-        aportó {formatoDinero(resumen.porColaborador.get(c.id) ?? 0)}
-        {periodo ? ' en el período' : ''}
+        {c.tipo ?? 'Sin tipo'} · {resumen.porColaboradorCantidad.get(c.id) ?? 0} aportes
+      </span>
+      <span className="tarjeta-valor">{formatoDinero(resumen.porColaborador.get(c.id) ?? 0)}</span>
+      <span>
+        <span className={`chip ${c.estado === 'Activo' ? 'chip-verde' : 'chip-gris'}`}>{c.estado === 'Activo' ? '● Activo' : '○ Inactivo'}</span>{' '}
+        <span className="chip chip-gris">{c.tipo ?? 'Sin tipo'}</span>
       </span>
       <span className="persona-meta">{c.telefono ?? c.email ?? 'Sin contacto'}</span>
     </TarjetaPersona>
@@ -168,10 +173,10 @@ export default function RedColaboradores({ repo }: { repo: Repo }) {
       </div>
 
       <section className="kpis">
-        <Kpi principal numero={resumen.activos} titulo="Colaboradores activos" />
-        <Kpi numero={resumen.inactivos} titulo="Inactivos" />
-        <Kpi numero={formatoDinero(resumen.totalAportes)} titulo={<>Total aportado{periodo ? ' en el período' : ''}</>} />
-        <Kpi numero={resumen.cantidadAportes} titulo={<>Aportes{periodo ? ' en el período' : ''}</>} />
+        <Kpi principal icono="👥" numero={resumen.activos} titulo="Colaboradores activos" />
+        <Kpi icono="○" numero={resumen.inactivos} titulo="Inactivos" />
+        <Kpi icono="🌾" dinero numero={formatoDinero(resumen.totalAportes)} titulo={<>Total aportado{periodo ? ' en el período' : ''}</>} />
+        <Kpi icono="🧾" numero={resumen.cantidadAportes} titulo={<>Aportes{periodo ? ' en el período' : ''}</>} />
       </section>
 
       <Pestanas
@@ -262,8 +267,9 @@ export default function RedColaboradores({ repo }: { repo: Repo }) {
               {registroGeneral.map((a) => (
                 <li key={a.id}>
                   <FilaRegistro
+                    fecha={a.fecha}
                     nombre={nombreColaborador(datos.colaboradores.find((c) => c.id === a.colaboradorId) ?? { nombre: 'Colaborador borrado' })}
-                    meta={<>{a.fecha} · {a.tipo}{a.metodo ? ` · ${a.metodo}` : ''}{a.referencia ? ` · ref. ${a.referencia}` : ''}</>}
+                    meta={<>{a.tipo}{a.metodo ? ` · ${a.metodo}` : ''}{a.referencia ? ` · ref. ${a.referencia}` : ''}</>}
                     valor={formatoDinero(a.monto)}
                     onClick={() => setSeleccionado(a.colaboradorId)}
                   />
@@ -342,14 +348,11 @@ export default function RedColaboradores({ repo }: { repo: Repo }) {
       )}
 
       <div className="vista-barra">
-        <label>
-          Ver{' '}
-          <select value={ver} onChange={(e) => setVer(e.target.value)}>
-            <option value="activos">Solo activos</option>
-            <option value="inactivos">Inactivos</option>
-            <option value="todos">Todos</option>
-          </select>
-        </label>
+        <span className="seg" role="group" aria-label="Ver">
+          <button type="button" aria-pressed={ver === 'activos'} onClick={() => setVer('activos')}>Activos</button>
+          <button type="button" aria-pressed={ver === 'inactivos'} onClick={() => setVer('inactivos')}>Inactivos</button>
+          <button type="button" aria-pressed={ver === 'todos'} onClick={() => setVer('todos')}>Todos</button>
+        </span>
         <span className="tenue">{visibles.length} en la lista</span>
       </div>
 

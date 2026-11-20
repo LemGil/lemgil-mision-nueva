@@ -134,20 +134,22 @@ export default function Panel({ repo, sync, estadoSync, modoLocal }: Props) {
           <section className="kpis">
             <Kpi
               principal
+              icono="👥"
               numero={censo.total}
               titulo="Total de Congregados"
               sub={<>{censo.enProceso} en proceso · {censo.miembros} miembros</>}
             />
-            <Kpi numero={censo.enProceso} titulo="En proceso (personas)" />
-            <Kpi numero={censo.miembros} titulo="Miembros" />
-            <Kpi numero={censo.diezmadores} titulo="Diezmadores" sub="corte transversal" />
+            <Kpi icono="🧭" numero={censo.enProceso} titulo="En proceso (personas)" />
+            <Kpi icono="🤝" numero={censo.miembros} titulo="Miembros" />
+            <Kpi icono="🌾" numero={censo.diezmadores} titulo="Diezmadores" sub="corte transversal" />
             <Kpi
+              icono="🚪"
               numero={bajasTotal}
               titulo="Bajas"
               sub={<>{censo.bajas.apartados} apartados · {censo.bajas.traslados} traslados ·{' '}{censo.bajas.fallecidos} fallecidos</>}
             />
             {censo.inactivos > 0 && (
-              <Kpi numero={censo.inactivos} titulo="Inactivos" sub="fuera del total" />
+              <Kpi icono="○" numero={censo.inactivos} titulo="Inactivos" sub="fuera del total" />
             )}
           </section>
 

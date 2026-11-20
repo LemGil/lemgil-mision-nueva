@@ -106,9 +106,9 @@ export default function Academia({ repo }: { repo: Repo }) {
       <GuiaPagina texto="Los estudiantes de la Academia del Espíritu: quién está activo y quién no." />
       {error && <p className="aviso aviso-rojo">{error}</p>}
       <section className="kpis">
-        <Kpi principal numero={activos} titulo="Estudiantes activos" />
-        <Kpi numero={datos.estudiantes.length - activos} titulo="Inactivos" />
-        <Kpi numero={datos.estudiantes.length} titulo="Total" />
+        <Kpi principal icono="🎓" numero={activos} titulo="Estudiantes activos" />
+        <Kpi icono="○" numero={datos.estudiantes.length - activos} titulo="Inactivos" />
+        <Kpi icono="📚" numero={datos.estudiantes.length} titulo="Total" />
       </section>
       {mostrarForm && (
       <section className="tarjeta">

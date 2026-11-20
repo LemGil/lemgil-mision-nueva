@@ -120,4 +120,18 @@ de un solo motor de conteo (`src/motor/`); el cuadre se verifica solo
   no queda marcado a mano de tarjeta, KPI, lista editable, tabla de
   datos, cabecera ni buscador (96/96).
 
+- **Fase E — como la muestra viva (2026-11-20, fotos y archivo de
+  LemGil):** las piezas ya únicas visten por fin el traje exacto de
+  la muestra aprobada. Tokens reparados (la Fase A había dejado
+  `--borde`, `--guia-fondo` y otros apuntando a sí mismos) con los
+  valores de la muestra; KPI con icono, etiqueta en mayúsculas y el
+  dinero en petróleo a 22px; pestaña activa en petróleo; la vista
+  Lista/Tarjetas/Agrupada como barra segmentada y el «Ver» de Bien
+  Común, Red y Personas segmentado; la fila y la tarjeta de dinero
+  con el valor a la derecha en negrita y el chip debajo (Bien Común
+  y Red, con la cantidad de aportes en la meta, del motor);
+  `FilaRegistro` con su columna de fecha (día en negrita y mes);
+  `DatosLista` como filas etiqueta/valor de la muestra; botones,
+  chips, guía, campos y ventana con el traje de la muestra (96/96).
+
 La app actual (`lemgil-mision-apk`) sigue viva e intacta mientras tanto.

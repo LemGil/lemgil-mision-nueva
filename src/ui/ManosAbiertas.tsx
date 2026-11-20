@@ -279,10 +279,10 @@ export default function ManosAbiertas({ repo }: { repo: Repo }) {
       {error && <p className="aviso aviso-rojo">{error}</p>}
 
       <section className="kpis">
-        <Kpi principal numero={activos} titulo="Beneficiarios activos" />
-        <Kpi numero={manos.campanasEnCurso} titulo="Campañas en curso" />
-        <Kpi numero={manos.entregasTotal} titulo="Entregas registradas" />
-        <Kpi numero={datos.beneficiarios.length} titulo="Beneficiarios en total" />
+        <Kpi principal icono="🤲" numero={activos} titulo="Beneficiarios activos" />
+        <Kpi icono="🎯" numero={manos.campanasEnCurso} titulo="Campañas en curso" />
+        <Kpi icono="🎁" numero={manos.entregasTotal} titulo="Entregas registradas" />
+        <Kpi icono="👥" numero={datos.beneficiarios.length} titulo="Beneficiarios en total" />
       </section>
 
       <Pestanas

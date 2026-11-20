@@ -74,6 +74,10 @@ export default function Miembros({ repo }: { repo: Repo }) {
   const fechasMiembros = datos.miembros.map((m) => m.fechaIngreso);
   const mesesDisp = ano === 0 ? [] : mesesConRegistros(fechasMiembros, ano);
 
+  const ICONOS_MIEMBRO: Record<string, string> = {
+    Activos: '🤝', Inactivos: '○', Trasladados: '🧳',
+    Fallecidos: '✝️', Disciplinados: '⚠️', 'En Grupo': '🧑‍🤝‍🧑',
+  };
   const tarjetasVista: [string, number][] = [
     ['Activos', tarjetas.activos], ['Inactivos', tarjetas.inactivos],
     ['Trasladados', tarjetas.trasladados], ['Fallecidos', tarjetas.fallecidos],
@@ -209,7 +213,7 @@ export default function Miembros({ repo }: { repo: Repo }) {
 
       <section className="kpis">
         {tarjetasVista.map(([titulo, valor]) => (
-          <Kpi key={titulo} numero={valor} titulo={titulo} />
+          <Kpi key={titulo} numero={valor} titulo={titulo} icono={ICONOS_MIEMBRO[titulo]} />
         ))}
       </section>
 

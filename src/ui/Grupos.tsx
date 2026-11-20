@@ -155,8 +155,8 @@ export default function Grupos({ repo }: { repo: Repo }) {
       <GuiaPagina texto="Los grupos de la congregación, con su líder, su reunión y su capacidad. Cada persona pertenece a un solo grupo." />
       {error && <p className="aviso aviso-rojo">{error}</p>}
       <section className="kpis">
-        <Kpi principal numero={datos.grupos.length} titulo="Grupos" />
-        <Kpi numero={conGrupo.size} titulo="Personas en grupos" />
+        <Kpi principal icono="🧑‍🤝‍🧑" numero={datos.grupos.length} titulo="Grupos" />
+        <Kpi icono="👥" numero={conGrupo.size} titulo="Personas en grupos" />
       </section>
 
       {mostrarForm && (
