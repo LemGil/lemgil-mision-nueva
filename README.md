@@ -104,6 +104,20 @@ de un solo motor de conteo (`src/motor/`); el cuadre se verifica solo
   sin capacidad, Sin meta), conteo de asignados por paso (Converso,
   Discipulado, Bautizado, Integrado) y barra de capacidad. Crear y
   editar grupos cubren todos los campos. Lógica en
-  `src/motor/gruposVista.ts` (97/97).
+  `src/motor/gruposVista.ts` (96/96).
+
+- **Fase D — uniformidad completa (2026-11-20, pedido de LemGil):**
+  las piezas que la constitución (§4) mandaba y las fases A–C no
+  habían construido. D1: `TarjetaPersona`/`Tarjeta` (la tarjeta única,
+  en botón o con acciones dentro) y `Kpi` adoptados en las 14
+  páginas — no queda ni una tarjeta ni un KPI escritos a mano. D2:
+  `ListaEdicion`/`FilaEdicion` (la fila editable única de
+  historiales, hitos, aportes y entregas) y `DatosLista` (la tabla
+  de datos de la ficha). D3: `CabeceraPagina` en las 14 páginas
+  (Ministerios no tenía cabecera) con la acción principal de
+  Academia y Grupos subida a la cabecera, y `Buscador` en las tres
+  listas que buscan. Verificado por búsqueda: fuera de `Piezas.tsx`
+  no queda marcado a mano de tarjeta, KPI, lista editable, tabla de
+  datos, cabecera ni buscador (96/96).
 
 La app actual (`lemgil-mision-apk`) sigue viva e intacta mientras tanto.

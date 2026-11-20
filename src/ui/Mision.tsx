@@ -15,6 +15,7 @@ import BorrarBoton from './BorrarBoton';
 import Modal from './Modal';
 import GuiaPagina from './GuiaPagina';
 import EditorPasos from './EditorPasos';
+import { Buscador, CabeceraPagina, FilaEdicion, Kpi, ListaEdicion, TarjetaPersona } from './Piezas';
 
 const hoyIso = () => new Date().toISOString().slice(0, 10);
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
@@ -173,20 +174,18 @@ export default function Mision({ repo }: { repo: Repo }) {
     const p = personaDe(c.personaId);
     const paso = datos.pasos.find((x) => x.id === c.estado);
     return (
-      <button key={c.id} className="persona-card" onClick={() => setSeleccionada(c.id)}>
-        <span className="persona-nombre">{p?.nombre ?? '(sin ficha)'} {p?.apellidos ?? ''}</span>
+      <TarjetaPersona key={c.id} nombre={`${p?.nombre ?? '(sin ficha)'} ${p?.apellidos ?? ''}`} onClick={() => setSeleccionada(c.id)}>
         <span className="persona-meta">{paso?.emoji} {paso?.nombre} · {diasEnPaso(c)} días en el paso</span>
         <span className="persona-meta">
           {[p?.telefono, p?.zona].filter(Boolean).join(' · ') || 'Sin teléfono ni zona'}
         </span>
-      </button>
+      </TarjetaPersona>
     );
   };
 
   return (
     <div className="panel">
-      <header className="panel-cabecera">
-        <h1>📣 Misión</h1>
+      <CabeceraPagina titulo="📣 Misión">
         <div className="form-acciones">
           <button className="btn" onClick={() => setEditandoPasos(true)}>
             ⚙️ Pasos
@@ -195,7 +194,7 @@ export default function Mision({ repo }: { repo: Repo }) {
             ➕ Nuevo Congregado
           </button>
         </div>
-      </header>
+      </CabeceraPagina>
       <GuiaPagina texto="La mesa del camino: Alcanzado → Confeso → Converso → Discipulado → Bautizado → Integrado. Cuenta registros paso a paso; al llegar a Integrado, la persona nace como miembro." />
 
       {editandoPasos && datos && (
@@ -283,32 +282,33 @@ export default function Mision({ repo }: { repo: Repo }) {
       </div>
 
       <section className="kpis">
-        <div className="kpi kpi-principal">
-          <span className="kpi-numero">{periodo ? (conteo.enProcesoPeriodo ?? 0) : conteo.enProceso}</span>
-          <span className="kpi-titulo">En proceso</span>
-          <span className="kpi-sub">
-            {periodo ? 'entraron en el período y siguen en la ruta' : 'registros en la ruta de Misión'}
-          </span>
-        </div>
+        <Kpi
+          principal
+          numero={periodo ? (conteo.enProcesoPeriodo ?? 0) : conteo.enProceso}
+          titulo="En proceso"
+          sub={periodo ? 'entraron en el período y siguen en la ruta' : 'registros en la ruta de Misión'}
+        />
         {conteo.pasos.map((t) => (
-          <div className="kpi" key={t.pasoId}>
-            <span className="kpi-numero">{periodo ? (t.periodo ?? 0) : t.foto}</span>
-            <span className="kpi-titulo">{t.emoji} {t.nombre}</span>
-            {periodo && <span className="kpi-sub">{t.foto} hoy</span>}
-          </div>
+          <Kpi
+            key={t.pasoId}
+            numero={periodo ? (t.periodo ?? 0) : t.foto}
+            titulo={<>{t.emoji} {t.nombre}</>}
+            sub={periodo ? `${t.foto} hoy` : undefined}
+          />
         ))}
         {conteo.salidas
           .filter((t) => (periodo ? (t.periodo ?? 0) : t.foto) > 0)
           .map((t) => (
-            <div className="kpi" key={t.pasoId}>
-              <span className="kpi-numero">{periodo ? (t.periodo ?? 0) : t.foto}</span>
-              <span className="kpi-titulo">{t.emoji} {t.nombre}</span>
-              {periodo && <span className="kpi-sub">{t.foto} hoy</span>}
-            </div>
+            <Kpi
+              key={t.pasoId}
+              numero={periodo ? (t.periodo ?? 0) : t.foto}
+              titulo={<>{t.emoji} {t.nombre}</>}
+              sub={periodo ? `${t.foto} hoy` : undefined}
+            />
           ))}
       </section>
 
-      <div className="buscador">
+      <Buscador>
         <input placeholder="🔍 Buscar en la lista…" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} />
         <select value={filtroPaso} onChange={(e) => setFiltroPaso(e.target.value)}>
           <option value="proceso">En proceso</option>
@@ -318,7 +318,7 @@ export default function Mision({ repo }: { repo: Repo }) {
           <option value="todas">Todas (con salidas)</option>
         </select>
         <span className="tenue">{lista.length} registros</span>
-      </div>
+      </Buscador>
 
       <BarraVistas
         vista={vista}
@@ -409,12 +409,12 @@ export default function Mision({ repo }: { repo: Repo }) {
 
           <h3>Historial (editable)</h3>
           {errorAccion && <p className="aviso aviso-rojo">{errorAccion}</p>}
-          <ul className="historial-edit">
+          <ListaEdicion>
             {(detalle.historial ?? []).map((h, i, arr) => {
               const pasoH = datos.pasos.find((p) => p.id === h.estado);
               const esActual = i === arr.length - 1 && h.estado === detalle.estado;
               return (
-                <li key={i}>
+                <FilaEdicion key={i}>
                   <input
                     type="date"
                     value={h.fecha}
@@ -439,10 +439,10 @@ export default function Mision({ repo }: { repo: Repo }) {
                       }
                     />
                   )}
-                </li>
+                </FilaEdicion>
               );
             })}
-          </ul>
+          </ListaEdicion>
           <div className="form-fila">
             <label>
               Paso que falta en el historial

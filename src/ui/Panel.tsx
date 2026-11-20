@@ -8,6 +8,7 @@ import { calcularCenso, type Censo } from '../motor/censo';
 import { cumpleanosProximos, estancados, type CumpleProximo, type Estancado } from '../motor/alertas';
 import { verificarCuadre, type ResultadoCuadre } from '../motor/cuadre';
 import GuiaPagina from './GuiaPagina';
+import { CabeceraPagina, Kpi } from './Piezas';
 
 interface Props {
   repo: Repo;
@@ -81,8 +82,7 @@ export default function Panel({ repo, sync, estadoSync, modoLocal }: Props) {
 
   return (
     <div className="panel">
-      <header className="panel-cabecera">
-        <h1>🏠 Panel</h1>
+      <CabeceraPagina titulo="🏠 Panel">
         <div className="panel-estados">
           <span className={`chip ${cuadre.verde ? 'chip-verde' : 'chip-rojo'}`}>
             {cuadre.verde ? '🟢 El cuadre' : '🔴 El cuadre no cierra'}
@@ -102,7 +102,7 @@ export default function Panel({ repo, sync, estadoSync, modoLocal }: Props) {
             </button>
           )}
         </div>
-      </header>
+      </CabeceraPagina>
       <GuiaPagina texto="La foto de la congregación hoy: cada persona cuenta una sola vez, en su etapa más avanzada. Aquí no se trabaja, se mira: el total, el cuadre, las alertas y el movimiento de este mes." />
 
       {!cuadre.verde && (
@@ -132,40 +132,22 @@ export default function Panel({ repo, sync, estadoSync, modoLocal }: Props) {
       ) : (
         <>
           <section className="kpis">
-            <div className="kpi kpi-principal">
-              <span className="kpi-numero">{censo.total}</span>
-              <span className="kpi-titulo">Total de Congregados</span>
-              <span className="kpi-sub">
-                {censo.enProceso} en proceso · {censo.miembros} miembros
-              </span>
-            </div>
-            <div className="kpi">
-              <span className="kpi-numero">{censo.enProceso}</span>
-              <span className="kpi-titulo">En proceso (personas)</span>
-            </div>
-            <div className="kpi">
-              <span className="kpi-numero">{censo.miembros}</span>
-              <span className="kpi-titulo">Miembros</span>
-            </div>
-            <div className="kpi">
-              <span className="kpi-numero">{censo.diezmadores}</span>
-              <span className="kpi-titulo">Diezmadores</span>
-              <span className="kpi-sub">corte transversal</span>
-            </div>
-            <div className="kpi">
-              <span className="kpi-numero">{bajasTotal}</span>
-              <span className="kpi-titulo">Bajas</span>
-              <span className="kpi-sub">
-                {censo.bajas.apartados} apartados · {censo.bajas.traslados} traslados ·{' '}
-                {censo.bajas.fallecidos} fallecidos
-              </span>
-            </div>
+            <Kpi
+              principal
+              numero={censo.total}
+              titulo="Total de Congregados"
+              sub={<>{censo.enProceso} en proceso · {censo.miembros} miembros</>}
+            />
+            <Kpi numero={censo.enProceso} titulo="En proceso (personas)" />
+            <Kpi numero={censo.miembros} titulo="Miembros" />
+            <Kpi numero={censo.diezmadores} titulo="Diezmadores" sub="corte transversal" />
+            <Kpi
+              numero={bajasTotal}
+              titulo="Bajas"
+              sub={<>{censo.bajas.apartados} apartados · {censo.bajas.traslados} traslados ·{' '}{censo.bajas.fallecidos} fallecidos</>}
+            />
             {censo.inactivos > 0 && (
-              <div className="kpi">
-                <span className="kpi-numero">{censo.inactivos}</span>
-                <span className="kpi-titulo">Inactivos</span>
-                <span className="kpi-sub">fuera del total</span>
-              </div>
+              <Kpi numero={censo.inactivos} titulo="Inactivos" sub="fuera del total" />
             )}
           </section>
 

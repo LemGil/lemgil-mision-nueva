@@ -10,6 +10,7 @@ import {
 } from '../motor/informes';
 import { anosConRegistros, mesesConRegistros } from '../motor/periodos';
 import GuiaPagina from './GuiaPagina';
+import { CabeceraPagina } from './Piezas';
 
 
 const MESES = [
@@ -59,12 +60,11 @@ export default function Informe({ repo }: { repo: Repo }) {
 
   return (
     <div className="panel">
-      <header className="panel-cabecera">
-        <h1>📋 Informe</h1>
+      <CabeceraPagina titulo="📋 Informe">
         <button className="btn" onClick={() => window.print()}>
           🖨️ Imprimir
         </button>
-      </header>
+      </CabeceraPagina>
       <GuiaPagina texto="Los números para compartir, por departamento y por período, listos para imprimir. Cuenta personas, como el Panel, no registros." />
 
       <div className="selector-depto">

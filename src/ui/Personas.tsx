@@ -11,7 +11,7 @@ import Modal from './Modal';
 import BorrarBoton from './BorrarBoton';
 import { InputZona } from './CamposLista';
 import GuiaPagina from './GuiaPagina';
-import { FilaPersona } from './Piezas';
+import { Buscador, CabeceraPagina, DatosLista, FilaPersona, TarjetaPersona } from './Piezas';
 
 const hoyIso = () => new Date().toISOString().slice(0, 10);
 const txt = (v: string) => v.trim() || undefined;
@@ -329,25 +329,23 @@ export default function Personas({ repo }: { repo: Repo }) {
   const tarjetaPersona = (per: Persona) => {
     const sit = situacionDe(datos, per.id);
     return (
-      <button key={per.id} className="persona-card" onClick={() => setSeleccionada(per.id)}>
-        <span className="persona-nombre">{per.nombre} {per.apellidos ?? ''}</span>
+      <TarjetaPersona key={per.id} nombre={`${per.nombre} ${per.apellidos ?? ''}`} onClick={() => setSeleccionada(per.id)}>
         <span><span className={`chip chip-${sit.tono}`}>{sit.texto}</span></span>
         <span className="persona-meta">{per.telefono ?? 'Sin teléfono'}</span>
         <span className="persona-meta">
           {[grupoDe(per.grupoId), per.zona].filter(Boolean).join(' · ') || 'Sin grupo ni zona'}
         </span>
-      </button>
+      </TarjetaPersona>
     );
   };
 
   return (
     <div className="panel">
-      <header className="panel-cabecera">
-        <h1>👥 Personas</h1>
+      <CabeceraPagina titulo="👥 Personas">
         <button className="btn btn-dorado" onClick={() => setMostrarForm((v) => !v)}>
           ➕ Nueva persona
         </button>
-      </header>
+      </CabeceraPagina>
       <GuiaPagina texto="La ficha única: aquí cada persona se escribe una sola vez, con su Nº de Identidad. Todas las demás mesas eligen de esta lista." />
 
       {mostrarForm && (
@@ -386,7 +384,7 @@ export default function Personas({ repo }: { repo: Repo }) {
         </form>
       )}
 
-      <div className="buscador">
+      <Buscador>
         <input
           placeholder="🔍 Buscar por nombre, teléfono o Nº de Identidad…"
           value={busqueda}
@@ -398,7 +396,7 @@ export default function Personas({ repo }: { repo: Repo }) {
           <option value="todos">Todos</option>
         </select>
         <span className="tenue">Mostrando {lista.length} de {datos.personas.length}</span>
-      </div>
+      </Buscador>
 
       <BarraVistas
         vista={vista}
@@ -465,13 +463,7 @@ export default function Personas({ repo }: { repo: Repo }) {
           ) : (
             <>
               {filasDatos.length > 0 ? (
-                <table className="tabla-datos">
-                  <tbody>
-                    {filasDatos.map(([etiqueta, valor]) => (
-                      <tr key={etiqueta}><td className="tenue">{etiqueta}</td><td>{valor}</td></tr>
-                    ))}
-                  </tbody>
-                </table>
+                <DatosLista filas={filasDatos} />
               ) : (
                 <p className="tenue">Sin datos registrados todavía.</p>
               )}

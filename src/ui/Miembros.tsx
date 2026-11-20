@@ -16,7 +16,7 @@ import SelectorPersona from './SelectorPersona';
 import Modal from './Modal';
 import GuiaPagina from './GuiaPagina';
 import EditorPasos from './EditorPasos';
-import { FilaPersona } from './Piezas';
+import { Buscador, CabeceraPagina, FilaEdicion, FilaPersona, Kpi, ListaEdicion, TarjetaPersona } from './Piezas';
 
 const hoyIso = () => new Date().toISOString().slice(0, 10);
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
@@ -116,8 +116,7 @@ export default function Miembros({ repo }: { repo: Repo }) {
     const p = personaDe(m.personaId);
     const esc = escaleraDeMiembro(datos, m);
     return (
-      <button key={m.id} className="persona-card" onClick={() => setSeleccionado(m.id)}>
-        <span className="persona-nombre">{p?.nombre} {p?.apellidos ?? ''}</span>
+      <TarjetaPersona key={m.id} nombre={`${p?.nombre ?? ''} ${p?.apellidos ?? ''}`} onClick={() => setSeleccionado(m.id)}>
         <span className="persona-meta">{m.estado} · {grupoDeMiembro(m) ?? 'Sin grupo'}</span>
         <span className="franja">
           {esc.estados.map((e) => (
@@ -130,18 +129,17 @@ export default function Miembros({ repo }: { repo: Repo }) {
           Escalera {esc.cumplidos}/{esc.total}
           {esc.actual ? ` · le falta ${esc.actual.nombre}` : ' · 🏁 completa'}
         </span>
-      </button>
+      </TarjetaPersona>
     );
   };
 
   return (
     <div className="panel">
-      <header className="panel-cabecera">
-        <h1>🤝 Miembros</h1>
+      <CabeceraPagina titulo="🤝 Miembros">
         <button className="btn" onClick={() => setEditandoPasos(true)}>
           ⚙️ Pasos
         </button>
-      </header>
+      </CabeceraPagina>
       <GuiaPagina texto="El directorio de los integrados y su escalera: Grupo → Diezmador → Academia → Ministerio → Hermano Mayor → Liderazgo. La Integración es la puerta, no un peldaño." />
       {error && <p className="aviso aviso-rojo">{error}</p>}
 
@@ -211,14 +209,11 @@ export default function Miembros({ repo }: { repo: Repo }) {
 
       <section className="kpis">
         {tarjetasVista.map(([titulo, valor]) => (
-          <div className="kpi" key={titulo}>
-            <span className="kpi-numero">{valor}</span>
-            <span className="kpi-titulo">{titulo}</span>
-          </div>
+          <Kpi key={titulo} numero={valor} titulo={titulo} />
         ))}
       </section>
 
-      <div className="buscador">
+      <Buscador>
         <input placeholder="🔍 Buscar en el Directorio…" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} />
         <select value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value)}>
           <option value="">Solo Activos</option>
@@ -234,7 +229,7 @@ export default function Miembros({ repo }: { repo: Repo }) {
           <option value="completa">🏁 Escalera completa</option>
         </select>
         <span className="tenue">{lista.length} en el Directorio</span>
-      </div>
+      </Buscador>
 
       <BarraVistas
         vista={vista}
@@ -316,9 +311,9 @@ export default function Miembros({ repo }: { repo: Repo }) {
           {hitos.length === 0 ? (
             <p className="tenue">Sin hitos registrados.</p>
           ) : (
-            <ul className="historial-edit">
+            <ListaEdicion>
               {hitos.map((h) => (
-                <li key={h.id}>
+                <FilaEdicion key={h.id}>
                   <input
                     type="date"
                     value={h.fecha ?? ''}
@@ -336,9 +331,9 @@ export default function Miembros({ repo }: { repo: Repo }) {
                       recargar();
                     }}
                   />
-                </li>
+                </FilaEdicion>
               ))}
-            </ul>
+            </ListaEdicion>
           )}
           <div className="form-fila">
             <label>

@@ -509,7 +509,7 @@ button.persona-fila:hover, .persona-fila.activa { border-color: var(--dorado); }
 }
 
 /* — La tarjeta rica del grupo (2026-11-20, como la app de siempre). — */
-.grupo-card-cabecera {
+.tarjeta-cabecera {
   display: flex;
   justify-content: space-between;
   align-items: center;

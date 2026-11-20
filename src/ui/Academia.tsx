@@ -8,6 +8,7 @@ import { agrupar } from '../motor/vistas';
 import BarraVistas, { type Vista } from './BarraVistas';
 import BorrarBoton from './BorrarBoton';
 import GuiaPagina from './GuiaPagina';
+import { CabeceraPagina, Kpi, Tarjeta } from './Piezas';
 
 
 export default function Academia({ repo }: { repo: Repo }) {
@@ -75,8 +76,7 @@ export default function Academia({ repo }: { repo: Repo }) {
     const p = personaDe(e.personaId);
     const g = p?.grupoId ? datos.grupos.find((x) => x.id === p.grupoId) : undefined;
     return (
-      <div key={e.id} className="persona-card">
-        <span className="persona-nombre">{p?.nombre} {p?.apellidos ?? ''}</span>
+      <Tarjeta key={e.id} nombre={`${p?.nombre ?? ''} ${p?.apellidos ?? ''}`}>
         <span><span className={`chip ${e.estado === 'Activo' ? 'chip-verde' : 'chip-gris'}`}>{e.estado}</span></span>
         <span className="persona-meta">{[p?.zona, g?.nombre].filter(Boolean).join(' · ') || 'Sin zona ni grupo'}</span>
         <span>
@@ -92,25 +92,24 @@ export default function Academia({ repo }: { repo: Repo }) {
             }}
           />
         </span>
-      </div>
+      </Tarjeta>
     );
   };
 
   return (
     <div className="panel">
-      <header className="panel-cabecera"><h1>🎓 Academia</h1></header>
+      <CabeceraPagina titulo="🎓 Academia">
+        {!mostrarForm && (
+          <button className="btn btn-dorado" onClick={() => setMostrarForm(true)}>➕ Nuevo estudiante</button>
+        )}
+      </CabeceraPagina>
       <GuiaPagina texto="Los estudiantes de la Academia del Espíritu: quién está activo y quién no." />
       {error && <p className="aviso aviso-rojo">{error}</p>}
       <section className="kpis">
-        <div className="kpi kpi-principal"><span className="kpi-numero">{activos}</span><span className="kpi-titulo">Estudiantes activos</span></div>
-        <div className="kpi"><span className="kpi-numero">{datos.estudiantes.length - activos}</span><span className="kpi-titulo">Inactivos</span></div>
-        <div className="kpi"><span className="kpi-numero">{datos.estudiantes.length}</span><span className="kpi-titulo">Total</span></div>
+        <Kpi principal numero={activos} titulo="Estudiantes activos" />
+        <Kpi numero={datos.estudiantes.length - activos} titulo="Inactivos" />
+        <Kpi numero={datos.estudiantes.length} titulo="Total" />
       </section>
-      {!mostrarForm && (
-        <div className="form-acciones">
-          <button className="btn btn-dorado" onClick={() => setMostrarForm(true)}>➕ Nuevo estudiante</button>
-        </div>
-      )}
       {mostrarForm && (
       <section className="tarjeta">
         <h2>➕ Nuevo estudiante</h2>

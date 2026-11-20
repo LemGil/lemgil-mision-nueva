@@ -19,7 +19,7 @@ import { agrupar } from '../motor/vistas';
 import BarraVistas, { type Vista } from './BarraVistas';
 import BorrarBoton from './BorrarBoton';
 import GuiaPagina from './GuiaPagina';
-import { FilaPersona, Pestanas } from './Piezas';
+import { CabeceraPagina, FilaEdicion, FilaPersona, Kpi, ListaEdicion, Pestanas, TarjetaPersona } from './Piezas';
 import Modal from './Modal';
 import { InputNombre, InputZona } from './CamposLista';
 import { nombreDeEntrega, resumenManos } from '../motor/manosAbiertas';
@@ -150,17 +150,14 @@ export default function ManosAbiertas({ repo }: { repo: Repo }) {
     </li>
   );
   const tarjetaBeneficiario = (b: Beneficiario) => (
-    <div key={b.id} className="persona-card">
-      <button className="persona-fila" onClick={() => abrirBenef(b)}>
-        <span className="persona-nombre">{nombreBeneficiario(b)}</span>
-      </button>
+    <TarjetaPersona key={b.id} nombre={nombreBeneficiario(b)} onClick={() => abrirBenef(b)}>
       <span className="persona-meta">
         {tipoDe(b)}
         {b.familia ? ` · ${b.familia} personas` : ''}
         {` · ${zonaDe(b)}`}
       </span>
       <span className={`chip ${b.estado === 'Activo' ? 'chip-verde' : 'chip-gris'}`}>{b.estado}</span>
-    </div>
+    </TarjetaPersona>
   );
 
   // ── Campañas ──
@@ -179,7 +176,7 @@ export default function ManosAbiertas({ repo }: { repo: Repo }) {
     .sort((a, b) => (a.fecha < b.fecha ? 1 : -1));
 
   const filaEntrega = (e: Entrega, conCampana: boolean) => (
-    <li key={e.id}>
+    <FilaEdicion key={e.id}>
       <input
         type="date"
         value={e.fecha}
@@ -203,7 +200,7 @@ export default function ManosAbiertas({ repo }: { repo: Repo }) {
           recargar();
         }}
       />
-    </li>
+    </FilaEdicion>
   );
 
   const guardarEntrega = async (campanaId: string) => {
@@ -277,17 +274,15 @@ export default function ManosAbiertas({ repo }: { repo: Repo }) {
 
   return (
     <div className="panel">
-      <header className="panel-cabecera">
-        <h1>🤲 Manos Abiertas</h1>
-      </header>
+      <CabeceraPagina titulo="🤲 Manos Abiertas" />
       <GuiaPagina texto="La ayuda organizada en tres mesas: a quién se ayuda (Personas, Familias y Grupos), las campañas (Desayuno con Jesús, Sopa con Jesús…) y cada entrega que se hace." />
       {error && <p className="aviso aviso-rojo">{error}</p>}
 
       <section className="kpis">
-        <div className="kpi kpi-principal"><span className="kpi-numero">{activos}</span><span className="kpi-titulo">Beneficiarios activos</span></div>
-        <div className="kpi"><span className="kpi-numero">{manos.campanasEnCurso}</span><span className="kpi-titulo">Campañas en curso</span></div>
-        <div className="kpi"><span className="kpi-numero">{manos.entregasTotal}</span><span className="kpi-titulo">Entregas registradas</span></div>
-        <div className="kpi"><span className="kpi-numero">{datos.beneficiarios.length}</span><span className="kpi-titulo">Beneficiarios en total</span></div>
+        <Kpi principal numero={activos} titulo="Beneficiarios activos" />
+        <Kpi numero={manos.campanasEnCurso} titulo="Campañas en curso" />
+        <Kpi numero={manos.entregasTotal} titulo="Entregas registradas" />
+        <Kpi numero={datos.beneficiarios.length} titulo="Beneficiarios en total" />
       </section>
 
       <Pestanas
@@ -533,7 +528,7 @@ export default function ManosAbiertas({ repo }: { repo: Repo }) {
           {todasEntregas.length === 0 ? (
             <p className="tenue">Sin entregas para esta vista.</p>
           ) : (
-            <ul className="historial-edit">{todasEntregas.map((e) => filaEntrega(e, true))}</ul>
+            <ListaEdicion>{todasEntregas.map((e) => filaEntrega(e, true))}</ListaEdicion>
           )}
         </>
       )}
@@ -713,7 +708,7 @@ export default function ManosAbiertas({ repo }: { repo: Repo }) {
           {entregasDe.length === 0 ? (
             <p className="tenue">Sin entregas registradas en esta campaña.</p>
           ) : (
-            <ul className="historial-edit">{entregasDe.map((e) => filaEntrega(e, false))}</ul>
+            <ListaEdicion>{entregasDe.map((e) => filaEntrega(e, false))}</ListaEdicion>
           )}
           {formularioEntrega(campanaDetalle.id)}
         </Modal>

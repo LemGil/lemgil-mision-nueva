@@ -9,7 +9,7 @@ import Modal from './Modal';
 import BorrarBoton from './BorrarBoton';
 import SelectorPersona from './SelectorPersona';
 import GuiaPagina from './GuiaPagina';
-import { FilaPersona } from './Piezas';
+import { CabeceraPagina, FilaPersona, Kpi, TarjetaPersona } from './Piezas';
 
 export default function Ministerios({ repo }: { repo: Repo }) {
   const [datos, setDatos] = useState<DatosMinisterio | null>(null);
@@ -56,7 +56,7 @@ export default function Ministerios({ repo }: { repo: Repo }) {
 
   return (
     <div>
-      <h1>⛪ Ministerios</h1>
+      <CabeceraPagina titulo="⛪ Ministerios" />
       <GuiaPagina texto="Quién sirve en cada ministerio. Al asignar a un miembro, su escalera marca sola el paso de Sirviendo." />
       <p className="tenue">
         Cada ministerio con su gente. Al asignar a una persona, su escalera de Miembros marca el
@@ -65,14 +65,8 @@ export default function Ministerios({ repo }: { repo: Repo }) {
       {error && <p className="aviso aviso-rojo">{error}</p>}
 
       <section className="kpis">
-        <div className="kpi">
-          <div className="kpi-numero">{ministerios.length}</div>
-          <div className="kpi-titulo">Ministerios</div>
-        </div>
-        <div className="kpi">
-          <div className="kpi-numero">{sirviendo.size}</div>
-          <div className="kpi-titulo">Personas sirviendo</div>
-        </div>
+        <Kpi numero={ministerios.length} titulo="Ministerios" />
+        <Kpi numero={sirviendo.size} titulo="Personas sirviendo" />
       </section>
 
       <BarraVistas
@@ -103,8 +97,7 @@ export default function Ministerios({ repo }: { repo: Repo }) {
           : (
             <div className="tarjetas-grid">
               {ministerios.map((m) => (
-                <button key={m.nombre} className="persona-card" onClick={() => setAbierto(m.nombre)}>
-                  <span className="persona-nombre">🤲 {m.nombre}</span>
+                <TarjetaPersona key={m.nombre} nombre={`🤲 ${m.nombre}`} onClick={() => setAbierto(m.nombre)}>
                   <span className="persona-meta">
                     {m.miembros.length} {m.miembros.length === 1 ? 'persona' : 'personas'}
                   </span>
@@ -115,7 +108,7 @@ export default function Ministerios({ repo }: { repo: Repo }) {
                     {m.miembros.slice(0, 3).map((p) => p.nombre).join(', ')}
                     {m.miembros.length > 3 ? '…' : ''}
                   </span>
-                </button>
+                </TarjetaPersona>
               ))}
             </div>
           )

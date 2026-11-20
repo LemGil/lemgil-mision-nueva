@@ -8,6 +8,7 @@ import BorrarBoton from './BorrarBoton';
 import { agrupar } from '../motor/vistas';
 import BarraVistas, { type Vista } from './BarraVistas';
 import GuiaPagina from './GuiaPagina';
+import { CabeceraPagina, Kpi, Tarjeta } from './Piezas';
 
 
 const hoyIso = () => new Date().toISOString().slice(0, 10);
@@ -81,8 +82,7 @@ export default function Evangelismos({ repo }: { repo: Repo }) {
     </li>
   );
   const tarjetaEvangelismo = (e: (typeof lista)[number]) => (
-    <div key={e.id} className="persona-card">
-      <span className="persona-nombre">📣 {e.fecha}{e.lugar ? ` · ${e.lugar}` : ''}</span>
+    <Tarjeta key={e.id} nombre={`📣 ${e.fecha}${e.lugar ? ` · ${e.lugar}` : ''}`}>
       <span className="persona-meta">
         {e.participanteIds.length} participantes
         {e.liderId ? ` · líder ${personaDe(e.liderId)?.nombre ?? ''} ${personaDe(e.liderId)?.apellidos ?? ''}` : ''}
@@ -90,21 +90,20 @@ export default function Evangelismos({ repo }: { repo: Repo }) {
       <span className="persona-meta">
         {e.participanteIds.map((id) => personaDe(id)?.nombre).filter(Boolean).join(', ') || 'Sin participantes'}
       </span>
-    </div>
+    </Tarjeta>
   );
 
   return (
     <div className="panel">
-      <header className="panel-cabecera">
-        <h1>🔥 Evangelismos</h1>
+      <CabeceraPagina titulo="🔥 Evangelismos">
         <button className="btn btn-dorado" onClick={() => setMostrarForm((v) => !v)}>➕ Nuevo</button>
-      </header>
+      </CabeceraPagina>
       <GuiaPagina texto="Las salidas evangelísticas: fecha, lugar, líder y participantes." />
       {error && <p className="aviso aviso-rojo">{error}</p>}
       <section className="kpis">
-        <div className="kpi kpi-principal"><span className="kpi-numero">{datos.evangelismos.length}</span><span className="kpi-titulo">Evangelismos</span></div>
-        <div className="kpi"><span className="kpi-numero">{esteMes}</span><span className="kpi-titulo">Este mes</span></div>
-        <div className="kpi"><span className="kpi-numero">{participantesUnicos}</span><span className="kpi-titulo">Participantes (personas)</span></div>
+        <Kpi principal numero={datos.evangelismos.length} titulo="Evangelismos" />
+        <Kpi numero={esteMes} titulo="Este mes" />
+        <Kpi numero={participantesUnicos} titulo="Participantes (personas)" />
       </section>
 
       {mostrarForm && (

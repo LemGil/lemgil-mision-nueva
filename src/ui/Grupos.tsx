@@ -12,7 +12,7 @@ import { agrupar } from '../motor/vistas';
 import BarraVistas, { type Vista } from './BarraVistas';
 
 import Modal from './Modal';
-import { FilaPersona } from './Piezas';
+import { CabeceraPagina, FilaPersona, Kpi, TarjetaPersona } from './Piezas';
 import BorrarBoton from './BorrarBoton';
 import GuiaPagina from './GuiaPagina';
 import { conteoPorPasoDelGrupo, estadoGrupo, liderVisible, lineaReunion, porcentajeCapacidad } from '../motor/gruposVista';
@@ -134,31 +134,31 @@ export default function Grupos({ repo }: { repo: Repo }) {
     const miembros = miembrosDe(g.id);
     const est = estadoGrupo(miembros.length, g.capacidad);
     return (
-      <button key={g.id} className="persona-card grupo-card" onClick={() => setSeleccionado(g.id)}>
-        <span className="grupo-card-cabecera">
-          <span className="persona-nombre">🏠 {g.nombre}</span>
-          <span className={`chip ${est.clase}`}>{est.etiqueta}</span>
-        </span>
+      <TarjetaPersona
+        key={g.id}
+        nombre={`🏠 ${g.nombre}`}
+        derecha={<span className={`chip ${est.clase}`}>{est.etiqueta}</span>}
+        onClick={() => setSeleccionado(g.id)}
+      >
         <StatsGrupo datos={datos} grupo={g} miembros={miembros} />
-      </button>
+      </TarjetaPersona>
     );
   };
 
   return (
     <div className="panel">
-      <header className="panel-cabecera"><h1>🧑‍🤝‍🧑 Grupos</h1></header>
+      <CabeceraPagina titulo="🧑‍🤝‍🧑 Grupos">
+        {!mostrarForm && (
+          <button className="btn btn-dorado" onClick={() => setMostrarForm(true)}>➕ Nuevo grupo</button>
+        )}
+      </CabeceraPagina>
       <GuiaPagina texto="Los grupos de la congregación, con su líder, su reunión y su capacidad. Cada persona pertenece a un solo grupo." />
       {error && <p className="aviso aviso-rojo">{error}</p>}
       <section className="kpis">
-        <div className="kpi kpi-principal"><span className="kpi-numero">{datos.grupos.length}</span><span className="kpi-titulo">Grupos</span></div>
-        <div className="kpi"><span className="kpi-numero">{conGrupo.size}</span><span className="kpi-titulo">Personas en grupos</span></div>
+        <Kpi principal numero={datos.grupos.length} titulo="Grupos" />
+        <Kpi numero={conGrupo.size} titulo="Personas en grupos" />
       </section>
 
-      {!mostrarForm && (
-        <div className="form-acciones">
-          <button className="btn btn-dorado" onClick={() => setMostrarForm(true)}>➕ Nuevo grupo</button>
-        </div>
-      )}
       {mostrarForm && (
       <section className="tarjeta formulario">
         <h2>➕ Nuevo grupo</h2>

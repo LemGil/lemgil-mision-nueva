@@ -14,7 +14,7 @@ import BorrarBoton from './BorrarBoton';
 
 import Modal from './Modal';
 import GuiaPagina from './GuiaPagina';
-import { FilaPersona, FilaRegistro, Pestanas } from './Piezas';
+import { CabeceraPagina, FilaEdicion, FilaPersona, FilaRegistro, Kpi, ListaEdicion, Pestanas, TarjetaPersona } from './Piezas';
 
 const hoyIso = () => new Date().toISOString().slice(0, 10);
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
@@ -106,18 +106,17 @@ export default function BienComun({ repo }: { repo: Repo }) {
   const tarjetaDiezmador = (d: (typeof visibles)[number]) => {
     const p = personaDe(d.personaId);
     return (
-      <button key={d.id} className="persona-card" onClick={() => setSeleccionado(d.id)}>
-        <span className="persona-nombre">{p?.nombre} {p?.apellidos ?? ''}</span>
+      <TarjetaPersona key={d.id} nombre={`${p?.nombre ?? ''} ${p?.apellidos ?? ''}`} onClick={() => setSeleccionado(d.id)}>
         <span><span className={`chip ${d.activo ? 'chip-verde' : 'chip-gris'}`}>{d.activo ? 'Activo' : 'Inactivo'}</span></span>
         <span className="persona-meta">aportó {formatoDinero(resumen.porPersona.get(d.personaId) ?? 0)}{periodo ? ' en el período' : ''}</span>
         <span className="persona-meta">{p?.zona ?? 'Sin zona'}</span>
-      </button>
+      </TarjetaPersona>
     );
   };
 
   return (
     <div className="panel">
-      <header className="panel-cabecera"><h1>🌾 Bien Común</h1></header>
+      <CabeceraPagina titulo="🌾 Bien Común" />
       <GuiaPagina texto="Los diezmadores y sus aportes de diezmos y ofrendas. Los aportes quedan a nombre de la persona para siempre: son historia, no se borran con su salida." />
       {error && <p className="aviso aviso-rojo">{error}</p>}
 
@@ -146,10 +145,10 @@ export default function BienComun({ repo }: { repo: Repo }) {
       </div>
 
       <section className="kpis">
-        <div className="kpi kpi-principal"><span className="kpi-numero">{resumen.diezmadoresActivos}</span><span className="kpi-titulo">Diezmadores activos</span></div>
-        <div className="kpi"><span className="kpi-numero">{resumen.diezmadoresInactivos}</span><span className="kpi-titulo">Inactivos</span></div>
-        <div className="kpi"><span className="kpi-numero">{formatoDinero(resumen.totalAportes)}</span><span className="kpi-titulo">Total aportado{periodo ? ' en el período' : ''}</span></div>
-        <div className="kpi"><span className="kpi-numero">{resumen.cantidadAportes}</span><span className="kpi-titulo">Aportes{periodo ? ' en el período' : ''}</span></div>
+        <Kpi principal numero={resumen.diezmadoresActivos} titulo="Diezmadores activos" />
+        <Kpi numero={resumen.diezmadoresInactivos} titulo="Inactivos" />
+        <Kpi numero={formatoDinero(resumen.totalAportes)} titulo={<>Total aportado{periodo ? ' en el período' : ''}</>} />
+        <Kpi numero={resumen.cantidadAportes} titulo={<>Aportes{periodo ? ' en el período' : ''}</>} />
       </section>
 
       <Pestanas
@@ -384,9 +383,9 @@ export default function BienComun({ repo }: { repo: Repo }) {
             <p className="tenue">Sin aportes registrados.</p>
           ) : (
             <>
-              <ul className="historial-edit">
+              <ListaEdicion>
                 {aportesDe.map((a) => (
-                  <li key={a.id}>
+                  <FilaEdicion key={a.id}>
                     <input
                       type="date"
                       value={a.fecha}
@@ -426,9 +425,9 @@ export default function BienComun({ repo }: { repo: Repo }) {
                         recargar();
                       }}
                     />
-                  </li>
+                  </FilaEdicion>
                 ))}
-              </ul>
+              </ListaEdicion>
               <p className="tenue">
                 {aportesDe.length} aportes · total {formatoDinero(aportesDe.reduce((x, a) => x + a.monto, 0))}.
                 Toca la fecha, el tipo o el monto para corregirlos.

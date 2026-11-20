@@ -9,7 +9,7 @@ import { formatoDinero } from '../motor/dinero';
 import { agrupar } from '../motor/vistas';
 import BarraVistas, { type Vista } from './BarraVistas';
 import GuiaPagina from './GuiaPagina';
-import { FilaPersona, FilaRegistro, Pestanas } from './Piezas';
+import { CabeceraPagina, FilaEdicion, FilaPersona, FilaRegistro, Kpi, ListaEdicion, Pestanas, TarjetaPersona } from './Piezas';
 import Modal from './Modal';
 import BorrarBoton from './BorrarBoton';
 
@@ -126,8 +126,7 @@ export default function RedColaboradores({ repo }: { repo: Repo }) {
   );
 
   const tarjetaColaborador = (c: Colaborador) => (
-    <button key={c.id} className="persona-card" onClick={() => setSeleccionado(c.id)}>
-      <span className="persona-nombre">{nombreColaborador(c)}</span>
+    <TarjetaPersona key={c.id} nombre={nombreColaborador(c)} onClick={() => setSeleccionado(c.id)}>
       <span>
         <span className={`chip ${c.estado === 'Activo' ? 'chip-verde' : 'chip-gris'}`}>{c.estado}</span>{' '}
         <span className="chip chip-gris">{c.tipo ?? 'Sin tipo'}</span>
@@ -137,12 +136,12 @@ export default function RedColaboradores({ repo }: { repo: Repo }) {
         {periodo ? ' en el período' : ''}
       </span>
       <span className="persona-meta">{c.telefono ?? c.email ?? 'Sin contacto'}</span>
-    </button>
+    </TarjetaPersona>
   );
 
   return (
     <div className="panel">
-      <header className="panel-cabecera"><h1>🌐 Red de Colaboradores</h1></header>
+      <CabeceraPagina titulo="🌐 Red de Colaboradores" />
       <GuiaPagina texto="Apoyo externo al Ministerio: personas, iglesias y ministerios que ofrendan. No son miembros: no entran en la ficha única ni en el censo; aquí viven su propio registro y sus aportes." />
       {error && <p className="aviso aviso-rojo">{error}</p>}
 
@@ -169,10 +168,10 @@ export default function RedColaboradores({ repo }: { repo: Repo }) {
       </div>
 
       <section className="kpis">
-        <div className="kpi kpi-principal"><span className="kpi-numero">{resumen.activos}</span><span className="kpi-titulo">Colaboradores activos</span></div>
-        <div className="kpi"><span className="kpi-numero">{resumen.inactivos}</span><span className="kpi-titulo">Inactivos</span></div>
-        <div className="kpi"><span className="kpi-numero">{formatoDinero(resumen.totalAportes)}</span><span className="kpi-titulo">Total aportado{periodo ? ' en el período' : ''}</span></div>
-        <div className="kpi"><span className="kpi-numero">{resumen.cantidadAportes}</span><span className="kpi-titulo">Aportes{periodo ? ' en el período' : ''}</span></div>
+        <Kpi principal numero={resumen.activos} titulo="Colaboradores activos" />
+        <Kpi numero={resumen.inactivos} titulo="Inactivos" />
+        <Kpi numero={formatoDinero(resumen.totalAportes)} titulo={<>Total aportado{periodo ? ' en el período' : ''}</>} />
+        <Kpi numero={resumen.cantidadAportes} titulo={<>Aportes{periodo ? ' en el período' : ''}</>} />
       </section>
 
       <Pestanas
@@ -542,9 +541,9 @@ export default function RedColaboradores({ repo }: { repo: Repo }) {
             <p className="tenue">Sin aportes registrados.</p>
           ) : (
             <>
-              <ul className="historial-edit">
+              <ListaEdicion>
                 {aportesDe.map((a) => (
-                  <li key={a.id}>
+                  <FilaEdicion key={a.id}>
                     <input
                       type="date"
                       value={a.fecha}
@@ -609,9 +608,9 @@ export default function RedColaboradores({ repo }: { repo: Repo }) {
                         recargar();
                       }}
                     />
-                  </li>
+                  </FilaEdicion>
                 ))}
-              </ul>
+              </ListaEdicion>
               <p className="tenue">
                 {aportesDe.length} aportes · total {formatoDinero(aportesDe.reduce((x, a) => x + a.monto, 0))}.
                 Toca cualquier dato para corregirlo.

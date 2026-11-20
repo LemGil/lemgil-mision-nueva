@@ -7,7 +7,7 @@ import type { Repo } from '../datos/repo';
 import type { DatosMinisterio } from '../modelo/tipos';
 import { CENTRO_DEFECTO, puntosDelMapa, sinUbicacion, type PuntoMapa } from '../motor/mapa';
 import GuiaPagina from './GuiaPagina';
-import { FilaPersona } from './Piezas';
+import { CabeceraPagina, FilaPersona } from './Piezas';
 
 interface Objetivo {
   tipo: 'persona' | 'grupo';
@@ -121,12 +121,11 @@ export default function Mapa({ repo }: { repo: Repo }) {
 
   return (
     <div className="panel">
-      <header className="panel-cabecera">
-        <h1>📍 Mapa</h1>
+      <CabeceraPagina titulo="📍 Mapa">
         <button className="btn" onClick={() => setEditando((v) => !v)}>
           {editando ? '✓ Terminar edición' : '✏️ Editar ubicaciones'}
         </button>
-      </header>
+      </CabeceraPagina>
       <GuiaPagina texto="Dónde vive cada uno. Las chinchetas se fijan a mano y se pueden arrastrar para corregirlas; ayuda a visitar y a ver la congregación por zonas." />
       <p className="tenue">
         {puntos.length} chinchetas fijadas. Las chinchetas son manuales (GPS o toque): la
