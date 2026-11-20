@@ -278,17 +278,22 @@ export function convertirRespaldo(respaldo: RespaldoViejo): {
       return true;
     });
 
-  // — Grupos: el líder viejo era texto libre; no se enlaza a ciegas. —
+  // — Grupos: el líder viejo era texto libre; se guarda como texto
+  // (liderTexto) y solo se enlaza a una persona si trae liderId. La
+  // reunión (día, hora, lugar) y la capacidad también viajan. —
   const grupos: Grupo[] = (respaldo.grupos ?? []).map((r) => {
     const liderId = texto(r.liderId);
-    if (!liderId && texto(r.lider)) {
-      avisos.push(`Grupo «${texto(r.nombre)}»: su líder era texto libre («${texto(r.lider)}») y queda sin enlazar.`);
-    }
+    const capacidadCruda = numero(r.capacidad) ?? (texto(r.capacidad) ? parseInt(texto(r.capacidad)!, 10) : NaN);
     return {
       id: idDe(r),
       nombre: texto(r.nombre) ?? '(sin nombre)',
       liderId: liderId && idsPersonas.has(liderId) ? liderId : null,
+      liderTexto: texto(r.lider),
       zona: texto(r.zona),
+      dia: texto(r.dia),
+      hora: texto(r.hora),
+      lugar: texto(r.lugar),
+      capacidad: Number.isFinite(capacidadCruda) && capacidadCruda > 0 ? capacidadCruda : undefined,
       lat: numero(r.lat) ?? null,
       lng: numero(r.lng) ?? null,
     };

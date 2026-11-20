@@ -12,6 +12,7 @@ import {
 import { traerRed, vistaPreviaRed, type VistaPreviaRed } from '../migracion/traerRed';
 import { traerManos, vistaPreviaManos, type VistaPreviaManos } from '../migracion/traerManos';
 import { completarBeneficiarios, vistaPreviaCompletarBeneficiarios, type ResumenCompletarBeneficiarios } from '../migracion/completarBeneficiarios';
+import { completarGrupos, vistaPreviaCompletarGrupos, type ResumenCompletarGrupos } from '../migracion/completarGrupos';
 import { convertirRespaldo, type InformeMigracion, type RespaldoViejo } from '../migracion/convertir';
 import { importarEnRepo, puedeImportar } from '../migracion/importar';
 import GuiaPagina from './GuiaPagina';
@@ -44,6 +45,10 @@ export default function Migrar({ repo }: { repo: Repo }) {
   const [previaBenef, setPreviaBenef] = useState<ResumenCompletarBeneficiarios | null>(null);
   const [traidosBenef, setTraidosBenef] = useState<ResumenCompletarBeneficiarios | null>(null);
   const [completandoBenef, setCompletandoBenef] = useState(false);
+  const [respaldoGrupos, setRespaldoGrupos] = useState<RespaldoViejo | null>(null);
+  const [previaGrupos, setPreviaGrupos] = useState<ResumenCompletarGrupos | null>(null);
+  const [traidosGrupos, setTraidosGrupos] = useState<ResumenCompletarGrupos | null>(null);
+  const [completandoGrupos, setCompletandoGrupos] = useState(false);
 
   const cargar = useCallback(async () => {
     setActuales(await aDatosMinisterio(repo));
@@ -169,6 +174,38 @@ export default function Migrar({ repo }: { repo: Repo }) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
       setTrayendoManos(false);
+    }
+  };
+
+  const leerArchivoGrupos = async (archivo: File) => {
+    setError('');
+    setPreviaGrupos(null);
+    setTraidosGrupos(null);
+    try {
+      const respaldo = JSON.parse(await archivo.text()) as RespaldoViejo;
+      if (!respaldo || typeof respaldo !== 'object' || !Array.isArray(respaldo.grupos)) {
+        throw new Error('Ese archivo no es un respaldo de la app anterior.');
+      }
+      setRespaldoGrupos(respaldo);
+      setPreviaGrupos(vistaPreviaCompletarGrupos(actuales.grupos, respaldo));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  };
+
+  const completarLosGrupos = async () => {
+    if (!respaldoGrupos) return;
+    setCompletandoGrupos(true);
+    setError('');
+    try {
+      const resumen = await completarGrupos(repo, respaldoGrupos, actuales.grupos);
+      setTraidosGrupos(resumen);
+      setPreviaGrupos(null);
+      await cargar();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setCompletandoGrupos(false);
     }
   };
 
@@ -489,6 +526,44 @@ export default function Migrar({ repo }: { repo: Repo }) {
         {traidosBenef && (
           <p className="aviso aviso-verde">
             ✓ Se completaron {traidosBenef.beneficiarios} beneficiarios. Sincroniza para subirlos.
+          </p>
+        )}
+      </section>
+
+      <section className="tarjeta">
+        <h2>🏠 Completar los datos de los grupos</h2>
+        <p className="tenue">
+          La primera migración trajo los grupos sin su reunión: el día, la hora, el lugar,
+          la capacidad y el líder en texto libre quedaron en la app anterior. Elige el mismo
+          respaldo y se rellenan SOLO los huecos: lo que ya esté puesto no se toca.
+        </p>
+        <input
+          type="file"
+          accept="application/json,.json"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) void leerArchivoGrupos(f);
+          }}
+        />
+        {previaGrupos && previaGrupos.grupos > 0 && (
+          <>
+            <p>
+              <strong>{previaGrupos.grupos} grupos</strong> ganarían datos:{' '}
+              {Object.entries(previaGrupos.campos)
+                .map(([campo, n]) => `${campo}: ${n}`)
+                .join(' · ')}
+            </p>
+            <button className="btn btn-dorado" disabled={completandoGrupos} onClick={completarLosGrupos}>
+              {completandoGrupos ? 'Completando…' : '🏠 Completar grupos'}
+            </button>
+          </>
+        )}
+        {previaGrupos && previaGrupos.grupos === 0 && (
+          <p className="aviso aviso-verde">✓ Los grupos ya tienen todos sus datos.</p>
+        )}
+        {traidosGrupos && (
+          <p className="aviso aviso-verde">
+            ✓ Se completaron {traidosGrupos.grupos} grupos. Sincroniza para subirlos.
           </p>
         )}
       </section>

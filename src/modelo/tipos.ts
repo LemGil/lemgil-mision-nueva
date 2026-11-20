@@ -167,7 +167,14 @@ export interface Grupo {
   id: string;
   nombre: string;
   liderId?: string | null; // personaId del líder
+  /** El líder en texto libre (p. ej. «Pastores Luis y Daymi»): si está
+   * puesto, es el que se muestra; el de la app anterior era así. */
+  liderTexto?: string;
   zona?: string;
+  dia?: string; // día de reunión («Domingo»)
+  hora?: string; // hora de reunión («10:30»)
+  lugar?: string; // dónde se reúne («CASA CENTRO»)
+  capacidad?: number; // la meta de asignados; sin capacidad no hay barra
   lat?: number | null;
   lng?: number | null;
 }

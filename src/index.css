@@ -507,3 +507,41 @@ button.persona-fila:hover, .persona-fila.activa { border-color: var(--dorado); }
   flex: 1;
   min-width: 130px;
 }
+
+/* — La tarjeta rica del grupo (2026-11-20, como la app de siempre). — */
+.grupo-card-cabecera {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--esp-2);
+}
+.grupo-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--esp-2);
+  margin: var(--esp-2) 0;
+}
+.grupo-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.grupo-stat b {
+  font-size: var(--letra-tarjeta, 17px);
+}
+.grupo-stat small {
+  color: var(--tenue);
+}
+.barra-capacidad {
+  display: block;
+  height: 8px;
+  background: var(--superficie-2);
+  border-radius: var(--radio-pildora);
+  overflow: hidden;
+}
+.barra-capacidad > span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--oro), var(--oro-luz));
+  border-radius: var(--radio-pildora);
+}

@@ -67,9 +67,9 @@ describe('la migración única', () => {
     expect(datos.asignaciones).toEqual([{ id: 'mm1', personaId: 'p1', ministerio: 'Alabanza' }]);
   });
 
-  it('el líder en texto libre no se enlaza a ciegas: queda el aviso', () => {
+  it('el líder en texto libre no se enlaza a ciegas: viaja como texto (liderTexto)', () => {
     expect(datos.grupos[0].liderId).toBeNull();
-    expect(informe.avisos.some((a) => a.includes('texto libre'))).toBe(true);
+    expect(datos.grupos[0].liderTexto).toBe('Ana Uno');
   });
 
   it('el proceso huérfano se reporta y no viaja', () => {

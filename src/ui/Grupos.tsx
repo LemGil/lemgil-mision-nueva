@@ -6,7 +6,7 @@ import type { DatosMinisterio } from '../modelo/tipos';
 import SelectorPersona from './SelectorPersona';
 import { clasificarPersona } from '../motor/censo';
 import { esBaja } from '../motor/vistas';
-import type { Grupo } from '../modelo/tipos';
+import type { Grupo, Persona } from '../modelo/tipos';
 import { InputZona } from './CamposLista';
 import { agrupar } from '../motor/vistas';
 import BarraVistas, { type Vista } from './BarraVistas';
@@ -15,6 +15,50 @@ import Modal from './Modal';
 import { FilaPersona } from './Piezas';
 import BorrarBoton from './BorrarBoton';
 import GuiaPagina from './GuiaPagina';
+import { conteoPorPasoDelGrupo, estadoGrupo, liderVisible, lineaReunion, porcentajeCapacidad } from '../motor/gruposVista';
+
+const DIAS_SEMANA = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+
+const capacidadNumero = (s: string): number | undefined => {
+  const n = parseInt(s, 10);
+  return Number.isFinite(n) && n > 0 ? n : undefined;
+};
+
+/** El cuerpo rico del grupo (el de la foto de la app de siempre):
+ * zona y líder, la reunión, el conteo por paso de la ruta y la barra
+ * de capacidad. Lo usan la tarjeta y la ventana del grupo. */
+function StatsGrupo({ datos, grupo, miembros }: { datos: DatosMinisterio; grupo: Grupo; miembros: (Persona | undefined)[] }) {
+  const total = miembros.length;
+  const conteos = conteoPorPasoDelGrupo(datos, new Set(miembros.map((p) => p!.id)));
+  const lider = liderVisible(datos, grupo);
+  const reunion = lineaReunion(grupo);
+  return (
+    <>
+      <span className="persona-meta">
+        {grupo.zona ? `📍 ${grupo.zona}` : '📍 Sin zona'}
+        {lider ? ` · 👤 ${lider}` : ''}
+        {grupo.lat != null ? ' · 📍 en el mapa' : ''}
+      </span>
+      {reunion && <span className="persona-meta">🏠 {reunion}</span>}
+      <span className="grupo-stats">
+        {conteos.map((c) => (
+          <span key={c.paso.id} className="grupo-stat">
+            <b>{c.n}</b>
+            <small>{c.paso.emoji} {c.corto}</small>
+          </span>
+        ))}
+      </span>
+      <span className="persona-meta">
+        Total asignados <strong>{total}{grupo.capacidad ? ` / ${grupo.capacidad}` : ''}</strong>
+      </span>
+      {grupo.capacidad ? (
+        <span className="barra-capacidad">
+          <span style={{ width: `${porcentajeCapacidad(total, grupo.capacidad)}%` }} />
+        </span>
+      ) : null}
+    </>
+  );
+}
 
 export default function Grupos({ repo }: { repo: Repo }) {
   const [datos, setDatos] = useState<DatosMinisterio | null>(null);
@@ -23,6 +67,11 @@ export default function Grupos({ repo }: { repo: Repo }) {
   const [nombre, setNombre] = useState('');
   const [zona, setZona] = useState('');
   const [liderId, setLiderId] = useState<string | null>(null);
+  const [liderTexto, setLiderTexto] = useState('');
+  const [dia, setDia] = useState('');
+  const [hora, setHora] = useState('');
+  const [lugar, setLugar] = useState('');
+  const [capacidad, setCapacidad] = useState('');
   const [mostrarForm, setMostrarForm] = useState(false);
   const [error, setError] = useState('');
   const [vista, setVista] = useState<Vista>('lista');
@@ -67,31 +116,38 @@ export default function Grupos({ repo }: { repo: Repo }) {
     }
     return g.zona?.trim() || 'Sin zona';
   };
-  const filaGrupo = (g: (typeof datos.grupos)[number]) => (
-    <li key={g.id}>
-      <FilaPersona
-        nombre={`🏠 ${g.nombre}`}
-        meta={<>{miembrosDe(g.id).length} personas{g.liderId ? ` · líder ${personaDe(g.liderId)?.nombre ?? ''}` : ''}{g.lat != null ? ' · 📍 en el mapa' : ''}</>}
-        activa={seleccionado === g.id}
-        onClick={() => setSeleccionado(g.id)}
-      />
-    </li>
-  );
-  const tarjetaGrupo = (g: (typeof datos.grupos)[number]) => (
-    <button key={g.id} className="persona-card" onClick={() => setSeleccionado(g.id)}>
-      <span className="persona-nombre">🏠 {g.nombre}</span>
-      <span className="persona-meta">{miembrosDe(g.id).length} personas{g.zona ? ` · Zona ${g.zona}` : ''}</span>
-      <span className="persona-meta">
-        {g.liderId ? `Líder: ${personaDe(g.liderId)?.nombre ?? ''} ${personaDe(g.liderId)?.apellidos ?? ''}` : 'Sin líder'}
-        {g.lat != null ? ' · 📍 en el mapa' : ''}
-      </span>
-    </button>
-  );
+  const filaGrupo = (g: (typeof datos.grupos)[number]) => {
+    const lider = liderVisible(datos, g);
+    const reunion = lineaReunion(g);
+    return (
+      <li key={g.id}>
+        <FilaPersona
+          nombre={`🏠 ${g.nombre}`}
+          meta={<>{miembrosDe(g.id).length} personas{lider ? ` · 👤 ${lider}` : ''}{reunion ? ` · ${reunion}` : ''}{g.lat != null ? ' · 📍 en el mapa' : ''}</>}
+          activa={seleccionado === g.id}
+          onClick={() => setSeleccionado(g.id)}
+        />
+      </li>
+    );
+  };
+  const tarjetaGrupo = (g: (typeof datos.grupos)[number]) => {
+    const miembros = miembrosDe(g.id);
+    const est = estadoGrupo(miembros.length, g.capacidad);
+    return (
+      <button key={g.id} className="persona-card grupo-card" onClick={() => setSeleccionado(g.id)}>
+        <span className="grupo-card-cabecera">
+          <span className="persona-nombre">🏠 {g.nombre}</span>
+          <span className={`chip ${est.clase}`}>{est.etiqueta}</span>
+        </span>
+        <StatsGrupo datos={datos} grupo={g} miembros={miembros} />
+      </button>
+    );
+  };
 
   return (
     <div className="panel">
       <header className="panel-cabecera"><h1>🧑‍🤝‍🧑 Grupos</h1></header>
-      <GuiaPagina texto="Los grupos de la congregación, con su líder y su zona. Cada persona pertenece a un solo grupo." />
+      <GuiaPagina texto="Los grupos de la congregación, con su líder, su reunión y su capacidad. Cada persona pertenece a un solo grupo." />
       {error && <p className="aviso aviso-rojo">{error}</p>}
       <section className="kpis">
         <div className="kpi kpi-principal"><span className="kpi-numero">{datos.grupos.length}</span><span className="kpi-titulo">Grupos</span></div>
@@ -110,6 +166,19 @@ export default function Grupos({ repo }: { repo: Repo }) {
           <label>Nombre<input value={nombre} onChange={(e) => setNombre(e.target.value)} /></label>
           <label>Zona<InputZona datos={datos} value={zona} onChange={setZona} /></label>
         </div>
+        <div className="form-fila">
+          <label>Líder (texto libre)<input value={liderTexto} onChange={(e) => setLiderTexto(e.target.value)} placeholder="Ej.: Pastores Luis y Daymi" /></label>
+          <label>Capacidad<input type="number" min={0} value={capacidad} onChange={(e) => setCapacidad(e.target.value)} /></label>
+        </div>
+        <div className="form-fila">
+          <label>Día de reunión<input value={dia} onChange={(e) => setDia(e.target.value)} list="dias-semana" /></label>
+          <label>Hora<input type="time" value={hora} onChange={(e) => setHora(e.target.value)} /></label>
+        </div>
+        <div className="form-fila">
+          <label>Lugar de reunión<input value={lugar} onChange={(e) => setLugar(e.target.value)} list="lugares-grupo" /></label>
+        </div>
+        <datalist id="dias-semana">{DIAS_SEMANA.map((d) => <option key={d} value={d} />)}</datalist>
+        <datalist id="lugares-grupo">{[...new Set(datos.grupos.map((g) => g.lugar).filter(Boolean))].map((l) => <option key={l} value={l} />)}</datalist>
         <p className="tenue">Líder: {liderId ? `${personaDe(liderId)?.nombre} ${personaDe(liderId)?.apellidos ?? ''}` : 'sin elegir'}</p>
         <SelectorPersona datos={datos} onElegir={setLiderId} placeholder="🔍 Buscar al líder…" />
         <div className="form-acciones">
@@ -119,8 +188,17 @@ export default function Grupos({ repo }: { repo: Repo }) {
             onClick={async () => {
               setError('');
               try {
-                await crearGrupo(repo, { nombre: nombre.trim(), zona: zona.trim() || undefined, liderId });
-                setNombre(''); setZona(''); setLiderId(null);
+                await crearGrupo(repo, {
+                nombre: nombre.trim(),
+                zona: zona.trim() || undefined,
+                liderId,
+                liderTexto: liderTexto.trim() || undefined,
+                dia: dia.trim() || undefined,
+                hora: hora.trim() || undefined,
+                lugar: lugar.trim() || undefined,
+                capacidad: capacidadNumero(capacidad),
+              });
+                setNombre(''); setZona(''); setLiderId(null); setLiderTexto(''); setDia(''); setHora(''); setLugar(''); setCapacidad('');
               setMostrarForm(false);
                 recargar();
               } catch (e) {
@@ -172,10 +250,12 @@ export default function Grupos({ repo }: { repo: Repo }) {
       {detalle && (
         <Modal onCerrar={() => setSeleccionado(null)}>
           <h2>🏠 {detalle.nombre}</h2>
-          <p className="tenue">
-            {detalle.zona && <>Zona {detalle.zona} · </>}
-            {detalle.liderId && <>Líder: {personaDe(detalle.liderId)?.nombre} {personaDe(detalle.liderId)?.apellidos ?? ''}</>}
+          <p>
+            <span className={`chip ${estadoGrupo(miembrosDe(detalle.id).length, detalle.capacidad).clase}`}>
+              {estadoGrupo(miembrosDe(detalle.id).length, detalle.capacidad).etiqueta}
+            </span>
           </p>
+          <StatsGrupo datos={datos} grupo={detalle} miembros={miembrosDe(detalle.id)} />
           <h3>En el grupo</h3>
           {miembrosDe(detalle.id).length === 0 ? (
             <p className="tenue">Nadie asignado todavía (se asigna desde Miembros o desde la ficha).</p>
@@ -227,6 +307,11 @@ function FormEditarGrupo({
   const [nombre, setNombre] = useState(grupo.nombre);
   const [zona, setZona] = useState(grupo.zona ?? '');
   const [liderId, setLiderId] = useState<string | null>(grupo.liderId ?? null);
+  const [liderTexto, setLiderTexto] = useState(grupo.liderTexto ?? '');
+  const [dia, setDia] = useState(grupo.dia ?? '');
+  const [hora, setHora] = useState(grupo.hora ?? '');
+  const [lugar, setLugar] = useState(grupo.lugar ?? '');
+  const [capacidad, setCapacidad] = useState(grupo.capacidad ? String(grupo.capacidad) : '');
   const [guardado, setGuardado] = useState(false);
   const [error, setError] = useState('');
   const personaDe = (id?: string | null) => datos.personas.find((p) => p.id === id);
@@ -249,6 +334,34 @@ function FormEditarGrupo({
       <p className="tenue">
         Líder: {liderId ? `${personaDe(liderId)?.nombre} ${personaDe(liderId)?.apellidos ?? ''}` : 'sin líder'}
       </p>
+      <div className="form-fila">
+        <label>
+          Líder (texto libre)
+          <input value={liderTexto} onChange={(e) => { setLiderTexto(e.target.value); tocar(); }} placeholder="Ej.: Pastores Luis y Daymi" />
+        </label>
+        <label>
+          Capacidad
+          <input type="number" min={0} value={capacidad} onChange={(e) => { setCapacidad(e.target.value); tocar(); }} />
+        </label>
+      </div>
+      <div className="form-fila">
+        <label>
+          Día de reunión
+          <input value={dia} onChange={(e) => { setDia(e.target.value); tocar(); }} list="dias-semana" />
+        </label>
+        <label>
+          Hora
+          <input type="time" value={hora} onChange={(e) => { setHora(e.target.value); tocar(); }} />
+        </label>
+      </div>
+      <div className="form-fila">
+        <label>
+          Lugar de reunión
+          <input value={lugar} onChange={(e) => { setLugar(e.target.value); tocar(); }} list="lugares-grupo" />
+        </label>
+      </div>
+      <datalist id="dias-semana">{DIAS_SEMANA.map((d) => <option key={d} value={d} />)}</datalist>
+      <datalist id="lugares-grupo">{[...new Set(datos.grupos.map((g) => g.lugar).filter(Boolean))].map((l) => <option key={l} value={l} />)}</datalist>
       <SelectorPersona
         datos={datos}
         onElegir={(id) => { setLiderId(id); tocar(); }}
@@ -267,6 +380,11 @@ function FormEditarGrupo({
                 nombre: nombre.trim(),
                 zona: zona.trim() || undefined,
                 liderId,
+                liderTexto: liderTexto.trim() || undefined,
+                dia: dia.trim() || undefined,
+                hora: hora.trim() || undefined,
+                lugar: lugar.trim() || undefined,
+                capacidad: capacidadNumero(capacidad),
               });
               setGuardado(true);
               onGuardado();

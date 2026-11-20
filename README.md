@@ -94,5 +94,16 @@ de un solo motor de conteo (`src/motor/`); el cuadre se verifica solo
   al final) y borrar con protecciones (nunca un protegido, ni un
   peldaño de fuente viva, ni uno con registros encima). Lógica en
   `src/motor/pasosEditar.ts` (88/88).
+- **Grupos como la app de siempre (2026-11-20, foto de LemGil):** el
+  Grupo recupera los campos que la migración no trajo — día, hora y
+  lugar de reunión, capacidad y líder en texto libre (`liderTexto`,
+  manda en pantalla sobre el líder-persona) — en el tipo, el
+  convertidor y la herramienta «🏠 Completar los datos de los grupos»
+  de Migración. La tarjeta y la ventana muestran la vista de la foto:
+  chip de estado (≥100% Saturado, ≥70% Casi Lleno, si no Disponible;
+  sin capacidad, Sin meta), conteo de asignados por paso (Converso,
+  Discipulado, Bautizado, Integrado) y barra de capacidad. Crear y
+  editar grupos cubren todos los campos. Lógica en
+  `src/motor/gruposVista.ts` (97/97).
 
 La app actual (`lemgil-mision-apk`) sigue viva e intacta mientras tanto.
