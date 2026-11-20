@@ -109,6 +109,31 @@ async function crearMiembroInterno(
   return miembro;
 }
 
+/** La siembra de las altas directas, UNA sola vía compartida por el
+ * registro de la persona nueva y por las altas desde la edición de su
+ * ficha: los procesos nacen igual en los dos sitios. */
+async function aplicarAltasDirectas(
+  repo: Repo,
+  datos: DatosMinisterio,
+  personaId: string,
+  altas: AltasDirectas,
+  hoy: string,
+): Promise<void> {
+  if (altas.integrado) {
+    const conversion = await crearConversionInterna(repo, datos, personaId, PS_INTEGRADO, hoy);
+    await crearMiembroInterno(repo, personaId, conversion.id, hoy);
+  } else if (altas.mision) {
+    await crearConversionInterna(repo, datos, personaId, PASO_DE_ENTRADA[altas.mision], hoy);
+  }
+  if (altas.beneficiario) {
+    await repo.guardar('beneficiarios', {
+      id: nuevoId(),
+      personaId,
+      estado: 'Activo',
+    });
+  }
+}
+
 /** Registra una persona nueva (el ÚNICO formulario que teclea datos nuevos),
  * con sus altas directas combinables. El carné duplicado bloquea. */
 export async function registrarPersona(
@@ -131,28 +156,46 @@ export async function registrarPersona(
   }
   const persona: Persona = { ...nueva, id: nuevoId() };
   await repo.guardar('personas', persona);
-
-  let conversion: Conversion | null = null;
-  if (altas.integrado) {
-    conversion = await crearConversionInterna(repo, datos, persona.id, PS_INTEGRADO, hoy);
-    await crearMiembroInterno(repo, persona.id, conversion.id, hoy);
-  } else if (altas.mision) {
-    conversion = await crearConversionInterna(
-      repo,
-      datos,
-      persona.id,
-      PASO_DE_ENTRADA[altas.mision],
-      hoy,
-    );
-  }
-  if (altas.beneficiario) {
-    await repo.guardar('beneficiarios', {
-      id: nuevoId(),
-      personaId: persona.id,
-      estado: 'Activo',
-    });
-  }
+  await aplicarAltasDirectas(repo, datos, persona.id, altas, hoy);
   return persona;
+}
+
+/** Da las altas directas a una persona YA registrada, desde la edición de
+ * su ficha — quien se registró antes de que existiera la sección de altas
+ * las recibe ahora, sin pasar por los módulos. Es SOLO de altas: nada se
+ * desmarca ni se borra aquí. Misma siembra que el registro nuevo, con el
+ * bloqueo duro de siempre, validado ANTES de sembrar: si el proceso ya
+ * existe —aunque su registro esté cerrado como salida (Apartado,
+ * Traslado…)— no nace otro, porque el bloqueo de la app mira el registro,
+ * no su estado. */
+export async function darAltasDirectas(
+  repo: Repo,
+  datos: DatosMinisterio,
+  personaId: string,
+  altas: AltasDirectas,
+  hoy: string,
+): Promise<void> {
+  if (altas.integrado || altas.mision) {
+    const existente = datos.conversiones.find((c) => c.personaId === personaId);
+    if (existente) {
+      const paso = pasoPorId(datos.pasos, existente.estado);
+      throw new Error(
+        `Esta persona ya está en Misión (estado actual: ${paso?.nombre ?? existente.estado}). Una persona solo puede tener UN registro en Misión: trabaja sobre su ficha.`,
+      );
+    }
+  }
+  if (altas.integrado) {
+    const miembro = datos.miembros.find((m) => m.personaId === personaId);
+    if (miembro) {
+      throw new Error(
+        `Esta persona ya es miembro (estado: ${miembro.estado}). Una persona solo puede tener UNA ficha en Miembros.`,
+      );
+    }
+  }
+  if (altas.beneficiario && datos.beneficiarios.some((b) => b.personaId === personaId)) {
+    throw new Error('Esta persona ya es beneficiaria en Manos Abiertas.');
+  }
+  await aplicarAltasDirectas(repo, datos, personaId, altas, hoy);
 }
 
 /** Da de alta en Misión a una persona existente. Bloqueo duro: si ya tiene

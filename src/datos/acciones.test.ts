@@ -9,7 +9,7 @@ import {
   PS_TRASLADO,
 } from '../modelo/catalogo';
 import { aDatosMinisterio, sembrarCatalogoSiVacio } from './aDatosMinisterio';
-import { avanzarConversion, crearConversion, registrarPersona } from './acciones';
+import { avanzarConversion, crearConversion, crearMiembro, darAltasDirectas, registrarPersona } from './acciones';
 import { BaseLocal } from './db';
 import { Repo } from './repo';
 
@@ -94,6 +94,88 @@ describe('acciones con las reglas del modelo', () => {
     await avanzarConversion(repo, datos, conv.id, PS_TRASLADO, HOY);
     const datos2 = await aDatosMinisterio(repo);
     expect(datos2.miembros.find((m) => m.personaId === p.id)?.estado).toBe('Trasladado');
+  });
+});
+
+describe('altas directas desde la edición de la ficha', () => {
+  it('marcar un alta que le falta la crea, con la misma siembra del registro nuevo', async () => {
+    const repo = await repoListo();
+    const datos0 = await aDatosMinisterio(repo);
+    const p = await registrarPersona(repo, datos0, { nombre: 'Gala' }, {}, HOY);
+    const datos = await aDatosMinisterio(repo);
+    await darAltasDirectas(repo, datos, p.id, { mision: 'converso', beneficiario: true }, HOY);
+    const datos2 = await aDatosMinisterio(repo);
+    const conv = datos2.conversiones.find((c) => c.personaId === p.id);
+    expect(conv?.estado).toBe(PS_CONVERSO);
+    expect(conv?.historial).toEqual([{ fecha: HOY, estado: PS_CONVERSO, nota: 'Registro inicial' }]);
+    expect(datos2.beneficiarios.find((b) => b.personaId === p.id)?.estado).toBe('Activo');
+  });
+
+  it('la combinación Integrado en edición: la conversión nace en el gozne y el miembro enlazado', async () => {
+    const repo = await repoListo();
+    const datos0 = await aDatosMinisterio(repo);
+    const p = await registrarPersona(repo, datos0, { nombre: 'Juan' }, {}, HOY);
+    const datos = await aDatosMinisterio(repo);
+    await darAltasDirectas(repo, datos, p.id, { integrado: true }, HOY);
+    const datos2 = await aDatosMinisterio(repo);
+    const conv = datos2.conversiones.find((c) => c.personaId === p.id);
+    const miembro = datos2.miembros.find((m) => m.personaId === p.id);
+    expect(conv?.estado).toBe(PS_INTEGRADO);
+    expect(miembro?.estado).toBe('Activo');
+    expect(miembro?.conversionId).toBe(conv?.id);
+  });
+
+  it('si ya tiene el proceso, el alta se bloquea y nada se duplica', async () => {
+    const repo = await repoListo();
+    const datos0 = await aDatosMinisterio(repo);
+    const p = await registrarPersona(
+      repo, datos0, { nombre: 'Hugo' }, { integrado: true, beneficiario: true }, HOY,
+    );
+    const datos = await aDatosMinisterio(repo);
+    await expect(
+      darAltasDirectas(repo, datos, p.id, { mision: 'alcanzado' }, HOY),
+    ).rejects.toThrow('ya está en Misión');
+    await expect(
+      darAltasDirectas(repo, datos, p.id, { integrado: true }, HOY),
+    ).rejects.toThrow('ya está en Misión');
+    await expect(
+      darAltasDirectas(repo, datos, p.id, { beneficiario: true }, HOY),
+    ).rejects.toThrow('ya es beneficiaria');
+    const datos2 = await aDatosMinisterio(repo);
+    expect(datos2.conversiones.filter((c) => c.personaId === p.id)).toHaveLength(1);
+    expect(datos2.miembros.filter((m) => m.personaId === p.id)).toHaveLength(1);
+    expect(datos2.beneficiarios.filter((b) => b.personaId === p.id)).toHaveLength(1);
+  });
+
+  it('el miembro directo (sin Misión) también bloquea el alta Integrado', async () => {
+    const repo = await repoListo();
+    const datos0 = await aDatosMinisterio(repo);
+    const p = await registrarPersona(repo, datos0, { nombre: 'Iris' }, {}, HOY);
+    const datos = await aDatosMinisterio(repo);
+    await crearMiembro(repo, datos, p.id, HOY);
+    const datos2 = await aDatosMinisterio(repo);
+    await expect(
+      darAltasDirectas(repo, datos2, p.id, { integrado: true }, HOY),
+    ).rejects.toThrow('ya es miembro');
+    expect(
+      (await aDatosMinisterio(repo)).miembros.filter((m) => m.personaId === p.id),
+    ).toHaveLength(1);
+  });
+
+  it('una conversión cerrada como salida (Apartado) también bloquea: el bloqueo mira el registro, no su estado', async () => {
+    const repo = await repoListo();
+    const datos0 = await aDatosMinisterio(repo);
+    const p = await registrarPersona(repo, datos0, { nombre: 'Karla' }, { mision: 'converso' }, HOY);
+    const datos = await aDatosMinisterio(repo);
+    const conv = datos.conversiones.find((c) => c.personaId === p.id)!;
+    await avanzarConversion(repo, datos, conv.id, PS_APARTADO, HOY);
+    const datos2 = await aDatosMinisterio(repo);
+    await expect(
+      darAltasDirectas(repo, datos2, p.id, { mision: 'alcanzado' }, HOY),
+    ).rejects.toThrow('ya está en Misión');
+    expect(
+      (await aDatosMinisterio(repo)).conversiones.filter((c) => c.personaId === p.id),
+    ).toHaveLength(1);
   });
 });
 
