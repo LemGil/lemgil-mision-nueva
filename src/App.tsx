@@ -73,6 +73,28 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Sincronización automática (pedido de LemGil, 2026-11-19): con la app
+  // abierta corre un ciclo al montar el sincronizador, cada 3 minutos,
+  // al volver la conexión (evento «online») y al regresar a la app
+  // (visible). El ciclo se protege de solaparse: si hay uno en curso,
+  // devuelve el mismo, así que los disparos pueden coincidir sin daño.
+  useEffect(() => {
+    if (!sync) return;
+    const disparar = () => void sync.ciclo().catch(() => undefined);
+    disparar();
+    const id = window.setInterval(disparar, 3 * 60 * 1000);
+    const alVisible = () => {
+      if (document.visibilityState === 'visible') disparar();
+    };
+    window.addEventListener('online', disparar);
+    document.addEventListener('visibilitychange', alVisible);
+    return () => {
+      window.clearInterval(id);
+      window.removeEventListener('online', disparar);
+      document.removeEventListener('visibilitychange', alVisible);
+    };
+  }, [sync]);
+
   const entrar = async (correo: string, contrasena: string) => {
     const s = await entrarYSincronizar(crearCliente(), repo, correo, contrasena, setEstadoSync);
     setSync(s);

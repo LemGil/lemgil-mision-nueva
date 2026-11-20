@@ -81,5 +81,10 @@ de un solo motor de conteo (`src/motor/`); el cuadre se verifica solo
   Evangelismos, Misión y la ventana de Ministerios). Con esto la
   constitución queda aplicada entera: tokens (A), piezas (B) y
   pantallas (C).
+- **Sincronización automática (2026-11-19, pedido de LemGil):** además
+  del ciclo al entrar/abrir y del botón «🔄 Sincronizar» del Panel, con
+  la app abierta corre un ciclo al montar el sincronizador, cada
+  3 minutos, al volver la conexión (evento «online») y al regresar a
+  la app (visible). El ciclo se protege de solaparse consigo mismo.
 
 La app actual (`lemgil-mision-apk`) sigue viva e intacta mientras tanto.
