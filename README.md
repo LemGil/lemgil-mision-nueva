@@ -86,5 +86,13 @@ de un solo motor de conteo (`src/motor/`); el cuadre se verifica solo
   la app abierta corre un ciclo al montar el sincronizador, cada
   3 minutos, al volver la conexión (evento «online») y al regresar a
   la app (visible). El ciclo se protege de solaparse consigo mismo.
+- **Editar los pasos (2026-11-20, pedido de LemGil):** botón «⚙️ Pasos»
+  en Misión y en Miembros abre el EditorPasos: renombrar y cambiar el
+  emoji de cualquier paso (el id no se toca), reordenar con ▲▼ (en
+  Misión solo el camino; la escalera de Miembros entera), crear pasos
+  (en Misión entran al camino antes del gozne; en Miembros, manuales
+  al final) y borrar con protecciones (nunca un protegido, ni un
+  peldaño de fuente viva, ni uno con registros encima). Lógica en
+  `src/motor/pasosEditar.ts` (88/88).
 
 La app actual (`lemgil-mision-apk`) sigue viva e intacta mientras tanto.

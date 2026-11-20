@@ -18,6 +18,14 @@ import {
   pasoPorId,
 } from '../modelo/catalogo';
 import { historialOrdenado } from '../motor/mision';
+import {
+  listaConPasoNuevo,
+  moverEnLista,
+  nombreRepetido,
+  pasosDelAmbito,
+  puedeBorrarPaso,
+  renumerar,
+} from '../motor/pasosEditar';
 import type {
   Aporte,
   AporteRed,
@@ -35,6 +43,7 @@ import type {
   Grupo,
   Hito,
   Miembro,
+  Paso,
   Persona,
 } from '../modelo/tipos';
 import type { Repo } from './repo';
@@ -704,4 +713,81 @@ export async function actualizarEntrega(repo: Repo, entrega: Entrega): Promise<v
 
 export async function borrarEntrega(repo: Repo, id: string): Promise<void> {
   await repo.borrar('entregas', id);
+}
+
+// — Editar los pasos (Misión y Miembros): nombre, emoji, orden, altas y
+// bajas con las protecciones del motor (pasosEditar). Todo pasa por el
+// Repo y viaja con la sync como cualquier otro dato. —
+
+/** Renombra un paso y/o cambia su emoji. El id no se toca: los
+ * registros que cuelgan de él quedan intactos. */
+export async function renombrarPaso(
+  repo: Repo,
+  datos: DatosMinisterio,
+  paso: Paso,
+  nombre: string,
+  emoji: string,
+): Promise<void> {
+  const limpio = nombre.trim();
+  if (!limpio) throw new Error('El paso necesita un nombre.');
+  if (nombreRepetido(datos.pasos, paso.ambito, limpio, paso.id)) {
+    throw new Error(`Ya hay un paso llamado «${limpio}» en este ámbito.`);
+  }
+  await repo.guardar('pasos', { ...paso, nombre: limpio, emoji: emoji.trim() || paso.emoji });
+}
+
+/** Sube o baja un paso un lugar (las reglas de quién puede moverse
+ * viven en el motor). Devuelve true si se movió. */
+export async function moverPaso(
+  repo: Repo,
+  datos: DatosMinisterio,
+  paso: Paso,
+  dir: -1 | 1,
+): Promise<boolean> {
+  const lista = moverEnLista(datos.pasos, paso.ambito, paso.id, dir);
+  if (!lista) return false;
+  for (const p of lista) await repo.guardar('pasos', p);
+  return true;
+}
+
+/** Crea un paso: en Misión entra al camino antes del gozne; en
+ * Miembros, como peldaño manual al final de la escalera. */
+export async function crearPaso(
+  repo: Repo,
+  datos: DatosMinisterio,
+  ambito: Paso['ambito'],
+  nombre: string,
+  emoji: string,
+): Promise<Paso> {
+  const limpio = nombre.trim();
+  if (!limpio) throw new Error('El paso necesita un nombre.');
+  if (nombreRepetido(datos.pasos, ambito, limpio)) {
+    throw new Error(`Ya hay un paso llamado «${limpio}» en este ámbito.`);
+  }
+  const nuevo: Paso = {
+    id: nuevoId(),
+    ambito,
+    nombre: limpio,
+    emoji: emoji.trim() || '•',
+    orden: 0,
+    ...(ambito === 'mision' ? { rol: 'camino' as const } : { fuente: 'manual' as const }),
+  };
+  for (const p of listaConPasoNuevo(datos.pasos, nuevo)) await repo.guardar('pasos', p);
+  return nuevo;
+}
+
+/** Borra un paso si las protecciones lo permiten; el ámbito se
+ * renumera para no dejar huecos. */
+export async function borrarPasoAccion(
+  repo: Repo,
+  datos: DatosMinisterio,
+  paso: Paso,
+): Promise<void> {
+  const veredicto = puedeBorrarPaso(datos, paso);
+  if (!veredicto.ok) throw new Error(veredicto.motivo);
+  await repo.borrar('pasos', paso.id);
+  const restantes = renumerar(
+    pasosDelAmbito(datos.pasos, paso.ambito).filter((p) => p.id !== paso.id),
+  );
+  for (const p of restantes) await repo.guardar('pasos', p);
 }

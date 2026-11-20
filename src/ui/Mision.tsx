@@ -14,6 +14,7 @@ import BarraVistas, { type Vista } from './BarraVistas';
 import BorrarBoton from './BorrarBoton';
 import Modal from './Modal';
 import GuiaPagina from './GuiaPagina';
+import EditorPasos from './EditorPasos';
 
 const hoyIso = () => new Date().toISOString().slice(0, 10);
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
@@ -39,6 +40,7 @@ export default function Mision({ repo }: { repo: Repo }) {
   const [entrada, setEntrada] = useState<EntradaMision>('alcanzado');
 
   const recargar = useCallback(() => setRecargas((x) => x + 1), []);
+  const [editandoPasos, setEditandoPasos] = useState(false);
 
   useEffect(() => {
     let vivo = true;
@@ -185,11 +187,26 @@ export default function Mision({ repo }: { repo: Repo }) {
     <div className="panel">
       <header className="panel-cabecera">
         <h1>📣 Misión</h1>
-        <button className="btn btn-dorado" onClick={() => setMostrarNuevo((v) => !v)}>
-          ➕ Nuevo Congregado
-        </button>
+        <div className="form-acciones">
+          <button className="btn" onClick={() => setEditandoPasos(true)}>
+            ⚙️ Pasos
+          </button>
+          <button className="btn btn-dorado" onClick={() => setMostrarNuevo((v) => !v)}>
+            ➕ Nuevo Congregado
+          </button>
+        </div>
       </header>
       <GuiaPagina texto="La mesa del camino: Alcanzado → Confeso → Converso → Discipulado → Bautizado → Integrado. Cuenta registros paso a paso; al llegar a Integrado, la persona nace como miembro." />
+
+      {editandoPasos && datos && (
+        <EditorPasos
+          datos={datos}
+          repo={repo}
+          ambito="mision"
+          onCerrar={() => setEditandoPasos(false)}
+          recargar={recargar}
+        />
+      )}
 
       {errorAccion && <p className="aviso aviso-rojo">{errorAccion}</p>}
 

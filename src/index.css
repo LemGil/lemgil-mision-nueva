@@ -483,3 +483,27 @@ button.persona-fila:hover, .persona-fila.activa { border-color: var(--dorado); }
 
 /* La fila de registro de la constitución: el valor, a la derecha en negrita. */
 .fila-valor { font-weight: 700; margin-left: auto; white-space: nowrap; }
+
+/* — Editor de pasos (2026-11-20): la fila de edición del catálogo. — */
+.pasos-lista {
+  list-style: none;
+  margin: var(--esp-3) 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-2);
+}
+.paso-fila-editor {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+  flex-wrap: wrap;
+}
+.paso-fila-editor .paso-emoji {
+  width: 60px;
+  text-align: center;
+}
+.paso-fila-editor .paso-nombre {
+  flex: 1;
+  min-width: 130px;
+}

@@ -15,6 +15,7 @@ import BorrarBoton from './BorrarBoton';
 import SelectorPersona from './SelectorPersona';
 import Modal from './Modal';
 import GuiaPagina from './GuiaPagina';
+import EditorPasos from './EditorPasos';
 import { FilaPersona } from './Piezas';
 
 const hoyIso = () => new Date().toISOString().slice(0, 10);
@@ -38,6 +39,7 @@ export default function Miembros({ repo }: { repo: Repo }) {
   const [agruparPor, setAgruparPor] = useState('grupo');
 
   const recargar = useCallback(() => setRecargas((x) => x + 1), []);
+  const [editandoPasos, setEditandoPasos] = useState(false);
   useEffect(() => {
     let vivo = true;
     void (async () => {
@@ -136,9 +138,22 @@ export default function Miembros({ repo }: { repo: Repo }) {
     <div className="panel">
       <header className="panel-cabecera">
         <h1>🤝 Miembros</h1>
+        <button className="btn" onClick={() => setEditandoPasos(true)}>
+          ⚙️ Pasos
+        </button>
       </header>
       <GuiaPagina texto="El directorio de los integrados y su escalera: Grupo → Diezmador → Academia → Ministerio → Hermano Mayor → Liderazgo. La Integración es la puerta, no un peldaño." />
       {error && <p className="aviso aviso-rojo">{error}</p>}
+
+      {editandoPasos && datos && (
+        <EditorPasos
+          datos={datos}
+          repo={repo}
+          ambito="miembros"
+          onCerrar={() => setEditandoPasos(false)}
+          recargar={recargar}
+        />
+      )}
 
       {!mostrarForm && (
         <div className="form-acciones">
