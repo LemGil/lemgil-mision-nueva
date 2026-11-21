@@ -146,4 +146,14 @@ de un solo motor de conteo (`src/motor/`); el cuadre se verifica solo
   vino ya bautizado; las Bajas desglosadas por tipo y con el paso
   del que venía cada uno). Motor puro `informeMision.ts` (108/108).
 
+- **El informe, también en la página Misión (2026-11-21):** a
+  petición de LemGil («No veo cambios en Misión»), el formato
+  completo vive además en la propia página Misión, bajo sus
+  tarjetas del período: la línea principal destacada y las seis
+  secciones ampliadas, calculadas con el período elegido en la
+  página (o de todo el tiempo, sin período). Las secciones se
+  construyen con la misma función compartida
+  (`seccionesInformeMision`) que usa la página Informe: un solo
+  formato en dos casas (108/108).
+
 La app actual (`lemgil-mision-apk`) sigue viva e intacta mientras tanto.

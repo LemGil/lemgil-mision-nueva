@@ -6,6 +6,8 @@ import { esSalida, pasosDeMision } from '../modelo/catalogo';
 import type { DatosMinisterio, Periodo } from '../modelo/tipos';
 import { fechaEnPasoActual } from '../motor/alertas';
 import { conteoMision, siguientePasoEnRuta } from '../motor/mision';
+import { informeMision } from '../motor/informeMision';
+import { seccionesInformeMision } from '../motor/informes';
 import { buscarPersonas } from '../motor/personaVista';
 import { agrupar } from '../motor/vistas';
 import { anosConRegistros, mesesConRegistros } from '../motor/periodos';
@@ -67,6 +69,8 @@ export default function Mision({ repo }: { repo: Repo }) {
           })(),
         };
   const conteo = conteoMision(datos, periodo);
+  const informe = informeMision(datos, periodo);
+  const seccionesInf = seccionesInformeMision(informe);
   const ruta = pasosDeMision(datos.pasos);
   const personaDe = (id: string) => datos.personas.find((p) => p.id === id);
   const hoy = hoyIso();
@@ -310,6 +314,28 @@ export default function Mision({ repo }: { repo: Repo }) {
             />
           ))}
       </section>
+
+      <section className="tarjeta informe-principal">
+        <span className="informe-principal-etiqueta">
+          📋 El informe{periodo ? ' del período' : ' de todo el tiempo'} — ⭐ Lo principal (personas únicas)
+        </span>
+        <p>{informe.frase}</p>
+      </section>
+      {seccionesInf.map((sec) => (
+        <section className="tarjeta" key={sec.titulo}>
+          <h2>{sec.titulo}</h2>
+          <table className="informe-tabla">
+            <tbody>
+              {sec.filas.map(([k, v]) => (
+                <tr key={k}>
+                  <td>{k}</td>
+                  <td className="informe-valor">{v}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+      ))}
 
       <Buscador>
         <input placeholder="🔍 Buscar en la lista…" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} />
