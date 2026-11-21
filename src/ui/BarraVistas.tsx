@@ -8,7 +8,8 @@ export interface OpcionAgrupar {
 /** El selector de vista de las listas: la barra segmentada de la
  * constitución — ☰ Lista · ▦ Tarjetas · ≣ Agrupada — y, en la
  * vista agrupada, el criterio (por paso, por zona o por grupo,
- * según la mesa). */
+ * según la mesa) también en píldoras, nunca en desplegable
+ * (Fase 3 del plan de conformidad, 2026-11-21). */
 export default function BarraVistas({
   vista,
   setVista,
@@ -36,16 +37,21 @@ export default function BarraVistas({
         </button>
       </div>
       {vista === 'agrupada' && (
-        <label>
-          Agrupar por{' '}
-          <select value={agruparPor} onChange={(e) => setAgruparPor(e.target.value)}>
+        <>
+          <span className="tenue">Agrupar por</span>
+          <div className="seg" role="group" aria-label="Agrupar por">
             {opciones.map((o) => (
-              <option key={o.valor} value={o.valor}>
+              <button
+                key={o.valor}
+                type="button"
+                aria-pressed={agruparPor === o.valor}
+                onClick={() => setAgruparPor(o.valor)}
+              >
                 {o.etiqueta}
-              </option>
+              </button>
             ))}
-          </select>
-        </label>
+          </div>
+        </>
       )}
     </div>
   );

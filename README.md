@@ -191,4 +191,14 @@ de un solo motor de conteo (`src/motor/`); el cuadre se verifica solo
   y unidad), en su pestaña y en la ventana de la campaña
   (108/108).
 
+- **Conformidad, Fase 3 — el sistema (2026-11-21):** todos los
+  márgenes y rellenos del CSS quedan en la escala de espacios
+  (4·8·12·16·24·32, con los 10 y 14 de la muestra en sus piezas);
+  ningún color vive fuera de `:root` (los valores de la muestra
+  del botón dorado, el chip oro y el botón de borrar también son
+  tokens, y los velos del menú igual); el movimiento suave llega
+  a la barra segmentada y a los campos; y «Agrupar por» pasa de
+  desplegable a píldoras. Con esta fase, el plan de conformidad
+  queda construido entero (108/108).
+
 La app actual (`lemgil-mision-apk`) sigue viva e intacta mientras tanto.
