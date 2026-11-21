@@ -201,4 +201,10 @@ de un solo motor de conteo (`src/motor/`); el cuadre se verifica solo
   desplegable a píldoras. Con esta fase, el plan de conformidad
   queda construido entero (108/108).
 
+- **Arreglo (2026-11-21):** la Fase 2 había dejado un `useState`
+  de Manos Abiertas DESPUÉS de la guardia de carga — el error
+  #310 de React, la página en blanco al entrar. El estado subió
+  con los demás, antes de la guardia; barrido de todas las
+  páginas: ningún otro caso (108/108).
+
 La app actual (`lemgil-mision-apk`) sigue viva e intacta mientras tanto.

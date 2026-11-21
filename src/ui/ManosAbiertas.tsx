@@ -50,6 +50,7 @@ export default function ManosAbiertas({ repo }: { repo: Repo }) {
   const [familiaBE, setFamiliaBE] = useState('');
   const [telefonoBE, setTelefonoBE] = useState('');
   const [zonaBE, setZonaBE] = useState('');
+  const [editandoEntrega, setEditandoEntrega] = useState<string | null>(null);
   // Campañas
   const [mostrarCamp, setMostrarCamp] = useState(false);
   const [nombreC, setNombreC] = useState('');
@@ -130,7 +131,6 @@ export default function ManosAbiertas({ repo }: { repo: Repo }) {
     if (agruparPor === 'estado') return b.estado;
     return zonaDe(b);
   };
-  const [editandoEntrega, setEditandoEntrega] = useState<string | null>(null);
   const abrirBenef = (b: Beneficiario) => {
     setBenefSel(b.id);
     setNombreBE(b.nombre ?? '');
