@@ -8,7 +8,7 @@ import BorrarBoton from './BorrarBoton';
 import { agrupar } from '../motor/vistas';
 import BarraVistas, { type Vista } from './BarraVistas';
 import GuiaPagina from './GuiaPagina';
-import { CabeceraPagina, Kpi, Tarjeta } from './Piezas';
+import { CabeceraPagina, FilaAcciones, Kpi, Tarjeta } from './Piezas';
 
 
 const hoyIso = () => new Date().toISOString().slice(0, 10);
@@ -63,22 +63,23 @@ export default function Evangelismos({ repo }: { repo: Repo }) {
   };
   const filaEvangelismo = (e: (typeof lista)[number]) => (
     <li key={e.id}>
-      <div className="persona-fila">
-        <span className="persona-nombre">{e.fecha}{e.lugar ? ` · ${e.lugar}` : ''}</span>
-        <span className="persona-meta">
-          {e.participanteIds.length} participantes
-          {e.liderId ? ` · líder ${personaDe(e.liderId)?.nombre ?? ''}` : ''}
-        </span>
-        <button className="btn" onClick={() => comenzarEdicion(e)}>✏️</button>
-        <BorrarBoton
-          texto="🗑️"
-          titulo="Borrar este evangelismo"
-          onBorrar={async () => {
-            await borrarEvangelismo(repo, e.id);
-            recargar();
-          }}
-        />
-      </div>
+      <FilaAcciones
+        nombre={`${e.fecha}${e.lugar ? ` · ${e.lugar}` : ''}`}
+        meta={`${e.participanteIds.length} participantes${e.liderId ? ` · líder ${personaDe(e.liderId)?.nombre ?? ''}` : ''}`}
+        acciones={
+          <>
+            <button className="btn" onClick={() => comenzarEdicion(e)}>✏️</button>
+            <BorrarBoton
+              texto="🗑️"
+              titulo="Borrar este evangelismo"
+              onBorrar={async () => {
+                await borrarEvangelismo(repo, e.id);
+                recargar();
+              }}
+            />
+          </>
+        }
+      />
     </li>
   );
   const tarjetaEvangelismo = (e: (typeof lista)[number]) => (

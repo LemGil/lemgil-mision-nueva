@@ -101,6 +101,49 @@ export function Pestanas<T extends string>({
 /** La tarjeta única (vista de tarjetas): el caparazón de la fila en
  * grande — nombre fuerte arriba, a la derecha el chip si lo lleva, y
  * el contenido debajo. Es botón: tocarla abre el detalle. */
+/** La fila con acciones: la misma fila de la lista única (nombre
+ * fuerte, meta tenue, valor o chip a la derecha) con su zona de
+ * botones al final, para las listas que trabajan sin abrir la ficha
+ * (avanzar, editar o borrar ahí mismo). Con onClick, la zona
+ * principal abre; sin onClick, la fila solo se mira y mandan sus
+ * botones. Nace en la Fase 1 del plan de conformidad (2026-11-21):
+ * una sola forma de listar, también con botones. */
+export function FilaAcciones({
+  nombre,
+  meta,
+  derecha,
+  acciones,
+  activa,
+  onClick,
+}: {
+  nombre: ReactNode;
+  meta?: ReactNode;
+  derecha?: ReactNode;
+  acciones?: ReactNode;
+  activa?: boolean;
+  onClick?: () => void;
+}) {
+  const principal = (
+    <>
+      <span className="persona-nombre">{nombre}</span>
+      {meta != null && <span className="persona-meta">{meta}</span>}
+    </>
+  );
+  return (
+    <div className={`persona-fila${activa ? ' activa' : ''}`}>
+      {onClick ? (
+        <button type="button" className="persona-main" onClick={onClick}>
+          {principal}
+        </button>
+      ) : (
+        <span className="persona-main">{principal}</span>
+      )}
+      {derecha}
+      {acciones}
+    </div>
+  );
+}
+
 export function TarjetaPersona({
   nombre,
   derecha,

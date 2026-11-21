@@ -8,7 +8,7 @@ import { agrupar } from '../motor/vistas';
 import BarraVistas, { type Vista } from './BarraVistas';
 import BorrarBoton from './BorrarBoton';
 import GuiaPagina from './GuiaPagina';
-import { CabeceraPagina, Kpi, Tarjeta } from './Piezas';
+import { CabeceraPagina, FilaAcciones, Kpi, Tarjeta } from './Piezas';
 
 
 export default function Academia({ repo }: { repo: Repo }) {
@@ -54,21 +54,25 @@ export default function Academia({ repo }: { repo: Repo }) {
     const p = personaDe(e.personaId);
     return (
       <li key={e.id}>
-        <div className="persona-fila">
-          <span className="persona-nombre">{p?.nombre} {p?.apellidos ?? ''}</span>
-          <span className={`chip ${e.estado === 'Activo' ? 'chip-verde' : 'chip-gris'}`}>{e.estado}</span>
-          <button className="btn" onClick={() => void alternar(e)}>
-            {e.estado === 'Activo' ? 'Pasar a Inactivo' : 'Reactivar'}
-          </button>
-          <BorrarBoton
-            texto="🗑️ Quitar"
-            titulo="Borrar el registro de estudiante"
-            onBorrar={async () => {
-              await borrarEstudiante(repo, e.id);
-              recargar();
-            }}
-          />
-        </div>
+        <FilaAcciones
+          nombre={`${p?.nombre} ${p?.apellidos ?? ''}`}
+          derecha={<span className={`chip ${e.estado === 'Activo' ? 'chip-verde' : 'chip-gris'}`}>{e.estado}</span>}
+          acciones={
+            <>
+              <button className="btn" onClick={() => void alternar(e)}>
+                {e.estado === 'Activo' ? 'Pasar a Inactivo' : 'Reactivar'}
+              </button>
+              <BorrarBoton
+                texto="🗑️ Quitar"
+                titulo="Borrar el registro de estudiante"
+                onBorrar={async () => {
+                await borrarEstudiante(repo, e.id);
+                recargar();
+                }}
+              />
+            </>
+          }
+        />
       </li>
     );
   };

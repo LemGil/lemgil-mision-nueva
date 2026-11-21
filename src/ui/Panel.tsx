@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { aDatosMinisterio } from '../datos/aDatosMinisterio';
 import { cargarCasoDePrueba } from '../datos/demo';
 import type { Repo } from '../datos/repo';
@@ -8,7 +9,7 @@ import { calcularCenso, type Censo } from '../motor/censo';
 import { cumpleanosProximos, estancados, type CumpleProximo, type Estancado } from '../motor/alertas';
 import { verificarCuadre, type ResultadoCuadre } from '../motor/cuadre';
 import GuiaPagina from './GuiaPagina';
-import { CabeceraPagina, Kpi } from './Piezas';
+import { CabeceraPagina, FilaPersona, Kpi } from './Piezas';
 
 interface Props {
   repo: Repo;
@@ -34,6 +35,7 @@ function mesActual(): { desde: string; hasta: string; nombre: string } {
 
 export default function Panel({ repo, sync, estadoSync, modoLocal }: Props) {
   const [datos, setDatos] = useState<DatosMinisterio | null>(null);
+  const navigate = useNavigate();
   const [censo, setCenso] = useState<Censo | null>(null);
   const [cuadre, setCuadre] = useState<ResultadoCuadre | null>(null);
   const [atascados, setAtascados] = useState<Estancado[]>([]);
@@ -184,25 +186,37 @@ export default function Panel({ repo, sync, estadoSync, modoLocal }: Props) {
                     Estancados en el inicio del camino ({atascados.length}) — 30 días o más sin
                     avanzar:
                   </p>
-                  <ul className="alerta-lista">
+                  <ul className="lista">
                     {atascados.slice(0, 8).map((e) => (
                       <li key={e.personaId + e.pasoNombre}>
-                        {e.nombre} · {e.pasoEmoji} {e.pasoNombre} · {e.dias} días
+                        <FilaPersona
+                          nombre={e.nombre}
+                          meta={`${e.pasoEmoji} ${e.pasoNombre}`}
+                          derecha={<span className="fila-valor">{e.dias} días</span>}
+                          onClick={() => navigate('/personas', { state: { abrirFicha: e.personaId } })}
+                        />
                       </li>
                     ))}
-                    {atascados.length > 8 && <li>…y {atascados.length - 8} más</li>}
+                    {atascados.length > 8 && <li className="tenue">…y {atascados.length - 8} más</li>}
                   </ul>
                 </>
               )}
               {cumples.length > 0 && (
                 <>
                   <p className="alerta-titulo">🎂 Cumpleaños próximos:</p>
-                  <ul className="alerta-lista">
+                  <ul className="lista">
                     {cumples.slice(0, 8).map((c) => (
                       <li key={c.personaId}>
-                        {c.nombre} · {c.diaMes} ·{' '}
-                        {c.dias === 0 ? '¡hoy!' : c.dias === 1 ? 'mañana' : `en ${c.dias} días`}
-                        {c.edadQueCumple ? ` · cumple ${c.edadQueCumple}` : ''}
+                        <FilaPersona
+                          nombre={c.nombre}
+                          meta={`${c.diaMes}${c.edadQueCumple ? ` · cumple ${c.edadQueCumple}` : ''}`}
+                          derecha={
+                            <span className="fila-valor">
+                              {c.dias === 0 ? '¡hoy!' : c.dias === 1 ? 'mañana' : `en ${c.dias} días`}
+                            </span>
+                          }
+                          onClick={() => navigate('/personas', { state: { abrirFicha: c.personaId } })}
+                        />
                       </li>
                     ))}
                   </ul>

@@ -172,4 +172,14 @@ de un solo motor de conteo (`src/motor/`); el cuadre se verifica solo
   **abajo** quedan el buscador y la lista principal de
   registros.
 
+- **Conformidad, Fase 1 — la Lista única (2026-11-21):** nace la
+  variante canónica `FilaAcciones` (la fila de siempre con su zona
+  de botones) y se adopta en Academia, Evangelismos, la lista
+  principal de Misión, los asignados de Ministerios y el gestor de
+  Zonas de Personas: ya no queda ninguna `persona-fila` escrita a
+  mano fuera de `Piezas.tsx`. El alta de Misión usa el
+  `SelectorPersona` compartido, y las alertas del Panel son filas
+  de la lista única que abren la ficha de la persona en Personas
+  (108/108).
+
 La app actual (`lemgil-mision-apk`) sigue viva e intacta mientras tanto.

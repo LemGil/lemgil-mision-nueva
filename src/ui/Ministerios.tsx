@@ -9,7 +9,7 @@ import Modal from './Modal';
 import BorrarBoton from './BorrarBoton';
 import SelectorPersona from './SelectorPersona';
 import GuiaPagina from './GuiaPagina';
-import { CabeceraPagina, FilaPersona, Kpi, TarjetaPersona } from './Piezas';
+import { CabeceraPagina, FilaAcciones, FilaPersona, Kpi, TarjetaPersona } from './Piezas';
 
 export default function Ministerios({ repo }: { repo: Repo }) {
   const [datos, setDatos] = useState<DatosMinisterio | null>(null);
@@ -202,9 +202,12 @@ export default function Ministerios({ repo }: { repo: Repo }) {
           </div>
           <ul className="lista-personas">
             {detalleMin.miembros.map((p) => (
-              <li key={p.asignacionId} className="persona-fila">
-                <span className="persona-nombre">{p.nombre}</span>
-                <button
+              <li key={p.asignacionId}>
+                <FilaAcciones
+                  nombre={p.nombre}
+                  acciones={
+                    <>
+<button
                   type="button"
                   className="btn"
                   title={p.responsable ? 'Quitar del frente' : 'Poner al frente del ministerio'}
@@ -230,6 +233,9 @@ export default function Ministerios({ repo }: { repo: Repo }) {
                 >
                   Quitar
                 </button>
+                    </>
+                  }
+                />
               </li>
             ))}
             {detalleMin.miembros.length === 0 && <li className="tenue">Sin personas todavía.</li>}

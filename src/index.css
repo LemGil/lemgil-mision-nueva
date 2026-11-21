@@ -206,6 +206,7 @@ h1, h2, .menu-marca {
 button.persona-fila { cursor: pointer; }
 button.persona-fila:hover, .persona-fila.activa { border-color: var(--dorado); }
 .persona-main { flex: 1; display: flex; flex-direction: column; gap: 2px; background: none; border: none; color: var(--texto); text-align: left; cursor: pointer; padding: 0; }
+.persona-fila > span.persona-main { cursor: default; }
 .persona-nombre { font-weight: 800; font-size: 15px; }
 .persona-meta { color: var(--tenue); font-size: var(--letra-meta); }
 .btn-avance { font-size: var(--letra-tarjeta); padding: 4px 13px; }

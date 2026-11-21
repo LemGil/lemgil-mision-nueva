@@ -16,7 +16,8 @@ import BorrarBoton from './BorrarBoton';
 import Modal from './Modal';
 import GuiaPagina from './GuiaPagina';
 import EditorPasos from './EditorPasos';
-import { Buscador, CabeceraPagina, FilaEdicion, FilaPersona, Kpi, ListaEdicion, Pestanas, TarjetaPersona } from './Piezas';
+import SelectorPersona from './SelectorPersona';
+import { Buscador, CabeceraPagina, FilaAcciones, FilaEdicion, FilaPersona, Kpi, ListaEdicion, Pestanas, TarjetaPersona } from './Piezas';
 
 const hoyIso = () => new Date().toISOString().slice(0, 10);
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
@@ -38,7 +39,6 @@ export default function Mision({ repo }: { repo: Repo }) {
 
   // Nuevo congregado
   const [mostrarNuevo, setMostrarNuevo] = useState(false);
-  const [buscaPersona, setBuscaPersona] = useState('');
   const [personaElegida, setPersonaElegida] = useState<string | null>(null);
   const [entrada, setEntrada] = useState<EntradaMision>('alcanzado');
 
@@ -78,9 +78,6 @@ export default function Mision({ repo }: { repo: Repo }) {
   };
   const hoy = hoyIso();
 
-  const candidatas = buscarPersonas(datos, buscaPersona).filter(
-    (p) => !datos.conversiones.some((c) => c.personaId === p.id),
-  );
   const idsBuscadas = new Set(buscarPersonas(datos, busqueda).map((p) => p.id));
 
   const lista = datos.conversiones.filter((c) => {
@@ -120,7 +117,6 @@ export default function Mision({ repo }: { repo: Repo }) {
       await crearConversion(repo, datos, personaElegida, entrada, hoy);
       setMostrarNuevo(false);
       setPersonaElegida(null);
-      setBuscaPersona('');
       recargar();
     } catch (e) {
       setErrorAccion(e instanceof Error ? e.message : String(e));
@@ -158,21 +154,23 @@ export default function Mision({ repo }: { repo: Repo }) {
     const siguiente = siguientePasoEnRuta(datos, c.estado);
     return (
       <li key={c.id}>
-        <div className={`persona-fila ${seleccionada === c.id ? 'activa' : ''}`}>
-          <button className="persona-main" onClick={() => setSeleccionada(c.id)}>
-            <span className="persona-nombre">{p?.nombre ?? '(sin ficha)'} {p?.apellidos ?? ''}</span>
-            <span className="persona-meta">{paso?.emoji} {paso?.nombre} · {diasEnPaso(c)} días en el paso</span>
-          </button>
-          {siguiente && paso?.rol !== 'gozne' && (
-            <button
-              className="btn btn-avance"
-              title={`Avanzar a ${datos.pasos.find((x) => x.id === siguiente)?.nombre}`}
-              onClick={() => avanzar(c.id, siguiente, 'Avance rápido')}
-            >
-              ▸
-            </button>
-          )}
-        </div>
+        <FilaAcciones
+          nombre={`${p?.nombre ?? '(sin ficha)'} ${p?.apellidos ?? ''}`}
+          meta={`${paso?.emoji ?? ''} ${paso?.nombre ?? ''} · ${diasEnPaso(c)} días en el paso`}
+          activa={seleccionada === c.id}
+          onClick={() => setSeleccionada(c.id)}
+          acciones={
+            siguiente && paso?.rol !== 'gozne' ? (
+              <button
+                className="btn btn-avance"
+                title={`Avanzar a ${datos.pasos.find((x) => x.id === siguiente)?.nombre}`}
+                onClick={() => avanzar(c.id, siguiente, 'Avance rápido')}
+              >
+                ▸
+              </button>
+            ) : undefined
+          }
+        />
       </li>
     );
   };
@@ -223,25 +221,15 @@ export default function Mision({ repo }: { repo: Repo }) {
             Elige una persona ya registrada (las que ya están en Misión no aparecen: bloqueo
             duro). Si aún no está registrada, créala primero en Personas con «➕ Nueva persona».
           </p>
-          <input
+          <p className="tenue">
+            Persona: {personaElegida ? `${personaDe(personaElegida)?.nombre ?? ''} ${personaDe(personaElegida)?.apellidos ?? ''}` : 'sin elegir'}
+          </p>
+          <SelectorPersona
+            datos={datos}
+            excluir={new Set(datos.conversiones.map((c) => c.personaId))}
+            onElegir={setPersonaElegida}
             placeholder="🔍 Buscar persona…"
-            value={buscaPersona}
-            onChange={(e) => setBuscaPersona(e.target.value)}
           />
-          <ul className="lista-personas">
-            {candidatas.slice(0, 8).map((p) => (
-              <li key={p.id}>
-                <button
-                  className={`persona-fila ${personaElegida === p.id ? 'activa' : ''}`}
-                  onClick={() => setPersonaElegida(p.id)}
-                >
-                  <span className="persona-nombre">{p.nombre} {p.apellidos ?? ''}</span>
-                  <span className="persona-meta">{p.telefono ?? 'Sin teléfono'}</span>
-                </button>
-              </li>
-            ))}
-            {candidatas.length === 0 && <li className="tenue">Sin personas disponibles.</li>}
-          </ul>
           <div className="radios">
             {(['alcanzado', 'confeso', 'converso', 'bautizado'] as EntradaMision[]).map((e) => {
               const pasoId = { alcanzado: 'ps-congregado', confeso: 'ps-confeso', converso: 'ps-nuevo', bautizado: 'ps-bautizado' }[e];
