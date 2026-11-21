@@ -161,6 +161,15 @@ de un solo motor de conteo (`src/motor/`); el cuadre se verifica solo
   encabezado** (Nombre · Fecha · Estado hoy · Días en la ruta),
   sin repetir la misma frase en cada fila; el desglose de bajas
   va como línea breve sobre su tabla. El Informe conserva su
-  formato de lectura para imprimir.
+  formato de lectura para imprimir. Corrección del mismo día, a
+  su palabra («las listas con el formato de la constitución, y
+  nada»): fuera las tablas — las listas de la página Misión usan
+  la fila única de la constitución (`FilaPersona`: nombre fuerte,
+  meta tenue, valor/chip a la derecha; tocar una fila abre la
+  ficha), y **toda la información de la mesa va en pestañas**
+  (⭐ Lo principal —la frase y las tarjetas del proceso— ·
+  Alcanzados · Bautizados · Integrados · Bajas · En proceso);
+  **abajo** quedan el buscador y la lista principal de
+  registros.
 
 La app actual (`lemgil-mision-apk`) sigue viva e intacta mientras tanto.

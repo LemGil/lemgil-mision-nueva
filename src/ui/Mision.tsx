@@ -16,7 +16,7 @@ import BorrarBoton from './BorrarBoton';
 import Modal from './Modal';
 import GuiaPagina from './GuiaPagina';
 import EditorPasos from './EditorPasos';
-import { Buscador, CabeceraPagina, FilaEdicion, Kpi, ListaEdicion, Pestanas, TarjetaPersona } from './Piezas';
+import { Buscador, CabeceraPagina, FilaEdicion, FilaPersona, Kpi, ListaEdicion, Pestanas, TarjetaPersona } from './Piezas';
 
 const hoyIso = () => new Date().toISOString().slice(0, 10);
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
@@ -26,7 +26,7 @@ export default function Mision({ repo }: { repo: Repo }) {
   const [recargas, setRecargas] = useState(0);
   const [ano, setAno] = useState<number>(0); // 0 = sin período (la foto)
   const [mes, setMes] = useState<number>(0);
-  const [pestanaInforme, setPestanaInforme] = useState<string>('alcanzados');
+  const [pestanaMesa, setPestanaMesa] = useState<string>('principal');
   const [filtroPaso, setFiltroPaso] = useState<string>('proceso');
   const [busqueda, setBusqueda] = useState('');
   const [seleccionada, setSeleccionada] = useState<string | null>(null);
@@ -72,6 +72,10 @@ export default function Mision({ repo }: { repo: Repo }) {
   const informe = informeMision(datos, periodo);
   const ruta = pasosDeMision(datos.pasos);
   const personaDe = (id: string) => datos.personas.find((p) => p.id === id);
+  const abrirFichaDe = (personaId: string) => {
+    const c = datos.conversiones.find((x) => x.personaId === personaId);
+    if (c) setSeleccionada(c.id);
+  };
   const hoy = hoyIso();
 
   const candidatas = buscarPersonas(datos, buscaPersona).filter(
@@ -284,6 +288,27 @@ export default function Mision({ repo }: { repo: Repo }) {
         {periodo && <span className="tenue">cuentan las entradas a cada paso en el período</span>}
       </div>
 
+      <section className="tarjeta">
+        <Pestanas
+          opciones={[
+            { id: 'principal', etiqueta: '⭐ Lo principal' },
+            { id: 'alcanzados', etiqueta: `🙏 Alcanzados (${informe.principal.alcanzados})` },
+            { id: 'bautizados', etiqueta: `💧 Bautizados (${informe.principal.bautizados})` },
+            { id: 'integrados', etiqueta: `🏘️ Integrados (${informe.principal.integrados})` },
+            { id: 'bajas', etiqueta: `🚪 Bajas (${informe.principal.bajas})` },
+            { id: 'enproceso', etiqueta: `🧭 En proceso (${informe.principal.enProceso})` },
+          ]}
+          activa={pestanaMesa}
+          onCambiar={setPestanaMesa}
+        />
+        {pestanaMesa === 'principal' && (
+          <>
+            <div className="informe-principal">
+              <span className="informe-principal-etiqueta">
+                📋 El informe{periodo ? ' del período' : ' de todo el tiempo'} (personas únicas)
+              </span>
+              <p>{informe.frase}</p>
+            </div>
       <section className="kpis">
         <Kpi
           principal
@@ -313,95 +338,66 @@ export default function Mision({ repo }: { repo: Repo }) {
             />
           ))}
       </section>
-
-      <section className="tarjeta informe-principal">
-        <span className="informe-principal-etiqueta">
-          📋 El informe{periodo ? ' del período' : ' de todo el tiempo'} — ⭐ Lo principal (personas únicas)
-        </span>
-        <p>{informe.frase}</p>
-      </section>
-      <section className="tarjeta">
-        <Pestanas
-          opciones={[
-            { id: 'alcanzados', etiqueta: `🙏 Alcanzados (${informe.principal.alcanzados})` },
-            { id: 'bautizados', etiqueta: `💧 Bautizados (${informe.principal.bautizados})` },
-            { id: 'integrados', etiqueta: `🏘️ Integrados (${informe.principal.integrados})` },
-            { id: 'bajas', etiqueta: `🚪 Bajas (${informe.principal.bajas})` },
-            { id: 'enproceso', etiqueta: `🧭 En proceso (${informe.principal.enProceso})` },
-          ]}
-          activa={pestanaInforme}
-          onCambiar={setPestanaInforme}
-        />
-        {pestanaInforme === 'alcanzados' &&
+          </>
+        )}
+        {pestanaMesa === 'alcanzados' &&
           (informe.alcanzados.length ? (
-            <table className="tabla-mision">
-              <thead>
-                <tr>
-                  <th>Nombre</th>
-                  <th>Fecha</th>
-                  <th>Estado hoy</th>
-                  <th className="num">Días en la ruta</th>
-                </tr>
-              </thead>
-              <tbody>
-                {informe.alcanzados.map((a) => (
-                  <tr key={a.nombre + a.fecha}>
-                    <td className="nombre">{a.nombre}</td>
-                    <td>{a.fecha}</td>
-                    <td>{a.pasoActual}</td>
-                    <td className="num">{a.diasEnRuta}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <ul className="lista">
+              {informe.alcanzados.map((a) => (
+                <li key={a.personaId}>
+                  <FilaPersona
+                    nombre={a.nombre}
+                    meta={`${a.fecha} · hoy: ${a.pasoActual}`}
+                    derecha={<span className="fila-valor">{a.diasEnRuta} días</span>}
+                    onClick={() => abrirFichaDe(a.personaId)}
+                  />
+                </li>
+              ))}
+            </ul>
           ) : (
             <p className="tenue">Sin registros en el período.</p>
           ))}
-        {pestanaInforme === 'bautizados' &&
+        {pestanaMesa === 'bautizados' &&
           (informe.bautizados.length ? (
-            <table className="tabla-mision">
-              <thead>
-                <tr>
-                  <th>Nombre</th>
-                  <th>Fecha</th>
-                </tr>
-              </thead>
-              <tbody>
-                {informe.bautizados.map((b) => (
-                  <tr key={b.nombre + b.fecha}>
-                    <td className="nombre">{b.nombre}</td>
-                    <td>{b.fecha}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <ul className="lista">
+              {informe.bautizados.map((b) => (
+                <li key={b.personaId}>
+                  <FilaPersona
+                    nombre={b.nombre}
+                    meta={b.fecha}
+                    derecha={<span className="fila-valor">💧</span>}
+                    onClick={() => abrirFichaDe(b.personaId)}
+                  />
+                </li>
+              ))}
+            </ul>
           ) : (
             <p className="tenue">Sin registros en el período.</p>
           ))}
-        {pestanaInforme === 'integrados' &&
+        {pestanaMesa === 'integrados' &&
           (informe.integrados.length ? (
-            <table className="tabla-mision">
-              <thead>
-                <tr>
-                  <th>Nombre</th>
-                  <th>Fecha</th>
-                  <th>Bautismo</th>
-                </tr>
-              </thead>
-              <tbody>
-                {informe.integrados.map((i) => (
-                  <tr key={i.nombre + i.fecha}>
-                    <td className="nombre">{i.nombre}</td>
-                    <td>{i.fecha}</td>
-                    <td>{i.bautizadoConNosotros ? '💧 Se bautizó con nosotros' : 'Vino ya bautizado'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <ul className="lista">
+              {informe.integrados.map((i) => (
+                <li key={i.personaId}>
+                  <FilaPersona
+                    nombre={i.nombre}
+                    meta={i.fecha}
+                    derecha={
+                      i.bautizadoConNosotros ? (
+                        <span className="chip chip-ambar">💧 con nosotros</span>
+                      ) : (
+                        <span className="chip chip-gris">vino ya bautizado</span>
+                      )
+                    }
+                    onClick={() => abrirFichaDe(i.personaId)}
+                  />
+                </li>
+              ))}
+            </ul>
           ) : (
             <p className="tenue">Sin registros en el período.</p>
           ))}
-        {pestanaInforme === 'bajas' && (
+        {pestanaMesa === 'bajas' && (
           <>
             {informe.bajasDesglose.length > 0 && (
               <p className="tenue resumen-bajas">
@@ -409,53 +405,41 @@ export default function Mision({ repo }: { repo: Repo }) {
               </p>
             )}
             {informe.bajas.length ? (
-              <table className="tabla-mision">
-                <thead>
-                  <tr>
-                    <th>Nombre</th>
-                    <th>Salida</th>
-                    <th>Fecha</th>
-                    <th>Venía de</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {informe.bajas.map((b) => (
-                    <tr key={b.nombre + b.fecha}>
-                      <td className="nombre">{b.nombre}</td>
-                      <td>{b.salida}</td>
-                      <td>{b.fecha}</td>
-                      <td>{b.pasoPrevio ?? '—'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <ul className="lista">
+                {informe.bajas.map((b) => (
+                  <li key={b.personaId}>
+                    <FilaPersona
+                      nombre={b.nombre}
+                      meta={`${b.salida} · ${b.fecha}${b.pasoPrevio ? ` · venía de ${b.pasoPrevio}` : ''}`}
+                      onClick={() => abrirFichaDe(b.personaId)}
+                    />
+                  </li>
+                ))}
+              </ul>
             ) : (
               <p className="tenue">Sin registros en el período.</p>
             )}
           </>
         )}
-        {pestanaInforme === 'enproceso' &&
+        {pestanaMesa === 'enproceso' &&
           (informe.enProceso.length ? (
-            <table className="tabla-mision">
-              <thead>
-                <tr>
-                  <th>Nombre</th>
-                  <th>Paso</th>
-                  <th className="num">Días en el paso</th>
-                  <th className="num">Días en la ruta</th>
-                </tr>
-              </thead>
-              <tbody>
-                {informe.enProceso.map((e) => (
-                  <tr key={e.nombre + e.pasoActual}>
-                    <td className="nombre">{e.nombre}</td>
-                    <td>{e.pasoActual}</td>
-                    <td className="num">{e.diasEnPaso}</td>
-                    <td className="num">{e.diasEnRuta}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <ul className="lista">
+              {informe.enProceso.map((e) => (
+                <li key={e.personaId}>
+                  <FilaPersona
+                    nombre={e.nombre}
+                    meta={e.pasoActual}
+                    derecha={
+                      <span className="fila-lado">
+                        <span className="fila-valor">{e.diasEnPaso} días</span>
+                        <span className="tenue">{e.diasEnRuta} en la ruta</span>
+                      </span>
+                    }
+                    onClick={() => abrirFichaDe(e.personaId)}
+                  />
+                </li>
+              ))}
+            </ul>
           ) : (
             <p className="tenue">Sin registros en el período.</p>
           ))}
