@@ -111,6 +111,12 @@ export default function Informe({ repo }: { repo: Repo }) {
       ) : (
         <>
           <h2 className="informe-titulo">{informe.titulo}</h2>
+          {informe.principal && (
+            <section className="tarjeta informe-principal">
+              <span className="informe-principal-etiqueta">⭐ Lo principal</span>
+              <p>{informe.principal}</p>
+            </section>
+          )}
           {informe.secciones.map((s) => (
             <section className="tarjeta" key={s.titulo}>
               <h2>{s.titulo}</h2>

@@ -8,7 +8,7 @@ import { resumenBienComun } from './bienComun';
 import { calcularCenso } from './censo';
 import { verificarCuadre } from './cuadre';
 import { escaleraDeMiembro, tarjetasDeMiembros } from './miembros';
-import { conteoMision } from './mision';
+import { informeMision } from './informeMision';
 import { nombreColaborador, resumenRed } from './red';
 import { resumenManos } from './manosAbiertas';
 import { formatoDinero } from './dinero';
@@ -40,6 +40,9 @@ export interface SeccionInforme {
 export interface Informe {
   id: DepartamentoId;
   titulo: string;
+  /** La línea principal del informe, si el departamento la tiene:
+   * se muestra destacada, antes de las secciones. */
+  principal?: string;
   secciones: SeccionInforme[];
 }
 
@@ -103,37 +106,64 @@ export function construirInforme(
       return { id, titulo: 'Informe General del Ministerio', secciones };
     }
     case 'mision': {
-      const conteo = conteoMision(datos, opts.periodo);
-      const censo = calcularCenso(datos, { periodo: opts.periodo });
+      // El formato de LemGil (2026-11-21): lo principal en cinco
+      // números —personas únicas— y lo ampliado, persona por
+      // persona. El motor vive en informeMision.ts.
+      const inf = informeMision(datos, opts.periodo);
+      const vacia: [string, string][] = [['Sin registros en el período', '']];
       const secciones: SeccionInforme[] = [
         {
-          titulo: '🧭 El proceso (registros)',
-          filas: [
-            ['En proceso', n(conteo.enProceso)],
-            ...conteo.pasos.map((t): [string, string] => [
-              `${t.emoji} ${t.nombre}`,
-              opts.periodo ? `${t.periodo ?? 0} en el período · ${t.foto} hoy` : n(t.foto),
-            ]),
-            ...conteo.salidas
-              .filter((t) => t.foto > 0 || (t.periodo ?? 0) > 0)
-              .map((t): [string, string] => [
-                `${t.emoji} ${t.nombre}`,
-                opts.periodo ? `${t.periodo ?? 0} en el período · ${t.foto} hoy` : n(t.foto),
-              ]),
-          ],
+          titulo: `🙏 Alcanzados (${inf.principal.alcanzados})`,
+          filas: inf.alcanzados.length
+            ? inf.alcanzados.map((a): [string, string] => [
+                a.nombre,
+                `${a.fecha} · hoy: ${a.pasoActual} · ${a.diasEnRuta} días en la ruta`,
+              ])
+            : vacia,
+        },
+        {
+          titulo: `💧 Bautizados (${inf.principal.bautizados})`,
+          filas: inf.bautizados.length
+            ? inf.bautizados.map((b): [string, string] => [b.nombre, b.fecha])
+            : vacia,
+        },
+        {
+          titulo: `🏘️ Integrados (${inf.principal.integrados})`,
+          filas: inf.integrados.length
+            ? inf.integrados.map((i): [string, string] => [
+                i.nombre,
+                i.bautizadoConNosotros
+                  ? `${i.fecha} · 💧 se bautizó con nosotros`
+                  : `${i.fecha} · vino ya bautizado`,
+              ])
+            : vacia,
+        },
+        {
+          titulo: '🚪 Bajas por tipo',
+          filas: inf.bajasDesglose.length
+            ? inf.bajasDesglose.map((d): [string, string] => [d.salida, n(d.cantidad)])
+            : vacia,
+        },
+        {
+          titulo: `🚪 Las bajas (${inf.principal.bajas})`,
+          filas: inf.bajas.length
+            ? inf.bajas.map((b): [string, string] => [
+                b.nombre,
+                `${b.salida} · ${b.fecha}${b.pasoPrevio ? ` · venía de ${b.pasoPrevio}` : ''}`,
+              ])
+            : vacia,
+        },
+        {
+          titulo: `🧭 En proceso (${inf.principal.enProceso}) — entraron en el período y siguen`,
+          filas: inf.enProceso.length
+            ? inf.enProceso.map((e): [string, string] => [
+                e.nombre,
+                `${e.pasoActual} · ${e.diasEnPaso} días en el paso · ${e.diasEnRuta} en la ruta`,
+              ])
+            : vacia,
         },
       ];
-      if (censo.periodo) {
-        secciones.push({
-          titulo: '📅 Movimiento del período (personas)',
-          filas: [
-            ['Confesiones', n(censo.periodo.confesiones)],
-            ['Conversiones', n(censo.periodo.conversiones)],
-            ['Bajas', n(censo.periodo.bajas)],
-          ],
-        });
-      }
-      return { id, titulo: 'Informe de Misión', secciones };
+      return { id, titulo: 'Informe de Misión', principal: inf.frase, secciones };
     }
     case 'miembros': {
       const t = tarjetasDeMiembros(datos, opts.cohorte);

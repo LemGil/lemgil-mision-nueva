@@ -19,10 +19,14 @@ describe('informes por departamento — los mismos números del motor', () => {
     expect(fila(inf, 'Movimiento', 'Bajas')).toBe('1');
   });
 
-  it('Misión informa registros: En proceso 9, no las 6 personas', () => {
+  it('Misión informa personas: lo principal y lo ampliado del período', () => {
     const inf = construirInforme('mision', CASO_2026, { periodo: NOVIEMBRE_2026 });
-    expect(fila(inf, 'proceso', 'En proceso')).toBe('9');
-    expect(fila(inf, 'proceso', 'Confeso')).toContain('2 en el período');
+    expect(inf.principal).toBe(
+      'Se terminó con: 1 Alcanzados · 0 Bautizados · 0 Integrados · 1 Bajas · 2 En Proceso',
+    );
+    expect(fila(inf, 'Alcanzados', 'Uno')).toContain('hoy: Alcanzado');
+    expect(fila(inf, 'Las bajas', 'Nueve')).toContain('Apartado · 2026-11-12');
+    expect(fila(inf, 'En proceso', 'Tres')).toContain('Discipulado');
   });
 
   it('Miembros: la foto y la escalera coinciden con las tarjetas', () => {

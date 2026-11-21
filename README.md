@@ -134,4 +134,16 @@ de un solo motor de conteo (`src/motor/`); el cuadre se verifica solo
   `DatosLista` como filas etiqueta/valor de la muestra; botones,
   chips, guía, campos y ventana con el traje de la muestra (96/96).
 
+- **Informe de Misión con el formato de LemGil (2026-11-21):** la
+  sección Misión del Informe se rehízo según su formato fijado en
+  el chat de orientación y su decisión de conteo: primero LO
+  PRINCIPAL en cinco números —«Se terminó con: N Alcanzados · N
+  Bautizados · N Integrados · N Bajas · N En Proceso»— contando
+  PERSONAS ÚNICAS (nadie dos veces) y con las Bajas sumando todas
+  las salidas; luego LO AMPLIADO, persona por persona (quiénes,
+  cuándo, en qué paso están hoy, el tiempo en el paso y en la
+  ruta; cada Integrado con su marca: 💧 se bautizó con nosotros o
+  vino ya bautizado; las Bajas desglosadas por tipo y con el paso
+  del que venía cada uno). Motor puro `informeMision.ts` (108/108).
+
 La app actual (`lemgil-mision-apk`) sigue viva e intacta mientras tanto.
