@@ -225,7 +225,6 @@ button.persona-fila:hover, .persona-fila.activa { border-color: var(--dorado); }
 .altas { border: 1px solid var(--borde); border-radius: var(--radio-tarjeta); margin: 12px 0; padding: 12px; }
 .altas legend { color: var(--tenue); font-size: var(--letra-meta); padding: 0 6px; }
 .check { display: flex; gap: 8px; align-items: center; font-size: var(--letra); margin: 5px 0; cursor: pointer; }
-.altas .ya-esta { cursor: default; color: var(--tenue); }
 .radios { margin: 4px 0 8px 24px; }
 .form-acciones { display: flex; gap: var(--esp-2); margin-top: 12px; align-items: end; }
 

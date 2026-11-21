@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { aDatosMinisterio } from '../datos/aDatosMinisterio';
-import { actualizarPersona, borrarPersona, darAltasDirectas, quitarZona, registrarPersona, renombrarZona, type EntradaMision } from '../datos/acciones';
+import { actualizarPersona, borrarPersona, quitarZona, registrarPersona, renombrarZona, type EntradaMision } from '../datos/acciones';
 import type { Repo } from '../datos/repo';
 import type { DatosMinisterio, Persona, Sexo } from '../modelo/tipos';
 import { buscarPersonas, fichaDePersona, situacionDe } from '../motor/personaVista';
@@ -179,10 +179,6 @@ export default function Personas({ repo }: { repo: Repo }) {
   const [entrada, setEntrada] = useState<EntradaMision>('alcanzado');
   const [altaIntegrado, setAltaIntegrado] = useState(false);
   const [altaBeneficiario, setAltaBeneficiario] = useState(false);
-  const [edAltaMision, setEdAltaMision] = useState(false);
-  const [edEntrada, setEdEntrada] = useState<EntradaMision>('alcanzado');
-  const [edAltaIntegrado, setEdAltaIntegrado] = useState(false);
-  const [edAltaBeneficiario, setEdAltaBeneficiario] = useState(false);
   const [errorForm, setErrorForm] = useState('');
   const [errorEdicion, setErrorEdicion] = useState('');
   const [ver, setVer] = useState<VerPersonas>('activos');
@@ -244,35 +240,12 @@ export default function Personas({ repo }: { repo: Repo }) {
     }
   };
 
-  const limpiarAltasEdicion = () => {
-    setEdAltaMision(false);
-    setEdEntrada('alcanzado');
-    setEdAltaIntegrado(false);
-    setEdAltaBeneficiario(false);
-  };
-
   const guardarEdicion = async (ev: React.FormEvent) => {
     ev.preventDefault();
     if (!ficha) return;
     setErrorEdicion('');
     try {
       await actualizarPersona(repo, datos, { ...ficha.persona, ...personaDe(camposEdicion) });
-      // Las altas que le faltaban y se marcaron nacen con la misma siembra
-      // del registro nuevo; la sección es solo de altas, nunca borra.
-      if (edAltaIntegrado || edAltaMision || edAltaBeneficiario) {
-        await darAltasDirectas(
-          repo,
-          datos,
-          ficha.persona.id,
-          {
-            mision: edAltaIntegrado ? undefined : edAltaMision ? edEntrada : undefined,
-            integrado: edAltaIntegrado,
-            beneficiario: edAltaBeneficiario,
-          },
-          hoyIso(),
-        );
-      }
-      limpiarAltasEdicion();
       setEditando(false);
       recargar();
     } catch (e) {
@@ -281,9 +254,6 @@ export default function Personas({ repo }: { repo: Repo }) {
   };
 
   const p = ficha?.persona;
-  const misionEd = ficha?.mision[0];
-  const miembroEd = ficha?.miembros[0];
-  const beneficiarioEd = ficha?.beneficiario;
   const filasDatos: [string, string][] = p
     ? (
         [
@@ -484,46 +454,6 @@ export default function Personas({ repo }: { repo: Repo }) {
           {editando ? (
             <form className="formulario" onSubmit={guardarEdicion}>
               <FormularioCampos campos={camposEdicion} set={setCamposEdicion} datos={datos} excluirId={p.id} />
-              <fieldset className="altas">
-                <legend>Al guardar, dar de alta también como:</legend>
-                {misionEd ? (
-                  <p className="check ya-esta">✔ Ya está en Misión — paso {misionEd.pasoNombre}</p>
-                ) : (
-                  <>
-                    <label className="check">
-                      <input type="checkbox" checked={edAltaMision} disabled={edAltaIntegrado} onChange={(e) => setEdAltaMision(e.target.checked)} />
-                      En Misión, entrando como:
-                    </label>
-                    <div className="radios">
-                      {(['alcanzado', 'confeso', 'converso', 'bautizado'] as EntradaMision[]).map((e) => (
-                        <label key={e} className="check">
-                          <input type="radio" name="entrada-edicion" checked={edEntrada === e} disabled={!edAltaMision || edAltaIntegrado} onChange={() => setEdEntrada(e)} />
-                          {nombrePasoEntrada(e)}
-                          {e === 'bautizado' && ' — llega de traslado, ya bautizado'}
-                        </label>
-                      ))}
-                    </div>
-                  </>
-                )}
-                {miembroEd ? (
-                  <p className="check ya-esta">✔ Ya es miembro</p>
-                ) : misionEd ? (
-                  <p className="check ya-esta">El miembro nace cuando su registro de Misión llegue a Integrado.</p>
-                ) : (
-                  <label className="check">
-                    <input type="checkbox" checked={edAltaIntegrado} onChange={(e) => setEdAltaIntegrado(e.target.checked)} />
-                    Integrado → Miembro directo
-                  </label>
-                )}
-                {beneficiarioEd ? (
-                  <p className="check ya-esta">✔ Ya es beneficiario</p>
-                ) : (
-                  <label className="check">
-                    <input type="checkbox" checked={edAltaBeneficiario} onChange={(e) => setEdAltaBeneficiario(e.target.checked)} />
-                    Beneficiario → Manos Abiertas
-                  </label>
-                )}
-              </fieldset>
               {errorEdicion && <p className="aviso aviso-rojo">{errorEdicion}</p>}
               <div className="form-acciones">
                 <button className="btn btn-dorado" type="submit">💾 Guardar cambios</button>
@@ -542,7 +472,6 @@ export default function Personas({ repo }: { repo: Repo }) {
                   className="btn"
                   onClick={() => {
                     setCamposEdicion(camposDe(p));
-                    limpiarAltasEdicion();
                     setErrorEdicion('');
                     setEditando(true);
                   }}
