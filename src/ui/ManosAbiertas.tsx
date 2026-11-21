@@ -274,7 +274,17 @@ export default function ManosAbiertas({ repo }: { repo: Repo }) {
 
   return (
     <div className="panel">
-      <CabeceraPagina titulo="🤲 Manos Abiertas" />
+      <CabeceraPagina titulo="🤲 Manos Abiertas">
+        {pestana === 'beneficiarios' && !mostrarBenef && (
+          <button className="btn btn-dorado" onClick={() => setMostrarBenef(true)}>➕ Nuevo beneficiario</button>
+        )}
+        {pestana === 'campanas' && !mostrarCamp && (
+          <button className="btn btn-dorado" onClick={() => setMostrarCamp(true)}>➕ Nueva campaña</button>
+        )}
+        {pestana === 'entregas' && !mostrarEntrega && (
+          <button className="btn btn-dorado" onClick={() => setMostrarEntrega(true)}>➕ Registrar entrega</button>
+        )}
+      </CabeceraPagina>
       <GuiaPagina texto="La ayuda organizada en tres mesas: a quién se ayuda (Personas, Familias y Grupos), las campañas (Desayuno con Jesús, Sopa con Jesús…) y cada entrega que se hace." />
       {error && <p className="aviso aviso-rojo">{error}</p>}
 
@@ -297,11 +307,6 @@ export default function ManosAbiertas({ repo }: { repo: Repo }) {
 
       {pestana === 'beneficiarios' && (
         <>
-          {!mostrarBenef && (
-            <div className="form-acciones">
-              <button className="btn btn-dorado" onClick={() => setMostrarBenef(true)}>➕ Nuevo beneficiario</button>
-            </div>
-          )}
           {mostrarBenef && (
             <section className="tarjeta">
               <h2>➕ Nuevo beneficiario</h2>
@@ -424,11 +429,6 @@ export default function ManosAbiertas({ repo }: { repo: Repo }) {
 
       {pestana === 'campanas' && (
         <>
-          {!mostrarCamp && (
-            <div className="form-acciones">
-              <button className="btn btn-dorado" onClick={() => setMostrarCamp(true)}>➕ Nueva campaña</button>
-            </div>
-          )}
           {mostrarCamp && (
             <section className="tarjeta formulario">
               <h2>➕ Nueva campaña</h2>
@@ -499,11 +499,6 @@ export default function ManosAbiertas({ repo }: { repo: Repo }) {
 
       {pestana === 'entregas' && (
         <>
-          {!mostrarEntrega && (
-            <div className="form-acciones">
-              <button className="btn btn-dorado" onClick={() => setMostrarEntrega(true)}>➕ Registrar entrega</button>
-            </div>
-          )}
           {mostrarEntrega && (
             <section className="tarjeta formulario">
               <h2>➕ Registrar entrega</h2>

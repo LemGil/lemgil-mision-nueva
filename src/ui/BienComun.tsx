@@ -129,7 +129,14 @@ export default function BienComun({ repo }: { repo: Repo }) {
 
   return (
     <div className="panel">
-      <CabeceraPagina titulo="🌾 Bien Común" />
+      <CabeceraPagina titulo="🌾 Bien Común">
+        {seccion === 'diezmadores' && !mostrarForm && (
+          <button className="btn btn-dorado" onClick={() => setMostrarForm(true)}>➕ Nuevo diezmador</button>
+        )}
+        {seccion === 'registro' && !mostrarGeneral && (
+          <button className="btn btn-dorado" onClick={() => setMostrarGeneral(true)}>➕ Registrar aporte (general)</button>
+        )}
+      </CabeceraPagina>
       <GuiaPagina texto="Los diezmadores y sus aportes de diezmos y ofrendas. Los aportes quedan a nombre de la persona para siempre: son historia, no se borran con su salida." />
       {error && <p className="aviso aviso-rojo">{error}</p>}
 
@@ -181,11 +188,6 @@ export default function BienComun({ repo }: { repo: Repo }) {
             reciente al más viejo. Total: {formatoDinero(registroGeneral.reduce((x, a) => x + a.monto, 0))}.
             Toca un registro para abrir la ficha de su diezmador.
           </p>
-          {!mostrarGeneral && (
-            <div className="form-acciones">
-              <button className="btn btn-dorado" onClick={() => setMostrarGeneral(true)}>➕ Registrar aporte (general)</button>
-            </div>
-          )}
           {mostrarGeneral && (
             <>
               <div className="form-fila">
@@ -261,11 +263,6 @@ export default function BienComun({ repo }: { repo: Repo }) {
 
       {seccion === 'diezmadores' && (
         <>
-      {!mostrarForm && (
-        <div className="form-acciones">
-          <button className="btn btn-dorado" onClick={() => setMostrarForm(true)}>➕ Nuevo diezmador</button>
-        </div>
-      )}
       {mostrarForm && (
       <section className="tarjeta">
         <h2>➕ Nuevo diezmador</h2>

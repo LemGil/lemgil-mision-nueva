@@ -140,9 +140,14 @@ export default function Miembros({ repo }: { repo: Repo }) {
   return (
     <div className="panel">
       <CabeceraPagina titulo="🤝 Miembros">
-        <button className="btn" onClick={() => setEditandoPasos(true)}>
-          ⚙️ Pasos
-        </button>
+        <div className="form-acciones">
+          <button className="btn" onClick={() => setEditandoPasos(true)}>
+            ⚙️ Pasos
+          </button>
+          {!mostrarForm && (
+            <button className="btn btn-dorado" onClick={() => setMostrarForm(true)}>➕ Nuevo miembro</button>
+          )}
+        </div>
       </CabeceraPagina>
       <GuiaPagina texto="El directorio de los integrados y su escalera: Grupo → Diezmador → Academia → Ministerio → Hermano Mayor → Liderazgo. La Integración es la puerta, no un peldaño." />
       {error && <p className="aviso aviso-rojo">{error}</p>}
@@ -157,11 +162,6 @@ export default function Miembros({ repo }: { repo: Repo }) {
         />
       )}
 
-      {!mostrarForm && (
-        <div className="form-acciones">
-          <button className="btn btn-dorado" onClick={() => setMostrarForm(true)}>➕ Nuevo miembro</button>
-        </div>
-      )}
       {mostrarForm && (
       <section className="tarjeta">
         <h2>➕ Nuevo miembro</h2>

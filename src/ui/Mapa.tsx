@@ -6,8 +6,9 @@ import { fijarUbicacion } from '../datos/acciones';
 import type { Repo } from '../datos/repo';
 import type { DatosMinisterio } from '../modelo/tipos';
 import { CENTRO_DEFECTO, puntosDelMapa, sinUbicacion, type PuntoMapa } from '../motor/mapa';
+import type { VerPersonas } from '../motor/vistas';
 import GuiaPagina from './GuiaPagina';
-import { CabeceraPagina, FilaPersona } from './Piezas';
+import { Buscador, CabeceraPagina, FilaPersona } from './Piezas';
 
 interface Objetivo {
   tipo: 'persona' | 'grupo';
@@ -19,6 +20,7 @@ export default function Mapa({ repo }: { repo: Repo }) {
   const [datos, setDatos] = useState<DatosMinisterio | null>(null);
   const [recargas, setRecargas] = useState(0);
   const [editando, setEditando] = useState(false);
+  const [ver, setVer] = useState<VerPersonas>('activos');
   const [fijando, setFijando] = useState<Objetivo | null>(null);
   const [aviso, setAviso] = useState('');
   const contenedorRef = useRef<HTMLDivElement>(null);
@@ -73,14 +75,14 @@ export default function Mapa({ repo }: { repo: Repo }) {
     };
   }, [repo, recargar, datos]);
 
-  const puntos: PuntoMapa[] = datos ? puntosDelMapa(datos) : [];
+  const puntos: PuntoMapa[] = datos ? puntosDelMapa(datos, ver) : [];
 
-  // Redibujar las chinchetas cuando cambian los datos o el modo.
+  // Redibujar las chinchetas cuando cambian los datos, el modo o el filtro «Ver».
   useEffect(() => {
     const capa = capaRef.current;
     if (!capa || !datos) return;
     capa.clearLayers();
-    for (const punto of puntosDelMapa(datos)) {
+    for (const punto of puntosDelMapa(datos, ver)) {
       const marker = L.marker([punto.lat, punto.lng], {
         draggable: editando,
         icon: L.divIcon({
@@ -103,10 +105,10 @@ export default function Mapa({ repo }: { repo: Repo }) {
       marker.addTo(capa);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [datos, editando, repo, recargar]);
+  }, [datos, editando, ver, repo, recargar]);
 
   if (!datos) return <p className="cargando">Cargando…</p>;
-  const sin = sinUbicacion(datos);
+  const sin = sinUbicacion(datos, ver);
 
   const fijarConGPS = () => {
     if (!fijando) return;
@@ -127,6 +129,13 @@ export default function Mapa({ repo }: { repo: Repo }) {
         </button>
       </CabeceraPagina>
       <GuiaPagina texto="Dónde vive cada uno. Las chinchetas se fijan a mano y se pueden arrastrar para corregirlas; ayuda a visitar y a ver la congregación por zonas." />
+      <Buscador>
+        <span className="seg" role="group" aria-label="Ver">
+          <button type="button" aria-pressed={ver === 'activos'} onClick={() => setVer('activos')}>Activos</button>
+          <button type="button" aria-pressed={ver === 'bajas'} onClick={() => setVer('bajas')}>Bajas</button>
+          <button type="button" aria-pressed={ver === 'todos'} onClick={() => setVer('todos')}>Todos</button>
+        </span>
+      </Buscador>
       <p className="tenue">
         {puntos.length} chinchetas fijadas. Las chinchetas son manuales (GPS o toque): la
         dirección escrita no se convierte sola.
@@ -160,7 +169,11 @@ export default function Mapa({ repo }: { repo: Repo }) {
                 />
               </li>
             ))}
-            {sin.length === 0 && <li className="tenue">Todas las fichas tienen su chincheta.</li>}
+            {sin.length === 0 && (
+              <li className="tenue">
+                {ver === 'todos' ? 'Todas las fichas tienen su chincheta.' : 'Sin fichas por fijar en esta vista.'}
+              </li>
+            )}
           </ul>
         )}
       </section>

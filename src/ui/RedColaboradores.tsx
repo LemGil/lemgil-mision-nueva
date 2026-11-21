@@ -146,7 +146,14 @@ export default function RedColaboradores({ repo }: { repo: Repo }) {
 
   return (
     <div className="panel">
-      <CabeceraPagina titulo="🌐 Red de Colaboradores" />
+      <CabeceraPagina titulo="🌐 Red de Colaboradores">
+        {seccion === 'colaboradores' && !mostrarForm && (
+          <button className="btn btn-dorado" onClick={() => setMostrarForm(true)}>➕ Nuevo colaborador</button>
+        )}
+        {seccion === 'registro' && !mostrarGeneral && (
+          <button className="btn btn-dorado" onClick={() => setMostrarGeneral(true)}>➕ Registrar aporte (general)</button>
+        )}
+      </CabeceraPagina>
       <GuiaPagina texto="Apoyo externo al Ministerio: personas, iglesias y ministerios que ofrendan. No son miembros: no entran en la ficha única ni en el censo; aquí viven su propio registro y sus aportes." />
       {error && <p className="aviso aviso-rojo">{error}</p>}
 
@@ -196,11 +203,6 @@ export default function RedColaboradores({ repo }: { repo: Repo }) {
             más reciente al más viejo. Total: {formatoDinero(registroGeneral.reduce((x, a) => x + a.monto, 0))}.
             Toca un registro para abrir la ficha de su colaborador.
           </p>
-          {!mostrarGeneral && (
-            <div className="form-acciones">
-              <button className="btn btn-dorado" onClick={() => setMostrarGeneral(true)}>➕ Registrar aporte (general)</button>
-            </div>
-          )}
           {mostrarGeneral && (
             <>
               <div className="form-fila">
@@ -282,11 +284,6 @@ export default function RedColaboradores({ repo }: { repo: Repo }) {
 
       {seccion === 'colaboradores' && (
         <>
-      {!mostrarForm && (
-        <div className="form-acciones">
-          <button className="btn btn-dorado" onClick={() => setMostrarForm(true)}>➕ Nuevo colaborador</button>
-        </div>
-      )}
       {mostrarForm && (
       <section className="tarjeta formulario">
         <h2>➕ Nuevo colaborador</h2>
