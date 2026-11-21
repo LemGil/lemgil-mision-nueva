@@ -154,6 +154,13 @@ de un solo motor de conteo (`src/motor/`); el cuadre se verifica solo
   página (o de todo el tiempo, sin período). Las secciones se
   construyen con la misma función compartida
   (`seccionesInformeMision`) que usa la página Informe: un solo
-  formato en dos casas (108/108).
+  formato en dos casas (108/108). Ajuste del mismo día, a su
+  palabra: la página Misión es mesa de trabajo, no papel — las
+  listas ampliadas van en **pestañas** (Alcanzados · Bautizados
+  · Integrados · Bajas · En proceso) y como **tablas con
+  encabezado** (Nombre · Fecha · Estado hoy · Días en la ruta),
+  sin repetir la misma frase en cada fila; el desglose de bajas
+  va como línea breve sobre su tabla. El Informe conserva su
+  formato de lectura para imprimir.
 
 La app actual (`lemgil-mision-apk`) sigue viva e intacta mientras tanto.

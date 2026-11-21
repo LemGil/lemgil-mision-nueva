@@ -7,7 +7,6 @@ import type { DatosMinisterio, Periodo } from '../modelo/tipos';
 import { fechaEnPasoActual } from '../motor/alertas';
 import { conteoMision, siguientePasoEnRuta } from '../motor/mision';
 import { informeMision } from '../motor/informeMision';
-import { seccionesInformeMision } from '../motor/informes';
 import { buscarPersonas } from '../motor/personaVista';
 import { agrupar } from '../motor/vistas';
 import { anosConRegistros, mesesConRegistros } from '../motor/periodos';
@@ -17,7 +16,7 @@ import BorrarBoton from './BorrarBoton';
 import Modal from './Modal';
 import GuiaPagina from './GuiaPagina';
 import EditorPasos from './EditorPasos';
-import { Buscador, CabeceraPagina, FilaEdicion, Kpi, ListaEdicion, TarjetaPersona } from './Piezas';
+import { Buscador, CabeceraPagina, FilaEdicion, Kpi, ListaEdicion, Pestanas, TarjetaPersona } from './Piezas';
 
 const hoyIso = () => new Date().toISOString().slice(0, 10);
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
@@ -27,6 +26,7 @@ export default function Mision({ repo }: { repo: Repo }) {
   const [recargas, setRecargas] = useState(0);
   const [ano, setAno] = useState<number>(0); // 0 = sin período (la foto)
   const [mes, setMes] = useState<number>(0);
+  const [pestanaInforme, setPestanaInforme] = useState<string>('alcanzados');
   const [filtroPaso, setFiltroPaso] = useState<string>('proceso');
   const [busqueda, setBusqueda] = useState('');
   const [seleccionada, setSeleccionada] = useState<string | null>(null);
@@ -70,7 +70,6 @@ export default function Mision({ repo }: { repo: Repo }) {
         };
   const conteo = conteoMision(datos, periodo);
   const informe = informeMision(datos, periodo);
-  const seccionesInf = seccionesInformeMision(informe);
   const ruta = pasosDeMision(datos.pasos);
   const personaDe = (id: string) => datos.personas.find((p) => p.id === id);
   const hoy = hoyIso();
@@ -321,21 +320,146 @@ export default function Mision({ repo }: { repo: Repo }) {
         </span>
         <p>{informe.frase}</p>
       </section>
-      {seccionesInf.map((sec) => (
-        <section className="tarjeta" key={sec.titulo}>
-          <h2>{sec.titulo}</h2>
-          <table className="informe-tabla">
-            <tbody>
-              {sec.filas.map(([k, v]) => (
-                <tr key={k}>
-                  <td>{k}</td>
-                  <td className="informe-valor">{v}</td>
+      <section className="tarjeta">
+        <Pestanas
+          opciones={[
+            { id: 'alcanzados', etiqueta: `🙏 Alcanzados (${informe.principal.alcanzados})` },
+            { id: 'bautizados', etiqueta: `💧 Bautizados (${informe.principal.bautizados})` },
+            { id: 'integrados', etiqueta: `🏘️ Integrados (${informe.principal.integrados})` },
+            { id: 'bajas', etiqueta: `🚪 Bajas (${informe.principal.bajas})` },
+            { id: 'enproceso', etiqueta: `🧭 En proceso (${informe.principal.enProceso})` },
+          ]}
+          activa={pestanaInforme}
+          onCambiar={setPestanaInforme}
+        />
+        {pestanaInforme === 'alcanzados' &&
+          (informe.alcanzados.length ? (
+            <table className="tabla-mision">
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>Fecha</th>
+                  <th>Estado hoy</th>
+                  <th className="num">Días en la ruta</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
-      ))}
+              </thead>
+              <tbody>
+                {informe.alcanzados.map((a) => (
+                  <tr key={a.nombre + a.fecha}>
+                    <td className="nombre">{a.nombre}</td>
+                    <td>{a.fecha}</td>
+                    <td>{a.pasoActual}</td>
+                    <td className="num">{a.diasEnRuta}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <p className="tenue">Sin registros en el período.</p>
+          ))}
+        {pestanaInforme === 'bautizados' &&
+          (informe.bautizados.length ? (
+            <table className="tabla-mision">
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>Fecha</th>
+                </tr>
+              </thead>
+              <tbody>
+                {informe.bautizados.map((b) => (
+                  <tr key={b.nombre + b.fecha}>
+                    <td className="nombre">{b.nombre}</td>
+                    <td>{b.fecha}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <p className="tenue">Sin registros en el período.</p>
+          ))}
+        {pestanaInforme === 'integrados' &&
+          (informe.integrados.length ? (
+            <table className="tabla-mision">
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>Fecha</th>
+                  <th>Bautismo</th>
+                </tr>
+              </thead>
+              <tbody>
+                {informe.integrados.map((i) => (
+                  <tr key={i.nombre + i.fecha}>
+                    <td className="nombre">{i.nombre}</td>
+                    <td>{i.fecha}</td>
+                    <td>{i.bautizadoConNosotros ? '💧 Se bautizó con nosotros' : 'Vino ya bautizado'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <p className="tenue">Sin registros en el período.</p>
+          ))}
+        {pestanaInforme === 'bajas' && (
+          <>
+            {informe.bajasDesglose.length > 0 && (
+              <p className="tenue resumen-bajas">
+                {informe.bajasDesglose.map((d) => `${d.salida}: ${d.cantidad}`).join(' · ')}
+              </p>
+            )}
+            {informe.bajas.length ? (
+              <table className="tabla-mision">
+                <thead>
+                  <tr>
+                    <th>Nombre</th>
+                    <th>Salida</th>
+                    <th>Fecha</th>
+                    <th>Venía de</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {informe.bajas.map((b) => (
+                    <tr key={b.nombre + b.fecha}>
+                      <td className="nombre">{b.nombre}</td>
+                      <td>{b.salida}</td>
+                      <td>{b.fecha}</td>
+                      <td>{b.pasoPrevio ?? '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <p className="tenue">Sin registros en el período.</p>
+            )}
+          </>
+        )}
+        {pestanaInforme === 'enproceso' &&
+          (informe.enProceso.length ? (
+            <table className="tabla-mision">
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>Paso</th>
+                  <th className="num">Días en el paso</th>
+                  <th className="num">Días en la ruta</th>
+                </tr>
+              </thead>
+              <tbody>
+                {informe.enProceso.map((e) => (
+                  <tr key={e.nombre + e.pasoActual}>
+                    <td className="nombre">{e.nombre}</td>
+                    <td>{e.pasoActual}</td>
+                    <td className="num">{e.diasEnPaso}</td>
+                    <td className="num">{e.diasEnRuta}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <p className="tenue">Sin registros en el período.</p>
+          ))}
+      </section>
 
       <Buscador>
         <input placeholder="🔍 Buscar en la lista…" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} />

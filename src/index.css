@@ -578,3 +578,13 @@ button.persona-fila:hover, .persona-fila.activa { border-color: var(--dorado); }
 .informe-principal { border-color: var(--oro); background: var(--oro-suave); }
 .informe-principal-etiqueta { font-size: var(--letra-menu); font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--tenue); }
 .informe-principal p { font-family: 'Cinzel', serif; font-size: var(--letra-tarjeta); font-weight: 700; margin: 6px 0 0; line-height: 1.4; }
+
+/* Tablas de trabajo del informe en la página Misión (mesa, no
+   papel): el encabezado va una sola vez y cada dato en su
+   columna, sin repetir la misma frase en cada fila. */
+.tabla-mision { width: 100%; border-collapse: collapse; font-size: 14px; }
+.tabla-mision th { text-align: left; font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--tenue); padding: 8px; border-bottom: 2px solid var(--borde-fuerte); }
+.tabla-mision td { padding: 7px 8px; border-bottom: 1px dashed var(--borde); }
+.tabla-mision th.num, .tabla-mision td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.tabla-mision td.nombre { font-weight: 700; }
+.resumen-bajas { margin: 2px 0 10px; }
