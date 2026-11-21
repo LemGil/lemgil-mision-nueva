@@ -19,7 +19,7 @@ import { agrupar } from '../motor/vistas';
 import BarraVistas, { type Vista } from './BarraVistas';
 import BorrarBoton from './BorrarBoton';
 import GuiaPagina from './GuiaPagina';
-import { CabeceraPagina, FilaEdicion, FilaPersona, Kpi, ListaEdicion, Pestanas, TarjetaPersona } from './Piezas';
+import { CabeceraPagina, FilaEdicion, FilaPersona, FilaRegistro, Kpi, ListaEdicion, Pestanas, TarjetaPersona } from './Piezas';
 import Modal from './Modal';
 import { InputNombre, InputZona } from './CamposLista';
 import { nombreDeEntrega, resumenManos } from '../motor/manosAbiertas';
@@ -130,6 +130,7 @@ export default function ManosAbiertas({ repo }: { repo: Repo }) {
     if (agruparPor === 'estado') return b.estado;
     return zonaDe(b);
   };
+  const [editandoEntrega, setEditandoEntrega] = useState<string | null>(null);
   const abrirBenef = (b: Beneficiario) => {
     setBenefSel(b.id);
     setNombreBE(b.nombre ?? '');
@@ -175,8 +176,11 @@ export default function ManosAbiertas({ repo }: { repo: Repo }) {
     .slice()
     .sort((a, b) => (a.fecha < b.fecha ? 1 : -1));
 
-  const filaEntrega = (e: Entrega, conCampana: boolean) => (
-    <FilaEdicion key={e.id}>
+  const filaEntrega = (e: Entrega, conCampana: boolean) =>
+    editandoEntrega === e.id ? (
+      <li key={e.id}>
+        <ListaEdicion>
+          <FilaEdicion>
       <input
         type="date"
         value={e.fecha}
@@ -200,8 +204,24 @@ export default function ManosAbiertas({ repo }: { repo: Repo }) {
           recargar();
         }}
       />
-    </FilaEdicion>
-  );
+    
+            <button className="btn" title="Cerrar el editor" onClick={() => setEditandoEntrega(null)}>
+              ✔
+            </button>
+          </FilaEdicion>
+        </ListaEdicion>
+      </li>
+    ) : (
+      <li key={e.id}>
+        <FilaRegistro
+          fecha={e.fecha}
+          nombre={nombreDeEntrega(e, nombreBenefPorId)}
+          meta={[conCampana ? nombreCampana(e.campanaId) : null, e.tipo ?? null].filter(Boolean).join(' · ') || undefined}
+          valor={e.cantidad ? `${e.cantidad} ${e.unidad ?? ''}`.trim() : ''}
+          onClick={() => setEditandoEntrega(e.id)}
+        />
+      </li>
+    );
 
   const guardarEntrega = async (campanaId: string) => {
     await registrarEntrega(repo, {
@@ -523,7 +543,7 @@ export default function ManosAbiertas({ repo }: { repo: Repo }) {
           {todasEntregas.length === 0 ? (
             <p className="tenue">Sin entregas para esta vista.</p>
           ) : (
-            <ListaEdicion>{todasEntregas.map((e) => filaEntrega(e, true))}</ListaEdicion>
+            <ul className="lista">{todasEntregas.map((e) => filaEntrega(e, true))}</ul>
           )}
         </>
       )}
@@ -703,7 +723,7 @@ export default function ManosAbiertas({ repo }: { repo: Repo }) {
           {entregasDe.length === 0 ? (
             <p className="tenue">Sin entregas registradas en esta campaña.</p>
           ) : (
-            <ListaEdicion>{entregasDe.map((e) => filaEntrega(e, false))}</ListaEdicion>
+            <ul className="lista">{entregasDe.map((e) => filaEntrega(e, false))}</ul>
           )}
           {formularioEntrega(campanaDetalle.id)}
         </Modal>

@@ -51,7 +51,7 @@ export function FilaRegistro({
 }: {
   fecha: string;
   nombre: ReactNode;
-  meta: ReactNode;
+  meta?: ReactNode;
   valor: string;
   onClick: () => void;
 }) {
@@ -65,7 +65,7 @@ export function FilaRegistro({
       </span>
       <span className="persona-main">
         <span className="persona-nombre">{nombre}</span>
-        <span className="persona-meta">{meta}</span>
+        {meta != null && <span className="persona-meta">{meta}</span>}
       </span>
       <span className="fila-valor">{valor}</span>
     </button>

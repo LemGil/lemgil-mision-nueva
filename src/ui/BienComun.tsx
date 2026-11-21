@@ -25,6 +25,7 @@ export default function BienComun({ repo }: { repo: Repo }) {
   const [ano, setAno] = useState(0);
   const [mes, setMes] = useState(0);
   const [seleccionado, setSeleccionado] = useState<string | null>(null);
+  const [editandoAporte, setEditandoAporte] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [mostrarForm, setMostrarForm] = useState(false);
   const [ver, setVer] = useState('activos');
@@ -386,14 +387,17 @@ export default function BienComun({ repo }: { repo: Repo }) {
               </div>
             </div>
           )}
-          <h3>Aportes (editables)</h3>
+          <h3>Aportes</h3>
           {aportesDe.length === 0 ? (
             <p className="tenue">Sin aportes registrados.</p>
           ) : (
             <>
-              <ListaEdicion>
+              <ul className="lista">
                 {aportesDe.map((a) => (
-                  <FilaEdicion key={a.id}>
+                  <li key={a.id}>
+                    {editandoAporte === a.id ? (
+                      <ListaEdicion>
+                        <FilaEdicion>
                     <input
                       type="date"
                       value={a.fecha}
@@ -433,12 +437,26 @@ export default function BienComun({ repo }: { repo: Repo }) {
                         recargar();
                       }}
                     />
-                  </FilaEdicion>
+                  
+                          <button className="btn" title="Cerrar el editor" onClick={() => setEditandoAporte(null)}>
+                            ✔
+                          </button>
+                        </FilaEdicion>
+                      </ListaEdicion>
+                    ) : (
+                      <FilaRegistro
+                        fecha={a.fecha}
+                        nombre={a.tipo}
+                        valor={formatoDinero(a.monto)}
+                        onClick={() => setEditandoAporte(a.id)}
+                      />
+                    )}
+                  </li>
                 ))}
-              </ListaEdicion>
+              </ul>
               <p className="tenue">
                 {aportesDe.length} aportes · total {formatoDinero(aportesDe.reduce((x, a) => x + a.monto, 0))}.
-                Toca la fecha, el tipo o el monto para corregirlos.
+                Toca un aporte para corregirlo.
               </p>
             </>
           )}

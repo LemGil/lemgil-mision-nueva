@@ -182,4 +182,13 @@ de un solo motor de conteo (`src/motor/`); el cuadre se verifica solo
   de la lista única que abren la ficha de la persona en Personas
   (108/108).
 
+- **Conformidad, Fase 2 — la Fila de registro única (2026-11-21):**
+  en las fichas de Bien Común y de la Red, los aportes se ven con
+  la misma `FilaRegistro` del registro general (fecha · concepto
+  · valor en negrita); tocar un aporte lo abre en su editor, con
+  su botón de cerrar. Las entregas de Manos Abiertas también
+  pasan a `FilaRegistro` (fecha · beneficiario · valor = cantidad
+  y unidad), en su pestaña y en la ventana de la campaña
+  (108/108).
+
 La app actual (`lemgil-mision-apk`) sigue viva e intacta mientras tanto.
