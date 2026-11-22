@@ -207,4 +207,10 @@ de un solo motor de conteo (`src/motor/`); el cuadre se verifica solo
   con los demás, antes de la guardia; barrido de todas las
   páginas: ningún otro caso (108/108).
 
+- **Ajuste (2026-11-22):** la página Misión ya no muestra el
+  panel amarillo «Se terminó con…» en su pestaña principal — los
+  mismos cinco números viven en los títulos de las pestañas. El
+  Informe (el papel) conserva su principal, porque ahí no hay
+  pestañas (108/108).
+
 La app actual (`lemgil-mision-apk`) sigue viva e intacta mientras tanto.

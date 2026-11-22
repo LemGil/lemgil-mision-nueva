@@ -291,12 +291,6 @@ export default function Mision({ repo }: { repo: Repo }) {
         />
         {pestanaMesa === 'principal' && (
           <>
-            <div className="informe-principal">
-              <span className="informe-principal-etiqueta">
-                📋 El informe{periodo ? ' del período' : ' de todo el tiempo'} (personas únicas)
-              </span>
-              <p>{informe.frase}</p>
-            </div>
       <section className="kpis">
         <Kpi
           principal
