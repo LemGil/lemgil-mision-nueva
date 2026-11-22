@@ -404,11 +404,10 @@ export default function Personas({ repo }: { repo: Repo }) {
               En Misión, entrando como:
             </label>
             <div className="radios">
-              {(['alcanzado', 'confeso', 'converso', 'bautizado'] as EntradaMision[]).map((e) => (
+              {(['alcanzado', 'confeso', 'converso'] as EntradaMision[]).map((e) => (
                 <label key={e} className="check">
                   <input type="radio" name="entrada" checked={entrada === e} disabled={!altaMision || altaIntegrado} onChange={() => setEntrada(e)} />
                   {nombrePasoEntrada(e)}
-                  {e === 'bautizado' && ' — llega de traslado, ya bautizado'}
                 </label>
               ))}
             </div>
@@ -510,11 +509,10 @@ export default function Personas({ repo }: { repo: Repo }) {
                       En Misión, entrando como:
                     </label>
                     <div className="radios">
-                      {(['alcanzado', 'confeso', 'converso', 'bautizado'] as EntradaMision[]).map((e) => (
+                      {(['alcanzado', 'confeso', 'converso'] as EntradaMision[]).map((e) => (
                         <label key={e} className="check">
                           <input type="radio" name="entrada-edicion" checked={edEntrada === e} disabled={!edAltaMision || edAltaIntegrado} onChange={() => setEdEntrada(e)} />
                           {nombrePasoEntrada(e)}
-                          {e === 'bautizado' && ' — llega de traslado, ya bautizado'}
                         </label>
                       ))}
                     </div>

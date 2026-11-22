@@ -225,4 +225,10 @@ de un solo motor de conteo (`src/motor/`); el cuadre se verifica solo
   ahora **Añadidos** (mismo id; herramienta en Migración para
   renombrarlo en los datos vivos). 111/111.
 
+- **Alineación (2026-11-22):** el formulario de Personas también
+  perdió la entrada «como Bautizado» (al crear y al editar): la
+  marca «💧 Llega ya bautizado» de Misión es la única vía para
+  quien llega bautizado, y su bautismo se marca en los datos de
+  la persona (111/111).
+
 La app actual (`lemgil-mision-apk`) sigue viva e intacta mientras tanto.
