@@ -5,7 +5,7 @@ import {
   PS_DISCIPULADO, PS_FALLECIDO, PS_INTEGRADO,
 } from '../modelo/catalogo';
 import { CASO_2026 } from './casos';
-import { informeMision } from './informeMision';
+import { corteBautizados, informeMision, origenBautismo } from './informeMision';
 
 const P2024 = { desde: '2024-01-01', hasta: '2024-12-31' };
 const HOY = '2025-01-15';
@@ -72,13 +72,13 @@ describe('informeMision — el formato de LemGil', () => {
     const inf = informeMision(datosFixture(), P2024, HOY);
     expect(inf.principal).toEqual({
       alcanzados: 4, // p1, p3, p4 (¡una vez!), p6
-      bautizados: 2, // p1 y el traslado p2
+      bautizados: 1, // solo p1: el traslado p2 vino ya bautizado (regla 2026-11-22)
       integrados: 2, // p1 y p2
       bajas: 2, // p3 apartado + p6 fallecida
       enProceso: 3, // p1, p2 y p4 siguen en la ruta
     });
     expect(inf.frase).toBe(
-      'Se terminó con: 4 Alcanzados · 2 Bautizados · 2 Integrados · 2 Bajas · 3 En Proceso',
+      'Se terminó con: 4 Alcanzados · 1 Bautizados · 2 Añadidos · 2 Bajas · 3 En Proceso',
     );
   });
 
@@ -108,6 +108,24 @@ describe('informeMision — el formato de LemGil', () => {
     // Los que salieron no están en proceso.
     expect(inf.enProceso.map((e) => e.nombre)).not.toContain('Pablo Apartado');
     expect(inf.enProceso.map((e) => e.nombre)).not.toContain('Irene Fallecida');
+  });
+
+  it('los bautizados del informe son solo los de la casa', () => {
+    const inf = informeMision(datosFixture(), P2024, HOY);
+    expect(inf.bautizados.map((b) => b.nombre)).toEqual(['Ana Plena']);
+  });
+
+  it('el origen del bautismo y el corte transversal', () => {
+    const d = datosFixture();
+    expect(origenBautismo(d, 'p1')).toBe('casa');
+    expect(origenBautismo(d, 'p2')).toBe('fuera');
+    expect(origenBautismo(d, 'p3')).toBeNull();
+    expect(corteBautizados(d)).toEqual({ casa: 1, fuera: 1, total: 2 });
+    const inf = informeMision(d, P2024, HOY);
+    const tomas = inf.enProceso.find((e) => e.nombre === 'Tomás Traslado');
+    expect(tomas?.vinoBautizado).toBe(true);
+    const diana = inf.enProceso.find((e) => e.nombre === 'Diana Duplicada');
+    expect(diana?.vinoBautizado).toBe(false);
   });
 
   it('sin período cuenta todo el tiempo', () => {

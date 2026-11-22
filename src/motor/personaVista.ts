@@ -48,7 +48,7 @@ export function situacionDe(datos: DatosMinisterio, personaId: string): Situacio
       return { texto: 'Miembro activo', tono: 'verde' };
     case 'gozne': {
       const gozne = datos.pasos.find((p) => p.rol === 'gozne');
-      return { texto: gozne?.nombre ?? 'Integrado', tono: 'verde' };
+      return { texto: gozne?.nombre ?? 'Añadidos', tono: 'verde' };
     }
     case 'etapa':
       return { texto: paso ? `${paso.emoji} ${paso.nombre}` : 'En proceso', tono: 'ambar' };

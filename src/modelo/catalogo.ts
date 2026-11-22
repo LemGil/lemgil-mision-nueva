@@ -24,13 +24,13 @@ export const PM_LIDERAZGO = 'pm-liderazgo';
 
 export const CATALOGO_SEMILLA: Paso[] = [
   // La ruta de Misión: Alcanzado → Confeso → Converso → Discipulado →
-  // Bautizado → Integrado (gozne) → Miembros. Salidas al final.
+  // Bautizado → Añadidos (gozne) → Miembros. Salidas al final.
   { id: PS_ALCAZADO, ambito: 'mision', nombre: 'Alcanzado', emoji: '🙏', orden: 1, rol: 'inicio', protegido: true },
   { id: PS_CONFESO, ambito: 'mision', nombre: 'Confeso', emoji: '🤲', orden: 2, rol: 'camino' },
   { id: PS_CONVERSO, ambito: 'mision', nombre: 'Converso', emoji: '🌱', orden: 3, rol: 'camino' },
   { id: PS_DISCIPULADO, ambito: 'mision', nombre: 'Discipulado', emoji: '📖', orden: 4, rol: 'camino' },
   { id: PS_BAUTIZADO, ambito: 'mision', nombre: 'Bautizado', emoji: '💧', orden: 5, rol: 'camino' },
-  { id: PS_INTEGRADO, ambito: 'mision', nombre: 'Integrado', emoji: '🏘️', orden: 6, rol: 'gozne', protegido: true },
+  { id: PS_INTEGRADO, ambito: 'mision', nombre: 'Añadidos', emoji: '🏘️', orden: 6, rol: 'gozne', protegido: true },
   { id: PS_APARTADO, ambito: 'mision', nombre: 'Apartado', emoji: '🚪', orden: 7, rol: 'salida', protegido: true },
   { id: PS_TRASLADO, ambito: 'mision', nombre: 'Traslado', emoji: '🧳', orden: 8, rol: 'salida', protegido: true },
   { id: PS_FALLECIDO, ambito: 'mision', nombre: 'Fallecido', emoji: '✝️', orden: 9, rol: 'salida', protegido: true },

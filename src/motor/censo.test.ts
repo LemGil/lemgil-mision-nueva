@@ -65,7 +65,7 @@ describe('la mesa de Misión cuenta registros', () => {
   it('las tarjetas por paso son la foto de los registros', () => {
     const foto = Object.fromEntries(conteo.pasos.map((t) => [t.nombre, t.foto]));
     expect(foto).toEqual({
-      Alcanzado: 1, Confeso: 2, Converso: 1, Discipulado: 2, Bautizado: 1, Integrado: 2,
+      Alcanzado: 1, Confeso: 2, Converso: 1, Discipulado: 2, Bautizado: 1, Añadidos: 2,
     });
     const salidas = Object.fromEntries(conteo.salidas.map((t) => [t.nombre, t.foto]));
     expect(salidas).toEqual({ Apartado: 1, Traslado: 0, Fallecido: 0 });

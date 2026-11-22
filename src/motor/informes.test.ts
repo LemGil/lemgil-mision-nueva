@@ -22,7 +22,7 @@ describe('informes por departamento — los mismos números del motor', () => {
   it('Misión informa personas: lo principal y lo ampliado del período', () => {
     const inf = construirInforme('mision', CASO_2026, { periodo: NOVIEMBRE_2026 });
     expect(inf.principal).toBe(
-      'Se terminó con: 1 Alcanzados · 0 Bautizados · 0 Integrados · 1 Bajas · 2 En Proceso',
+      'Se terminó con: 1 Alcanzados · 0 Bautizados · 0 Añadidos · 1 Bajas · 2 En Proceso',
     );
     expect(fila(inf, 'Alcanzados', 'Uno')).toContain('hoy: Alcanzado');
     expect(fila(inf, 'Las bajas', 'Nueve')).toContain('Apartado · 2026-11-12');

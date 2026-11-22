@@ -92,7 +92,7 @@ describe('listaConPasoNuevo y nombreRepetido', () => {
     const nuevo: Paso = { id: 'px-1', ambito: 'mision', nombre: 'Ayuno', emoji: '🕯️', orden: 0, rol: 'camino' };
     const r = listaConPasoNuevo(pasos, nuevo);
     const nombres = pasosDelAmbito(r, 'mision').map((p) => p.nombre);
-    expect(nombres).toEqual(['Alcanzado', 'Confeso', 'Converso', 'Discipulado', 'Bautizado', 'Ayuno', 'Integrado', 'Apartado', 'Traslado', 'Fallecido']);
+    expect(nombres).toEqual(['Alcanzado', 'Confeso', 'Converso', 'Discipulado', 'Bautizado', 'Ayuno', 'Añadidos', 'Apartado', 'Traslado', 'Fallecido']);
     expect(pasosDelAmbito(r, 'mision').map((p) => p.orden)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
   });
 

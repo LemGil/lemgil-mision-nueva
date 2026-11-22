@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import { aDatosMinisterio } from '../datos/aDatosMinisterio';
-import { avanzarConversion, borrarConversion, crearConversion, guardarHistorial, type EntradaMision } from '../datos/acciones';
+import { avanzarConversion, borrarConversion, crearConversion, crearConversionLlegaBautizado, guardarHistorial, type EntradaMision } from '../datos/acciones';
 import type { Repo } from '../datos/repo';
 import { esSalida, pasosDeMision } from '../modelo/catalogo';
 import type { DatosMinisterio, Periodo } from '../modelo/tipos';
 import { fechaEnPasoActual } from '../motor/alertas';
 import { conteoMision, siguientePasoEnRuta } from '../motor/mision';
-import { informeMision } from '../motor/informeMision';
+import { informeMision, origenBautismo } from '../motor/informeMision';
 import { buscarPersonas } from '../motor/personaVista';
 import { agrupar } from '../motor/vistas';
 import { anosConRegistros, mesesConRegistros } from '../motor/periodos';
@@ -41,6 +41,8 @@ export default function Mision({ repo }: { repo: Repo }) {
   const [mostrarNuevo, setMostrarNuevo] = useState(false);
   const [personaElegida, setPersonaElegida] = useState<string | null>(null);
   const [entrada, setEntrada] = useState<EntradaMision>('alcanzado');
+  const [llegaBautizado, setLlegaBautizado] = useState(false);
+  const [fechaBautismoLlega, setFechaBautismoLlega] = useState('');
 
   const recargar = useCallback(() => setRecargas((x) => x + 1), []);
   const [editandoPasos, setEditandoPasos] = useState(false);
@@ -88,6 +90,7 @@ export default function Mision({ repo }: { repo: Repo }) {
   });
 
   const detalle = seleccionada ? datos.conversiones.find((c) => c.id === seleccionada) : undefined;
+  const origenDetalle = detalle ? origenBautismo(datos, detalle.personaId) : null;
 
   const avanzar = async (conversionId: string, pasoId: string, nota: string) => {
     setErrorAccion('');
@@ -114,9 +117,15 @@ export default function Mision({ repo }: { repo: Repo }) {
     if (!personaElegida) return;
     setErrorAccion('');
     try {
-      await crearConversion(repo, datos, personaElegida, entrada, hoy);
+      if (llegaBautizado) {
+        await crearConversionLlegaBautizado(repo, datos, personaElegida, fechaBautismoLlega, hoy);
+      } else {
+        await crearConversion(repo, datos, personaElegida, entrada, hoy);
+      }
       setMostrarNuevo(false);
       setPersonaElegida(null);
+      setLlegaBautizado(false);
+      setFechaBautismoLlega('');
       recargar();
     } catch (e) {
       setErrorAccion(e instanceof Error ? e.message : String(e));
@@ -231,18 +240,40 @@ export default function Mision({ repo }: { repo: Repo }) {
             placeholder="🔍 Buscar persona…"
           />
           <div className="radios">
-            {(['alcanzado', 'confeso', 'converso', 'bautizado'] as EntradaMision[]).map((e) => {
+            {(['alcanzado', 'confeso', 'converso'] as EntradaMision[]).map((e) => {
               const pasoId = { alcanzado: 'ps-congregado', confeso: 'ps-confeso', converso: 'ps-nuevo', bautizado: 'ps-bautizado' }[e];
               const paso = datos.pasos.find((p) => p.id === pasoId);
               return (
                 <label key={e} className="check">
-                  <input type="radio" name="entrada-mision" checked={entrada === e} onChange={() => setEntrada(e)} />
+                  <input type="radio" name="entrada-mision" checked={entrada === e} onChange={() => setEntrada(e)} disabled={llegaBautizado} />
                   Como {paso?.nombre ?? e}
-                  {e === 'bautizado' && ' — llega de traslado, ya bautizado'}
                 </label>
               );
             })}
           </div>
+          <label className="check">
+            <input
+              type="checkbox"
+              checked={llegaBautizado}
+              onChange={(e) => setLlegaBautizado(e.target.checked)}
+            />
+            💧 Llega ya bautizado — de otra congregación
+          </label>
+          {llegaBautizado && (
+            <>
+              <div className="form-fila">
+                <label>
+                  Fecha de bautismo (si se conoce)
+                  <input type="date" value={fechaBautismoLlega} onChange={(e) => setFechaBautismoLlega(e.target.value)} />
+                </label>
+              </div>
+              <p className="tenue">
+                Entra como Alcanzado — como todos — y su bautismo queda marcado «vino ya
+                bautizado»: consta en su ficha, en el Panel y en el Informe, pero no cuenta
+                como bautismo de la casa.
+              </p>
+            </>
+          )}
           <div className="form-acciones">
             <button className="btn btn-dorado" onClick={crear} disabled={!personaElegida}>
               💾 Registrar
@@ -282,7 +313,7 @@ export default function Mision({ repo }: { repo: Repo }) {
             { id: 'principal', etiqueta: '⭐ Lo principal' },
             { id: 'alcanzados', etiqueta: `🙏 Alcanzados (${informe.principal.alcanzados})` },
             { id: 'bautizados', etiqueta: `💧 Bautizados (${informe.principal.bautizados})` },
-            { id: 'integrados', etiqueta: `🏘️ Integrados (${informe.principal.integrados})` },
+            { id: 'integrados', etiqueta: `🏘️ Añadidos (${informe.principal.integrados})` },
             { id: 'bajas', etiqueta: `🚪 Bajas (${informe.principal.bajas})` },
             { id: 'enproceso', etiqueta: `🧭 En proceso (${informe.principal.enProceso})` },
           ]}
@@ -329,7 +360,7 @@ export default function Mision({ repo }: { repo: Repo }) {
                 <li key={a.personaId}>
                   <FilaPersona
                     nombre={a.nombre}
-                    meta={`${a.fecha} · hoy: ${a.pasoActual}`}
+                    meta={`${a.fecha} · hoy: ${a.pasoActual}${a.vinoBautizado ? ' · 💧 vino bautizado' : ''}`}
                     derecha={<span className="fila-valor">{a.diasEnRuta} días</span>}
                     onClick={() => abrirFichaDe(a.personaId)}
                   />
@@ -410,7 +441,7 @@ export default function Mision({ repo }: { repo: Repo }) {
                 <li key={e.personaId}>
                   <FilaPersona
                     nombre={e.nombre}
-                    meta={e.pasoActual}
+                    meta={`${e.pasoActual}${e.vinoBautizado ? ' · 💧 vino bautizado' : ''}`}
                     derecha={
                       <span className="fila-lado">
                         <span className="fila-valor">{e.diasEnPaso} días</span>
@@ -499,6 +530,16 @@ export default function Mision({ repo }: { repo: Repo }) {
             )}
           </div>
 
+          {origenDetalle && (
+            <p>
+              {origenDetalle === 'casa' ? (
+                <span className="chip chip-verde">💧 Se bautizó con nosotros</span>
+              ) : (
+                <span className="chip chip-gris">💧 Vino ya bautizado</span>
+              )}
+            </p>
+          )}
+
           <div className="form-fila">
             <label>
               Estado
@@ -521,9 +562,9 @@ export default function Mision({ repo }: { repo: Repo }) {
             </div>
           </div>
           <p className="tenue">
-            Al caer en {ruta.find((p) => p.rol === 'gozne')?.nombre ?? 'Integrado'} nace el
+            Al caer en {ruta.find((p) => p.rol === 'gozne')?.nombre ?? 'Añadidos'} nace el
             miembro automáticamente — es el gozne. Por eso el avance rápido (▸) se detiene antes:
-            a Integrado se llega desde aquí, guardando.
+            a Añadidos se llega desde aquí, guardando.
           </p>
 
           <h3>Historial (editable)</h3>

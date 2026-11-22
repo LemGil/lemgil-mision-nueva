@@ -10,6 +10,7 @@ import { cumpleanosProximos, estancados, type CumpleProximo, type Estancado } fr
 import { verificarCuadre, type ResultadoCuadre } from '../motor/cuadre';
 import GuiaPagina from './GuiaPagina';
 import { CabeceraPagina, FilaPersona, Kpi } from './Piezas';
+import { corteBautizados } from '../motor/informeMision';
 
 interface Props {
   repo: Repo;
@@ -80,6 +81,7 @@ export default function Panel({ repo, sync, estadoSync, modoLocal }: Props) {
   const sinDatos = datos.personas.length === 0;
   const bajasTotal =
     censo.bajas.apartados + censo.bajas.traslados + censo.bajas.fallecidos + censo.bajas.otrasSalidas;
+  const corteBaut = corteBautizados(datos);
   const fallos = cuadre.chequeos.filter((c) => !c.ok);
 
   return (
@@ -144,6 +146,12 @@ export default function Panel({ repo, sync, estadoSync, modoLocal }: Props) {
             <Kpi icono="🧭" numero={censo.enProceso} titulo="En proceso (personas)" />
             <Kpi icono="🤝" numero={censo.miembros} titulo="Miembros" />
             <Kpi icono="🌾" numero={censo.diezmadores} titulo="Diezmadores" sub="corte transversal" />
+            <Kpi
+              icono="💧"
+              numero={corteBaut.total}
+              titulo="Bautizados"
+              sub={<>{corteBaut.casa} con nosotros · {corteBaut.fuera} vinieron bautizados</>}
+            />
             <Kpi
               icono="🚪"
               numero={bajasTotal}

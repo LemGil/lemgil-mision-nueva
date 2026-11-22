@@ -23,6 +23,8 @@ export interface AlcanzadoInforme {
   /** El paso en que está hoy (o su salida). */
   pasoActual: string;
   diasEnRuta: number;
+  /** Llegó ya bautizado de otra congregación. */
+  vinoBautizado: boolean;
 }
 
 export interface BautizadoInforme {
@@ -36,8 +38,8 @@ export interface IntegradoInforme {
   nombre: string;
   fecha: string;
   /** true: su historial recorrió aquí el paso Bautizado antes de
-   * Integrado. false: vino ya bautizado (entró por Bautizado o
-   * directo a Integrado, sin bautismo registrado en la casa). */
+   * Añadido. false: vino ya bautizado (entró por Bautizado o
+   * directo a Añadido, sin bautismo registrado en la casa). */
   bautizadoConNosotros: boolean;
 }
 
@@ -57,6 +59,8 @@ export interface EnProcesoInforme {
   pasoActual: string;
   diasEnPaso: number;
   diasEnRuta: number;
+  /** Llegó ya bautizado de otra congregación. */
+  vinoBautizado: boolean;
 }
 
 export interface InformeMision {
@@ -94,6 +98,45 @@ function fechaEntrada(c: Conversion, pasoId: string, periodo?: Periodo): string 
     return c.fecha;
   }
   return null;
+}
+
+export type OrigenBautismo = 'casa' | 'fuera' | null;
+
+/** El origen del bautismo de una persona (regla del 2026-11-22):
+ * si su historial recorrió el paso Bautizado DESPUÉS de haber
+ * entrado a la ruta (no como primera entrada), se bautizó CON
+ * NOSOTROS. Si entró por Bautizado — la vieja puerta de los
+ * traslados — o su ficha de persona dice bautizado sin paso
+ * recorrido en la casa, VINO YA BAUTIZADO. Sin ninguna señal,
+ * null: no consta bautismo. */
+export function origenBautismo(datos: DatosMinisterio, personaId: string): OrigenBautismo {
+  let fuera = false;
+  for (const c of datos.conversiones) {
+    if (c.personaId !== personaId) continue;
+    const hist = (c.historial ?? []).slice().sort((a, b) => (a.fecha < b.fecha ? -1 : 1));
+    const idx = hist.findIndex((h) => h.estado === PS_BAUTIZADO);
+    if (idx > 0) return 'casa';
+    if (idx === 0) fuera = true;
+    if (hist.length === 0 && c.estado === PS_BAUTIZADO) fuera = true;
+  }
+  if (fuera) return 'fuera';
+  const p = datos.personas.find((x) => x.id === personaId);
+  if (p?.bautizado) return 'fuera';
+  return null;
+}
+
+/** Los bautizados como corte transversal del censo — personas,
+ * divididas por el origen de su bautismo (Panel e Informe
+ * General). No toca el total de Congregados. */
+export function corteBautizados(datos: DatosMinisterio): { casa: number; fuera: number; total: number } {
+  let casa = 0;
+  let fuera = 0;
+  for (const p of datos.personas) {
+    const o = origenBautismo(datos, p.id);
+    if (o === 'casa') casa++;
+    else if (o === 'fuera') fuera++;
+  }
+  return { casa, fuera, total: casa + fuera };
 }
 
 export function informeMision(
@@ -167,6 +210,7 @@ export function informeMision(
   for (const [personaId, convs] of porPersona) {
     const nombre = nombrePersona(personaId);
     const actual = estadoActual(convs);
+    const vinoBautizado = origenBautismo(datos, personaId) === 'fuera';
 
     if (inicio) {
       const e = entradaDe(convs, inicio.id);
@@ -177,19 +221,34 @@ export function informeMision(
           fecha: e.fecha,
           pasoActual: nombrePaso(actual.pasoId),
           diasEnRuta: diasEntre(e.fecha, hoy),
+          vinoBautizado,
         });
       }
     }
 
-    const eBaut = entradaDe(convs, PS_BAUTIZADO);
-    if (eBaut) bautizados.push({ personaId, nombre, fecha: eBaut.fecha });
+    // Bautizados del período: SOLO los de la casa — la entrada al
+    // paso Bautizado que no es la primera del registro. La que es
+    // la primera fue la vieja puerta de los traslados: esa
+    // persona vino ya bautizada y no cuenta como bautismo nuestro.
+    let fechaBautCasa: string | null = null;
+    for (const c of convs) {
+      const hist = (c.historial ?? []).slice().sort((a, b) => (a.fecha < b.fecha ? -1 : 1));
+      hist.forEach((h, idx) => {
+        if (h.estado === PS_BAUTIZADO && idx > 0 && (!periodo || enPeriodo(h.fecha, periodo))) {
+          if (!fechaBautCasa || h.fecha < fechaBautCasa) fechaBautCasa = h.fecha;
+        }
+      });
+    }
+    if (fechaBautCasa) {
+      bautizados.push({ personaId, nombre, fecha: fechaBautCasa as string });
+    }
 
     if (gozne) {
       const eInt = entradaDe(convs, gozne.id);
       if (eInt) {
         // ¿Se bautizó con nosotros? Su historial recorrió el paso
         // Bautizado DESPUÉS de haber entrado a la ruta (no como
-        // primer paso) y ANTES de llegar a Integrado.
+        // primer paso) y ANTES de llegar a Añadido.
         const hist = (eInt.conv.historial ?? []).slice().sort((a, b) => (a.fecha < b.fecha ? -1 : 1));
         const idxInt = hist.findIndex((h) => h.estado === gozne.id);
         const antes = idxInt >= 0 ? hist.slice(0, idxInt) : hist;
@@ -239,6 +298,7 @@ export function informeMision(
         pasoActual: nombrePaso(actual.pasoId),
         diasEnPaso: diasEntre(actual.desde, hoy),
         diasEnRuta: diasEntre(entradaRuta, hoy),
+        vinoBautizado,
       });
     }
   }
@@ -267,7 +327,7 @@ export function informeMision(
   };
   const frase =
     `Se terminó con: ${principal.alcanzados} Alcanzados · ${principal.bautizados} Bautizados · ` +
-    `${principal.integrados} Integrados · ${principal.bajas} Bajas · ${principal.enProceso} En Proceso`;
+    `${principal.integrados} Añadidos · ${principal.bajas} Bajas · ${principal.enProceso} En Proceso`;
 
   return { frase, principal, alcanzados, bautizados, integrados, bajasDesglose, bajas, enProceso };
 }

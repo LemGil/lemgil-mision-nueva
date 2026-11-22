@@ -1,6 +1,7 @@
 import 'fake-indexeddb/auto';
 import { describe, expect, it } from 'vitest';
 import {
+  PS_ALCAZADO,
   PS_APARTADO,
   PS_BAUTIZADO,
   PS_CONFESO,
@@ -9,7 +10,7 @@ import {
   PS_TRASLADO,
 } from '../modelo/catalogo';
 import { aDatosMinisterio, sembrarCatalogoSiVacio } from './aDatosMinisterio';
-import { avanzarConversion, crearConversion, crearMiembro, darAltasDirectas, registrarPersona } from './acciones';
+import { avanzarConversion, crearConversion, crearConversionLlegaBautizado, crearMiembro, darAltasDirectas, registrarPersona } from './acciones';
 import { BaseLocal } from './db';
 import { Repo } from './repo';
 
@@ -194,5 +195,27 @@ describe('ministerios', () => {
     ).rejects.toThrow('ya está en ese ministerio');
     await quitarDeMinisterio(repo, a.id);
     expect((await aDatosMinisterio(repo)).asignaciones).toHaveLength(0);
+  });
+
+  it('quien llega bautizado: nace en Alcanzado, con su bautismo en la persona y la nota en el historial', async () => {
+    const repo = await repoListo();
+    const datos0 = await aDatosMinisterio(repo);
+    const p = await registrarPersona(repo, datos0, { nombre: 'Llega Bautizado' }, {}, HOY);
+    const datos1 = await aDatosMinisterio(repo);
+    await crearConversionLlegaBautizado(repo, datos1, p.id, '2020-05-01', HOY);
+    const datos = await aDatosMinisterio(repo);
+    const conv = datos.conversiones.find((c) => c.personaId === p.id);
+    expect(conv?.estado).toBe(PS_ALCAZADO);
+    expect(conv?.bautizado).toBe(true);
+    expect(conv?.historial).toEqual([
+      { fecha: HOY, estado: PS_ALCAZADO, nota: 'Llegó bautizado/a de otra congregación' },
+    ]);
+    const persona = datos.personas.find((x) => x.id === p.id);
+    expect(persona?.bautizado).toBe(true);
+    expect(persona?.fechaBautismo).toBe('2020-05-01');
+    // Y el bloqueo duro sigue: no puede tener dos registros.
+    await expect(
+      crearConversionLlegaBautizado(repo, datos, p.id, '', HOY),
+    ).rejects.toThrow('solo puede tener UN registro');
   });
 });

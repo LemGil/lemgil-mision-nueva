@@ -13,6 +13,7 @@ import { traerRed, vistaPreviaRed, type VistaPreviaRed } from '../migracion/trae
 import { traerManos, vistaPreviaManos, type VistaPreviaManos } from '../migracion/traerManos';
 import { completarBeneficiarios, vistaPreviaCompletarBeneficiarios, type ResumenCompletarBeneficiarios } from '../migracion/completarBeneficiarios';
 import { completarGrupos, vistaPreviaCompletarGrupos, type ResumenCompletarGrupos } from '../migracion/completarGrupos';
+import { renombrarAnadidos } from '../migracion/renombrarAnadidos';
 import { convertirRespaldo, type InformeMigracion, type RespaldoViejo } from '../migracion/convertir';
 import { importarEnRepo, puedeImportar } from '../migracion/importar';
 import GuiaPagina from './GuiaPagina';
@@ -50,6 +51,8 @@ export default function Migrar({ repo }: { repo: Repo }) {
   const [previaGrupos, setPreviaGrupos] = useState<ResumenCompletarGrupos | null>(null);
   const [traidosGrupos, setTraidosGrupos] = useState<ResumenCompletarGrupos | null>(null);
   const [completandoGrupos, setCompletandoGrupos] = useState(false);
+  const [renombrando, setRenombrando] = useState(false);
+  const [renombrado, setRenombrado] = useState<number | null>(null);
 
   const cargar = useCallback(async () => {
     setActuales(await aDatosMinisterio(repo));
@@ -207,6 +210,19 @@ export default function Migrar({ repo }: { repo: Repo }) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
       setCompletandoGrupos(false);
+    }
+  };
+
+  const renombrarPaso = async () => {
+    setRenombrando(true);
+    setError('');
+    try {
+      setRenombrado(await renombrarAnadidos(repo));
+      await cargar();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setRenombrando(false);
     }
   };
 
@@ -566,6 +582,25 @@ export default function Migrar({ repo }: { repo: Repo }) {
           <p className="aviso aviso-verde">
             ✓ Se completaron {traidosGrupos.grupos} grupos. Sincroniza para subirlos.
           </p>
+        )}
+      </section>
+
+      <section className="tarjeta">
+        <h2>🏘️ El paso se llama Añadidos</h2>
+        <p className="tenue">
+          El paso del gozne cambió de nombre: de «Integrado» a «Añadidos» (decisión del
+          2026-11-22). Es el mismo paso — su id no cambia, como ayer Congregado se volvió
+          Alcanzado. Este botón lo renombra en los datos de este equipo; al sincronizar,
+          el nombre nuevo llega a todos.
+        </p>
+        <button className="btn btn-dorado" disabled={renombrando} onClick={renombrarPaso}>
+          {renombrando ? 'Renombrando…' : '🏘️ Renombrar el paso a Añadidos'}
+        </button>
+        {renombrado === 1 && (
+          <p className="aviso aviso-verde">✓ El paso ya se llama Añadidos. Sincroniza para subirlo.</p>
+        )}
+        {renombrado === 0 && (
+          <p className="aviso aviso-verde">✓ El paso ya se llamaba Añadidos en este equipo.</p>
         )}
       </section>
     </div>

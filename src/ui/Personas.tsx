@@ -13,6 +13,7 @@ import BorrarBoton from './BorrarBoton';
 import { InputZona } from './CamposLista';
 import GuiaPagina from './GuiaPagina';
 import { Buscador, CabeceraPagina, DatosLista, FilaAcciones, FilaPersona, TarjetaPersona } from './Piezas';
+import { origenBautismo } from '../motor/informeMision';
 
 const hoyIso = () => new Date().toISOString().slice(0, 10);
 const txt = (v: string) => v.trim() || undefined;
@@ -297,6 +298,7 @@ export default function Personas({ repo }: { repo: Repo }) {
   const misionEd = ficha?.mision[0];
   const miembroEd = ficha?.miembros[0];
   const beneficiarioEd = ficha?.beneficiario;
+  const origenP = p ? origenBautismo(datos, p.id) : null;
   const filasDatos: [string, string][] = p
     ? (
         [
@@ -314,7 +316,7 @@ export default function Personas({ repo }: { repo: Repo }) {
           ['Correo', p.email],
           ['Grupo', grupoDe(p.grupoId)],
           ['Hermano mayor', nombreDe(p.hermanoMayorId)],
-          ['Bautizado', p.bautizado === undefined ? undefined : p.bautizado ? `Sí${p.fechaBautismo ? ` · ${p.fechaBautismo}` : ''}` : 'No'],
+          ['Bautizado', p.bautizado === undefined && !origenP ? undefined : (p.bautizado || origenP) ? `Sí${p.fechaBautismo ? ` · ${p.fechaBautismo}` : ''}${origenP === 'casa' ? ' · se bautizó con nosotros' : origenP === 'fuera' ? ' · vino ya bautizado' : ''}` : 'No'],
         ] as [string, string | undefined][]
       ).filter((f): f is [string, string] => !!f[1])
     : [];
@@ -412,7 +414,7 @@ export default function Personas({ repo }: { repo: Repo }) {
             </div>
             <label className="check">
               <input type="checkbox" checked={altaIntegrado} onChange={(e) => setAltaIntegrado(e.target.checked)} />
-              Integrado → Miembro directo
+              Añadido → Miembro directo
             </label>
             <label className="check">
               <input type="checkbox" checked={altaBeneficiario} onChange={(e) => setAltaBeneficiario(e.target.checked)} />
@@ -525,7 +527,7 @@ export default function Personas({ repo }: { repo: Repo }) {
                 ) : (
                   <label className="check">
                     <input type="checkbox" checked={edAltaIntegrado} onChange={(e) => setEdAltaIntegrado(e.target.checked)} />
-                    Integrado → Miembro directo
+                    Añadido → Miembro directo
                   </label>
                 )}
                 {beneficiarioEd ? (

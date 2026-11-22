@@ -8,7 +8,7 @@ import { resumenBienComun } from './bienComun';
 import { calcularCenso } from './censo';
 import { verificarCuadre } from './cuadre';
 import { escaleraDeMiembro, tarjetasDeMiembros } from './miembros';
-import { informeMision, type InformeMision } from './informeMision';
+import { corteBautizados, informeMision, type InformeMision } from './informeMision';
 import { nombreColaborador, resumenRed } from './red';
 import { resumenManos } from './manosAbiertas';
 import { formatoDinero } from './dinero';
@@ -64,7 +64,7 @@ export function seccionesInformeMision(inf: InformeMision): SeccionInforme[] {
         filas: inf.alcanzados.length
           ? inf.alcanzados.map((a): [string, string] => [
               a.nombre,
-              `${a.fecha} · hoy: ${a.pasoActual} · ${a.diasEnRuta} días en la ruta`,
+              `${a.fecha} · hoy: ${a.pasoActual} · ${a.diasEnRuta} días en la ruta${a.vinoBautizado ? ' · 💧 vino bautizado' : ''}`,
             ])
           : vacia,
       },
@@ -75,7 +75,7 @@ export function seccionesInformeMision(inf: InformeMision): SeccionInforme[] {
           : vacia,
       },
       {
-        titulo: `🏘️ Integrados (${inf.principal.integrados})`,
+        titulo: `🏘️ Añadidos (${inf.principal.integrados})`,
         filas: inf.integrados.length
           ? inf.integrados.map((i): [string, string] => [
               i.nombre,
@@ -105,7 +105,7 @@ export function seccionesInformeMision(inf: InformeMision): SeccionInforme[] {
         filas: inf.enProceso.length
           ? inf.enProceso.map((e): [string, string] => [
               e.nombre,
-              `${e.pasoActual} · ${e.diasEnPaso} días en el paso · ${e.diasEnRuta} en la ruta`,
+              `${e.pasoActual} · ${e.diasEnPaso} días en el paso · ${e.diasEnRuta} en la ruta${e.vinoBautizado ? ' · 💧 vino bautizado' : ''}`,
             ])
           : vacia,
       },
@@ -120,6 +120,7 @@ export function construirInforme(
   switch (id) {
     case 'general': {
       const censo = calcularCenso(datos, { periodo: opts.periodo });
+      const corteBaut = corteBautizados(datos);
       const cuadre = verificarCuadre(datos);
       const secciones: SeccionInforme[] = [
         {
@@ -129,6 +130,10 @@ export function construirInforme(
             ...censo.etapas.map((e): [string, string] => [`${e.emoji} ${e.nombre}`, n(e.cantidad)]),
             ['Miembros', n(censo.miembros)],
             ['Diezmadores (corte transversal)', n(censo.diezmadores)],
+            [
+              'Bautizados (corte transversal)',
+              `${n(corteBaut.casa)} con nosotros · ${n(corteBaut.fuera)} vinieron bautizados`,
+            ],
             ['Hombres / Mujeres', `${censo.demografico.hombres} / ${censo.demografico.mujeres}`],
             [
               'Niños / Jóvenes / Adultos / Ancianos',

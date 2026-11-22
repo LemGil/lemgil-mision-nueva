@@ -213,4 +213,16 @@ de un solo motor de conteo (`src/motor/`); el cuadre se verifica solo
   Informe (el papel) conserva su principal, porque ahí no hay
   pestañas (108/108).
 
+- **Bautizados y Añadidos (2026-11-22, plan de LemGil):** quien
+  llega ya bautizado entra como Alcanzado — la puerta de entrada
+  por Bautizado se cerró — con la marca «💧 Llega ya bautizado»
+  en el alta (su bautismo y su fecha quedan en la persona y el
+  historial lo anota). El origen del bautismo se deriva con la
+  regla de la primera entrada (`origenBautismo`): el «Bautizados»
+  del informe cuenta solo los de la casa, y el Panel y el Informe
+  General llevan el corte transversal «💧 Bautizados: N con
+  nosotros · M vinieron bautizados». El paso del gozne se llama
+  ahora **Añadidos** (mismo id; herramienta en Migración para
+  renombrarlo en los datos vivos). 111/111.
+
 La app actual (`lemgil-mision-apk`) sigue viva e intacta mientras tanto.

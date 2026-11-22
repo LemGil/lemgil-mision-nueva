@@ -217,6 +217,49 @@ export async function crearConversion(
   return crearConversionInterna(repo, datos, personaId, PASO_DE_ENTRADA[entrada], hoy);
 }
 
+/**
+ * Alta en Misión de quien llega ya bautizado de otra congregación
+ * (procedimiento del 2026-11-22): el proceso nace en Alcanzado —
+ * como el de todos —, la persona queda con su bautismo (y su
+ * fecha, si se conoce) registrados, y el historial anota la
+ * llegada. Su bautismo NO cuenta como bautismo de la casa: en los
+ * conteos se lee «vino ya bautizado» por el origen.
+ */
+export async function crearConversionLlegaBautizado(
+  repo: Repo,
+  datos: DatosMinisterio,
+  personaId: string,
+  fechaBautismo: string,
+  hoy: string,
+): Promise<Conversion> {
+  const existente = datos.conversiones.find((c) => c.personaId === personaId);
+  if (existente) {
+    const paso = pasoPorId(datos.pasos, existente.estado);
+    throw new Error(
+      `Esta persona ya está en Misión (estado actual: ${paso?.nombre ?? existente.estado}). Una persona solo puede tener UN registro en Misión: trabaja sobre su ficha.`,
+    );
+  }
+  const persona = datos.personas.find((x) => x.id === personaId);
+  if (persona && (!persona.bautizado || (fechaBautismo && !persona.fechaBautismo))) {
+    await repo.guardar('personas', {
+      ...persona,
+      bautizado: true,
+      fechaBautismo: fechaBautismo || persona.fechaBautismo,
+    });
+  }
+  const conversion = await crearConversionInterna(repo, datos, personaId, PS_ALCAZADO, hoy);
+  const conNota: Conversion = {
+    ...conversion,
+    bautizado: true,
+    historial: [
+      ...(conversion.historial ?? []),
+      { fecha: hoy, estado: PS_ALCAZADO, nota: 'Llegó bautizado/a de otra congregación' },
+    ],
+  };
+  await repo.guardar('conversiones', conNota);
+  return conNota;
+}
+
 /** Registra un miembro directo (sin pasar por Misión). Bloqueo duro. */
 export async function crearMiembro(
   repo: Repo,
