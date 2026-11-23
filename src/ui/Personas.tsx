@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { aDatosMinisterio } from '../datos/aDatosMinisterio';
-import { actualizarPersona, borrarPersona, darAltasDirectas, quitarZona, registrarPersona, renombrarZona, type EntradaMision } from '../datos/acciones';
+import { actualizarPersona, asignarGrupos, borrarPersona, darAltasDirectas, quitarZona, registrarPersona, renombrarZona, type EntradaMision } from '../datos/acciones';
+import { idsGruposDe, nombresGruposDe } from '../motor/gruposVista';
+import CamposGrupos from './CamposGrupos';
 import type { Repo } from '../datos/repo';
 import type { DatosMinisterio, Persona, Sexo } from '../modelo/tipos';
 import { buscarPersonas, fichaDePersona, situacionDe } from '../motor/personaVista';
@@ -134,15 +136,6 @@ function FormularioCampos({
       </div>
       <div className="form-fila">
         <label>
-          Grupo
-          <select value={campos.grupoId} onChange={(e) => u({ grupoId: e.target.value })}>
-            <option value="">Sin grupo</option>
-            {datos.grupos.map((g) => (
-              <option key={g.id} value={g.id}>{g.nombre}</option>
-            ))}
-          </select>
-        </label>
-        <label>
           Hermano mayor
           <select value={campos.hermanoMayorId} onChange={(e) => u({ hermanoMayorId: e.target.value })}>
             <option value="">Sin hermano mayor</option>
@@ -199,6 +192,8 @@ export default function Personas({ repo }: { repo: Repo }) {
 
   const [campos, setCampos] = useState<Campos>(camposDe());
   const [camposEdicion, setCamposEdicion] = useState<Campos>(camposDe());
+  const [gruposCrear, setGruposCrear] = useState<string[]>([]);
+  const [gruposEditar, setGruposEditar] = useState<string[]>([]);
   const [altaMision, setAltaMision] = useState(false);
   const [entrada, setEntrada] = useState<EntradaMision>('alcanzado');
   const [altaIntegrado, setAltaIntegrado] = useState(false);
@@ -244,7 +239,6 @@ export default function Personas({ repo }: { repo: Repo }) {
     const p = id ? datos.personas.find((x) => x.id === id) : undefined;
     return p ? `${p.nombre} ${p.apellidos ?? ''}`.trim() : undefined;
   };
-  const grupoDe = (id?: string | null) => (id ? datos.grupos.find((g) => g.id === id)?.nombre : undefined);
 
   const guardar = async (ev: React.FormEvent) => {
     ev.preventDefault();
@@ -261,8 +255,12 @@ export default function Personas({ repo }: { repo: Repo }) {
         },
         hoyIso(),
       );
+      if (gruposCrear.length) {
+        await asignarGrupos(repo, { ...datos, personas: [...datos.personas, persona] }, persona.id, gruposCrear);
+      }
       setMostrarForm(false);
       setCampos(camposDe());
+      setGruposCrear([]);
       setAltaMision(false); setAltaIntegrado(false); setAltaBeneficiario(false);
       setSeleccionada(persona.id);
       recargar();
@@ -283,7 +281,14 @@ export default function Personas({ repo }: { repo: Repo }) {
     if (!ficha) return;
     setErrorEdicion('');
     try {
-      await actualizarPersona(repo, datos, { ...ficha.persona, ...personaDe(camposEdicion) });
+      const actualizada = { ...ficha.persona, ...personaDe(camposEdicion) };
+      await actualizarPersona(repo, datos, actualizada);
+      await asignarGrupos(
+        repo,
+        { ...datos, personas: datos.personas.map((x) => (x.id === actualizada.id ? actualizada : x)) },
+        actualizada.id,
+        gruposEditar,
+      );
       // Las altas que le faltaban y se marcaron nacen con la misma siembra
       // del registro nuevo; la sección es solo de altas, nunca borra.
       if (edAltaIntegrado || edAltaMision || edAltaBeneficiario) {
@@ -327,7 +332,7 @@ export default function Personas({ repo }: { repo: Repo }) {
           ['Hijos', p.hijos],
           ['Contacto preferido', p.contactoPreferido],
           ['Correo', p.email],
-          ['Grupo', grupoDe(p.grupoId)],
+          ['Grupos', nombresGruposDe(datos, p.id)],
           ['Hermano mayor', nombreDe(p.hermanoMayorId)],
           ['Bautizado', p.bautizado === undefined && !origenP ? undefined : (p.bautizado || origenP) ? `Sí${p.fechaBautismo ? ` · ${p.fechaBautismo}` : ''}${origenP === 'casa' ? ' · se bautizó con nosotros' : origenP === 'fuera' ? ' · vino ya bautizado' : ''}` : 'No'],
         ] as [string, string | undefined][]
@@ -355,7 +360,7 @@ export default function Personas({ repo }: { repo: Repo }) {
 
   const claveGrupo = (per: Persona): string => {
     if (agruparPor === 'zona') return per.zona?.trim() || 'Sin zona';
-    if (agruparPor === 'grupo') return grupoDe(per.grupoId) ?? 'Sin grupo';
+    if (agruparPor === 'grupo') return nombresGruposDe(datos, per.id) ?? 'Sin grupo';
     return situacionDe(datos, per.id).texto;
   };
 
@@ -391,7 +396,7 @@ export default function Personas({ repo }: { repo: Repo }) {
         <span><span className={`chip chip-${sit.tono}`}>{sit.texto}</span></span>
         <span className="persona-meta">{per.telefono ?? 'Sin teléfono'}</span>
         <span className="persona-meta">
-          {[grupoDe(per.grupoId), per.zona].filter(Boolean).join(' · ') || 'Sin grupo ni zona'}
+          {[nombresGruposDe(datos, per.id), per.zona].filter(Boolean).join(' · ') || 'Sin grupo ni zona'}
         </span>
       </TarjetaPersona>
     );
@@ -410,6 +415,7 @@ export default function Personas({ repo }: { repo: Repo }) {
         <form className="tarjeta formulario" onSubmit={guardar}>
           <h2>➕ Nueva persona</h2>
           <FormularioCampos campos={campos} set={setCampos} datos={datos} />
+          <CamposGrupos datos={datos} seleccion={gruposCrear} onCambiar={setGruposCrear} />
           <fieldset className="altas">
             <legend>Al guardar, dar de alta también como:</legend>
             <label className="check">
@@ -536,6 +542,7 @@ export default function Personas({ repo }: { repo: Repo }) {
           {editando ? (
             <form className="formulario" onSubmit={guardarEdicion}>
               <FormularioCampos campos={camposEdicion} set={setCamposEdicion} datos={datos} excluirId={p.id} />
+              <CamposGrupos datos={datos} seleccion={gruposEditar} onCambiar={setGruposEditar} />
               <fieldset className="altas">
                 <legend>Al guardar, dar de alta también como:</legend>
                 {misionEd ? (
@@ -593,6 +600,7 @@ export default function Personas({ repo }: { repo: Repo }) {
                   className="btn"
                   onClick={() => {
                     setCamposEdicion(camposDe(p));
+                    setGruposEditar(idsGruposDe(datos, p.id));
                     limpiarAltasEdicion();
                     setErrorEdicion('');
                     setEditando(true);

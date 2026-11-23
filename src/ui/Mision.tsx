@@ -9,6 +9,7 @@ import { fechaEnPasoActual } from '../motor/alertas';
 import { conteoMision, siguientePasoEnRuta } from '../motor/mision';
 import { informeMision, origenBautismo } from '../motor/informeMision';
 import { buscarPersonas } from '../motor/personaVista';
+import { nombresGruposDe } from '../motor/gruposVista';
 import { agrupar } from '../motor/vistas';
 import { anosConRegistros, mesesConRegistros } from '../motor/periodos';
 
@@ -163,8 +164,7 @@ export default function Mision({ repo }: { repo: Repo }) {
     const per = personaDe(c.personaId);
     if (agruparPor === 'zona') return per?.zona?.trim() || 'Sin zona';
     if (agruparPor === 'grupo') {
-      const g = per?.grupoId ? datos.grupos.find((x) => x.id === per.grupoId) : undefined;
-      return g?.nombre ?? 'Sin grupo';
+      return (per ? nombresGruposDe(datos, per.id) : undefined) ?? 'Sin grupo';
     }
     const paso = datos.pasos.find((x) => x.id === c.estado);
     return paso ? `${paso.emoji} ${paso.nombre}` : c.estado;

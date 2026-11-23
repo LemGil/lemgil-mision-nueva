@@ -288,3 +288,20 @@ de un solo motor de conteo (`src/motor/`); el cuadre se verifica solo
   banda de fijando arriba (112/112).
 
 La app actual (`lemgil-mision-apk`) sigue viva e intacta mientras tanto.
+
+## Tipos de grupo y formulario de Grupos completo (v34)
+
+- **Tipos de grupo** (decisión de LemGil, 2026-11-23): un grupo tiene
+  `tipo` (Iglesia, Oikos…; la lista nace del uso, como las zonas).
+  La regla «un solo grupo por persona» pasa a ser **un grupo por
+  tipo**: un hermano está en su Iglesia y en su Oikos a la vez. La
+  pertenencia vive en `grupoIds` (persona y miembro, espejados por
+  `asignarGrupos`); el `grupoId` viejo se sigue leyendo sin migración.
+- **Formulario de Grupos**: campo Tipo en crear y editar; bloque de
+  líder unido (buscador + texto libre + ✕ quitar + qué se muestra);
+  sección «Miembros del grupo» en los dos formularios (agregar/quitar,
+  con aviso de movimiento solo dentro del mismo tipo).
+- Miembros y Personas asignan con selectores **por tipo**
+  (`CamposGrupos`); las metas de Misión, Academia y Bien Común
+  muestran todos los grupos de la persona.
+- 117/117 pruebas.

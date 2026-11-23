@@ -10,7 +10,8 @@ import {
   PS_TRASLADO,
 } from '../modelo/catalogo';
 import { aDatosMinisterio, sembrarCatalogoSiVacio } from './aDatosMinisterio';
-import { avanzarConversion, crearConversion, crearConversionLlegaBautizado, crearMiembro, darAltasDirectas, registrarPersona } from './acciones';
+import { avanzarConversion, agregarAGrupo, crearConversion, crearConversionLlegaBautizado, crearMiembro, darAltasDirectas, quitarDeGrupo, registrarPersona } from './acciones';
+import { idsGruposDe } from '../motor/gruposVista';
 import { BaseLocal } from './db';
 import { Repo } from './repo';
 
@@ -217,5 +218,33 @@ describe('ministerios', () => {
     await expect(
       crearConversionLlegaBautizado(repo, datos, p.id, '', HOY),
     ).rejects.toThrow('solo puede tener UN registro');
+  });
+});
+
+describe('grupos con tipos: un grupo por tipo', () => {
+  it('la persona está en su Iglesia y su Oikos; cambiar de Oikos no toca la Iglesia', async () => {
+    const repo = await repoListo();
+    await repo.guardar('grupos', { id: 'g-iglesia', nombre: 'IGLESIA 120 Y 51', tipo: 'Iglesia' });
+    await repo.guardar('grupos', { id: 'g-oikos', nombre: 'OIKOS ALICIA', tipo: 'Oikos' });
+    await repo.guardar('grupos', { id: 'g-oikos2', nombre: 'OIKOS BETEL', tipo: 'Oikos' });
+    await repo.guardar('personas', { id: 'p1', nombre: 'Luis' });
+    await repo.guardar('miembros', { id: 'm1', personaId: 'p1', estado: 'Activo', fechaIngreso: HOY });
+    let datos = await aDatosMinisterio(repo);
+    await agregarAGrupo(repo, datos, 'p1', datos.grupos.find((g) => g.id === 'g-iglesia')!);
+    datos = await aDatosMinisterio(repo);
+    await agregarAGrupo(repo, datos, 'p1', datos.grupos.find((g) => g.id === 'g-oikos')!);
+    datos = await aDatosMinisterio(repo);
+    expect(idsGruposDe(datos, 'p1')).toEqual(['g-iglesia', 'g-oikos']);
+    await agregarAGrupo(repo, datos, 'p1', datos.grupos.find((g) => g.id === 'g-oikos2')!);
+    datos = await aDatosMinisterio(repo);
+    expect(idsGruposDe(datos, 'p1')).toEqual(['g-iglesia', 'g-oikos2']);
+    const per = datos.personas.find((x) => x.id === 'p1')!;
+    const mie = datos.miembros.find((x) => x.personaId === 'p1')!;
+    expect(per.grupoIds).toEqual(['g-iglesia', 'g-oikos2']);
+    expect(mie.grupoIds).toEqual(['g-iglesia', 'g-oikos2']);
+    expect(per.grupoId).toBe('g-iglesia');
+    await quitarDeGrupo(repo, datos, 'p1', 'g-oikos2');
+    datos = await aDatosMinisterio(repo);
+    expect(idsGruposDe(datos, 'p1')).toEqual(['g-iglesia']);
   });
 });

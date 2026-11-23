@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { aDatosMinisterio } from '../datos/aDatosMinisterio';
-import { actualizarGrupo, borrarGrupo, crearGrupo } from '../datos/acciones';
+import { actualizarGrupo, agregarAGrupo, borrarGrupo, crearGrupo, quitarDeGrupo } from '../datos/acciones';
 import type { Repo } from '../datos/repo';
 import type { DatosMinisterio } from '../modelo/tipos';
 import SelectorPersona from './SelectorPersona';
@@ -16,7 +16,7 @@ import { Buscador, CabeceraPagina, FilaPersona, Kpi, TarjetaPersona } from './Pi
 import { coincideBusqueda } from '../motor/personaVista';
 import BorrarBoton from './BorrarBoton';
 import GuiaPagina from './GuiaPagina';
-import { conteoPorPasoDelGrupo, estadoGrupo, liderVisible, lineaReunion, porcentajeCapacidad } from '../motor/gruposVista';
+import { claveTipoGrupo, conteoPorPasoDelGrupo, estadoGrupo, grupoDeTipo, idsGruposDe, idsMiembrosDeGrupo, liderVisible, lineaReunion, porcentajeCapacidad, tipoVisibleGrupo, tiposDeGrupoEnUso } from '../motor/gruposVista';
 
 const DIAS_SEMANA = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 
@@ -36,6 +36,7 @@ function StatsGrupo({ datos, grupo, miembros }: { datos: DatosMinisterio; grupo:
   return (
     <>
       <span className="persona-meta">
+        {grupo.tipo ? `🏷️ ${grupo.tipo} · ` : ''}
         {grupo.zona ? `📍 ${grupo.zona}` : '📍 Sin zona'}
         {lider ? ` · 👤 ${lider}` : ''}
         {grupo.lat != null ? ' · 📍 en el mapa' : ''}
@@ -61,11 +62,71 @@ function StatsGrupo({ datos, grupo, miembros }: { datos: DatosMinisterio; grupo:
   );
 }
 
+/** La sección de miembros del formulario del grupo: los que están,
+ * con su ✕ para quitar, y el buscador para agregar. El aviso de
+ * movimiento salta solo si la persona ya está en otro grupo DEL
+ * MISMO tipo que el del formulario (su Iglesia no estorba a su Oikos). */
+function SeccionMiembros({
+  datos,
+  seleccion,
+  onCambiar,
+  tipoTexto,
+  grupoActualId,
+}: {
+  datos: DatosMinisterio;
+  seleccion: string[];
+  onCambiar: (ids: string[]) => void;
+  tipoTexto: string;
+  grupoActualId?: string;
+}) {
+  const personaDe = (id: string) => datos.personas.find((x) => x.id === id);
+  const claveNueva = claveTipoGrupo({ tipo: tipoTexto } as Grupo);
+  return (
+    <>
+      <h3>👥 Miembros del grupo</h3>
+      {seleccion.length === 0 ? (
+        <p className="tenue">Nadie todavía: busca y agrega a los hermanos.</p>
+      ) : (
+        <ul className="historial">
+          {seleccion.map((id) => {
+            const per = personaDe(id);
+            const otro = grupoDeTipo(datos, id, claveNueva);
+            const aviso = otro && otro.id !== grupoActualId ? otro : undefined;
+            return (
+              <li key={id}>
+                {per ? `${per.nombre} ${per.apellidos ?? ''}` : id}
+                {aviso && (
+                  <span className="tenue"> · ⚠ Está en {aviso.nombre} (mismo tipo): al guardar pasará a este grupo</span>
+                )}
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={() => onCambiar(seleccion.filter((x) => x !== id))}
+                >
+                  ✕ Quitar
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      <SelectorPersona
+        datos={datos}
+        excluir={new Set(seleccion)}
+        onElegir={(id) => onCambiar([...seleccion, id])}
+        placeholder="🔍 Agregar un miembro…"
+      />
+    </>
+  );
+}
+
 export default function Grupos({ repo }: { repo: Repo }) {
   const [datos, setDatos] = useState<DatosMinisterio | null>(null);
   const [recargas, setRecargas] = useState(0);
   const [seleccionado, setSeleccionado] = useState<string | null>(null);
   const [nombre, setNombre] = useState('');
+  const [tipo, setTipo] = useState('');
+  const [miembrosSel, setMiembrosSel] = useState<string[]>([]);
   const [zona, setZona] = useState('');
   const [liderId, setLiderId] = useState<string | null>(null);
   const [liderTexto, setLiderTexto] = useState('');
@@ -94,21 +155,16 @@ export default function Grupos({ repo }: { repo: Repo }) {
   const personaDe = (id?: string | null) => datos.personas.find((p) => p.id === id);
   const esPersonaBaja = (personaId: string) =>
     esBaja(clasificarPersona(datos, personaId).clase);
-  const miembrosDe = (grupoId: string) => {
-    const ids = new Set<string>();
-    for (const m of datos.miembros) if (m.grupoId === grupoId) ids.add(m.personaId);
-    for (const p of datos.personas) if (p.grupoId === grupoId) ids.add(p.id);
+  const miembrosDe = (grupoId: string) =>
     // En el grupo solo salen los que están: apartados, traslados y
     // fallecidos (las bajas) no se listan ni se cuentan.
-    return [...ids]
+    idsMiembrosDeGrupo(datos, grupoId)
       .filter((id) => !esPersonaBaja(id))
       .map((id) => personaDe(id))
       .filter(Boolean);
-  };
   const detalle = seleccionado ? datos.grupos.find((g) => g.id === seleccionado) : undefined;
   const conGrupo = new Set<string>();
-  for (const m of datos.miembros) if (m.grupoId) conGrupo.add(m.personaId);
-  for (const p of datos.personas) if (p.grupoId) conGrupo.add(p.id);
+  for (const p of datos.personas) if (idsGruposDe(datos, p.id).length > 0) conGrupo.add(p.id);
   for (const id of [...conGrupo]) if (esPersonaBaja(id)) conGrupo.delete(id);
 
   const visibles = datos.grupos.filter((g) =>
@@ -119,6 +175,7 @@ export default function Grupos({ repo }: { repo: Repo }) {
       const l = g.liderId ? personaDe(g.liderId) : undefined;
       return l ? `${l.nombre} ${l.apellidos ?? ''}`.trim() : 'Sin líder';
     }
+    if (agruparPor === 'tipo') return tipoVisibleGrupo(g);
     return g.zona?.trim() || 'Sin zona';
   };
   const filaGrupo = (g: (typeof datos.grupos)[number]) => {
@@ -128,7 +185,7 @@ export default function Grupos({ repo }: { repo: Repo }) {
       <li key={g.id}>
         <FilaPersona
           nombre={`🏠 ${g.nombre}`}
-          meta={<>{miembrosDe(g.id).length} personas{lider ? ` · 👤 ${lider}` : ''}{reunion ? ` · ${reunion}` : ''}{g.lat != null ? ' · 📍 en el mapa' : ''}</>}
+          meta={<>{g.tipo ? `${g.tipo} · ` : ''}{miembrosDe(g.id).length} personas{lider ? ` · 👤 ${lider}` : ''}{reunion ? ` · ${reunion}` : ''}{g.lat != null ? ' · 📍 en el mapa' : ''}</>}
           activa={seleccionado === g.id}
           onClick={() => setSeleccionado(g.id)}
         />
@@ -155,7 +212,7 @@ export default function Grupos({ repo }: { repo: Repo }) {
       <CabeceraPagina titulo="🧑‍🤝‍🧑 Grupos">
         <button className="btn btn-dorado" onClick={() => setMostrarForm((v) => !v)}>➕ Nuevo grupo</button>
       </CabeceraPagina>
-      <GuiaPagina texto="Los grupos de la congregación, con su líder, su reunión y su capacidad. Cada persona pertenece a un solo grupo." />
+      <GuiaPagina texto="Los grupos de la congregación, con su tipo, su líder, su reunión y su capacidad. Una persona puede estar en un grupo de cada tipo: su Iglesia y su Oikos." />
       {error && <p className="aviso aviso-rojo">{error}</p>}
       <section className="kpis">
         <Kpi principal icono="🧑‍🤝‍🧑" numero={datos.grupos.length} titulo="Grupos" />
@@ -170,7 +227,7 @@ export default function Grupos({ repo }: { repo: Repo }) {
           <label>Zona<InputZona datos={datos} value={zona} onChange={setZona} /></label>
         </div>
         <div className="form-fila">
-          <label>Líder (texto libre)<input value={liderTexto} onChange={(e) => setLiderTexto(e.target.value)} placeholder="Ej.: Pastores Luis y Daymi" /></label>
+          <label>Tipo<input value={tipo} onChange={(e) => setTipo(e.target.value)} list="tipos-grupo" placeholder="Ej.: Iglesia, Oikos" /></label>
           <label>Capacidad<input type="number" min={0} value={capacidad} onChange={(e) => setCapacidad(e.target.value)} /></label>
         </div>
         <div className="form-fila">
@@ -182,8 +239,20 @@ export default function Grupos({ repo }: { repo: Repo }) {
         </div>
         <datalist id="dias-semana">{DIAS_SEMANA.map((d) => <option key={d} value={d} />)}</datalist>
         <datalist id="lugares-grupo">{[...new Set(datos.grupos.map((g) => g.lugar).filter(Boolean))].map((l) => <option key={l} value={l} />)}</datalist>
-        <p className="tenue">Líder: {liderId ? `${personaDe(liderId)?.nombre} ${personaDe(liderId)?.apellidos ?? ''}` : 'sin elegir'}</p>
+        <datalist id="tipos-grupo">{[...new Set(['Iglesia', 'Oikos', ...tiposDeGrupoEnUso(datos).map((t) => t.nombre)])].filter((t) => t !== 'Sin tipo').map((t) => <option key={t} value={t} />)}</datalist>
+        <h3>👤 Líder</h3>
+        <p className="tenue">
+          Líder: {liderId ? `${personaDe(liderId)?.nombre} ${personaDe(liderId)?.apellidos ?? ''}` : 'sin elegir'}
+          {liderId && (
+            <button type="button" className="btn" onClick={() => setLiderId(null)}>✕ Quitar</button>
+          )}
+        </p>
         <SelectorPersona datos={datos} onElegir={setLiderId} placeholder="🔍 Buscar al líder…" />
+        <div className="form-fila">
+          <label>Líder (texto libre)<input value={liderTexto} onChange={(e) => setLiderTexto(e.target.value)} placeholder="Ej.: Pastores Luis y Daymi" /></label>
+        </div>
+        <p className="tenue">Si escribes el texto libre, eso es lo que se muestra; si no, el nombre de la persona elegida.</p>
+        <SeccionMiembros datos={datos} seleccion={miembrosSel} onCambiar={setMiembrosSel} tipoTexto={tipo} />
         <div className="form-acciones">
           <button
             className="btn btn-dorado"
@@ -191,8 +260,9 @@ export default function Grupos({ repo }: { repo: Repo }) {
             onClick={async () => {
               setError('');
               try {
-                await crearGrupo(repo, {
+                const creado = await crearGrupo(repo, {
                 nombre: nombre.trim(),
+                tipo: tipo.trim() || undefined,
                 zona: zona.trim() || undefined,
                 liderId,
                 liderTexto: liderTexto.trim() || undefined,
@@ -201,7 +271,8 @@ export default function Grupos({ repo }: { repo: Repo }) {
                 lugar: lugar.trim() || undefined,
                 capacidad: capacidadNumero(capacidad),
               });
-                setNombre(''); setZona(''); setLiderId(null); setLiderTexto(''); setDia(''); setHora(''); setLugar(''); setCapacidad('');
+                for (const pid of miembrosSel) await agregarAGrupo(repo, datos, pid, creado);
+                setNombre(''); setTipo(''); setMiembrosSel([]); setZona(''); setLiderId(null); setLiderTexto(''); setDia(''); setHora(''); setLugar(''); setCapacidad('');
               setMostrarForm(false);
                 recargar();
               } catch (e) {
@@ -229,6 +300,7 @@ export default function Grupos({ repo }: { repo: Repo }) {
         opciones={[
           { valor: 'zona', etiqueta: 'Zona' },
           { valor: 'lider', etiqueta: 'Líder' },
+          { valor: 'tipo', etiqueta: 'Tipo' },
         ]}
       />
       {vista === 'lista' && (
@@ -264,7 +336,7 @@ export default function Grupos({ repo }: { repo: Repo }) {
           <StatsGrupo datos={datos} grupo={detalle} miembros={miembrosDe(detalle.id)} />
           <h3>En el grupo</h3>
           {miembrosDe(detalle.id).length === 0 ? (
-            <p className="tenue">Nadie asignado todavía (se asigna desde Miembros o desde la ficha).</p>
+            <p className="tenue">Nadie asignado todavía (se agrega en el formulario de este grupo, en Miembros o en la ficha).</p>
           ) : (
             <ul className="historial">
               {miembrosDe(detalle.id).map((p) => (
@@ -311,6 +383,8 @@ function FormEditarGrupo({
   onGuardado: () => void;
 }) {
   const [nombre, setNombre] = useState(grupo.nombre);
+  const [tipo, setTipo] = useState(grupo.tipo ?? '');
+  const [miembrosSel, setMiembrosSel] = useState<string[]>(() => idsMiembrosDeGrupo(datos, grupo.id));
   const [zona, setZona] = useState(grupo.zona ?? '');
   const [liderId, setLiderId] = useState<string | null>(grupo.liderId ?? null);
   const [liderTexto, setLiderTexto] = useState(grupo.liderTexto ?? '');
@@ -337,19 +411,35 @@ function FormEditarGrupo({
           <InputZona datos={datos} value={zona} onChange={(v) => { setZona(v); tocar(); }} />
         </label>
       </div>
-      <p className="tenue">
-        Líder: {liderId ? `${personaDe(liderId)?.nombre} ${personaDe(liderId)?.apellidos ?? ''}` : 'sin líder'}
-      </p>
       <div className="form-fila">
         <label>
-          Líder (texto libre)
-          <input value={liderTexto} onChange={(e) => { setLiderTexto(e.target.value); tocar(); }} placeholder="Ej.: Pastores Luis y Daymi" />
+          Tipo
+          <input value={tipo} onChange={(e) => { setTipo(e.target.value); tocar(); }} list="tipos-grupo" placeholder="Ej.: Iglesia, Oikos" />
         </label>
         <label>
           Capacidad
           <input type="number" min={0} value={capacidad} onChange={(e) => { setCapacidad(e.target.value); tocar(); }} />
         </label>
       </div>
+      <h3>👤 Líder</h3>
+      <p className="tenue">
+        Líder: {liderId ? `${personaDe(liderId)?.nombre} ${personaDe(liderId)?.apellidos ?? ''}` : 'sin líder'}
+        {liderId && (
+          <button type="button" className="btn" onClick={() => { setLiderId(null); tocar(); }}>✕ Quitar</button>
+        )}
+      </p>
+      <SelectorPersona
+        datos={datos}
+        onElegir={(id) => { setLiderId(id); tocar(); }}
+        placeholder="🔍 Cambiar el líder…"
+      />
+      <div className="form-fila">
+        <label>
+          Líder (texto libre)
+          <input value={liderTexto} onChange={(e) => { setLiderTexto(e.target.value); tocar(); }} placeholder="Ej.: Pastores Luis y Daymi" />
+        </label>
+      </div>
+      <p className="tenue">Si escribes el texto libre, eso es lo que se muestra; si no, el nombre de la persona elegida.</p>
       <div className="form-fila">
         <label>
           Día de reunión
@@ -368,11 +458,7 @@ function FormEditarGrupo({
       </div>
       <datalist id="dias-semana">{DIAS_SEMANA.map((d) => <option key={d} value={d} />)}</datalist>
       <datalist id="lugares-grupo">{[...new Set(datos.grupos.map((g) => g.lugar).filter(Boolean))].map((l) => <option key={l} value={l} />)}</datalist>
-      <SelectorPersona
-        datos={datos}
-        onElegir={(id) => { setLiderId(id); tocar(); }}
-        placeholder="🔍 Cambiar el líder…"
-      />
+      <SeccionMiembros datos={datos} seleccion={miembrosSel} onCambiar={(ids) => { setMiembrosSel(ids); tocar(); }} tipoTexto={tipo} grupoActualId={grupo.id} />
       <div className="form-acciones">
         <button
           className="btn btn-dorado"
@@ -381,9 +467,10 @@ function FormEditarGrupo({
             setError('');
             setGuardado(false);
             try {
-              await actualizarGrupo(repo, {
+              const actualizado = {
                 ...grupo,
                 nombre: nombre.trim(),
+                tipo: tipo.trim() || undefined,
                 zona: zona.trim() || undefined,
                 liderId,
                 liderTexto: liderTexto.trim() || undefined,
@@ -391,7 +478,15 @@ function FormEditarGrupo({
                 hora: hora.trim() || undefined,
                 lugar: lugar.trim() || undefined,
                 capacidad: capacidadNumero(capacidad),
-              });
+              };
+              await actualizarGrupo(repo, actualizado);
+              const iniciales = idsMiembrosDeGrupo(datos, grupo.id);
+              for (const id of miembrosSel) {
+                if (!iniciales.includes(id)) await agregarAGrupo(repo, datos, id, actualizado);
+              }
+              for (const id of iniciales) {
+                if (!miembrosSel.includes(id)) await quitarDeGrupo(repo, datos, id, grupo.id);
+              }
               setGuardado(true);
               onGuardado();
             } catch (e) {

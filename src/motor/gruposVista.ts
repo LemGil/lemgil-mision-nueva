@@ -83,3 +83,85 @@ export function lineaReunion(grupo: Grupo): string {
   const cuando = [grupo.dia?.trim(), grupo.hora?.trim()].filter(Boolean).join(' ');
   return [cuando, grupo.lugar?.trim()].filter(Boolean).join(' · ');
 }
+
+// ——— Pertenencia con tipos (decisión de LemGil, 2026-11-23) ———
+// Existen diferentes tipos de grupo (Iglesia, Oikos…): una persona
+// puede estar en UN grupo de cada tipo — su Iglesia y su Oikos a la
+// vez. La pertenencia vive en `grupoIds` (la lista); el `grupoId`
+// viejo se sigue leyendo como una lista de uno, sin migración.
+
+const normalizarTipo = (s: string): string =>
+  s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
+
+/** La clave de comparación del tipo de un grupo ('' si no tiene). */
+export function claveTipoGrupo(grupo?: Grupo | null): string {
+  return normalizarTipo(grupo?.tipo ?? '');
+}
+
+/** El tipo tal como se muestra ('Sin tipo' si el grupo no tiene). */
+export function tipoVisibleGrupo(grupo?: Grupo | null): string {
+  return grupo?.tipo?.trim() || 'Sin tipo';
+}
+
+/** Los ids de grupo de una persona: la unión de su ficha y de su
+ * ficha de miembro, leyendo el dato viejo (grupoId) y el nuevo
+ * (grupoIds), solo grupos que existen. */
+export function idsGruposDe(datos: DatosMinisterio, personaId: string): string[] {
+  const ids = new Set<string>();
+  const agregar = (lista?: string[], unico?: string | null) => {
+    for (const id of lista ?? []) if (id) ids.add(id);
+    if (unico) ids.add(unico);
+  };
+  const persona = datos.personas.find((x) => x.id === personaId);
+  if (persona) agregar(persona.grupoIds, persona.grupoId);
+  const miembro = datos.miembros.find((x) => x.personaId === personaId);
+  if (miembro) agregar(miembro.grupoIds, miembro.grupoId);
+  return [...ids].filter((id) => datos.grupos.some((g) => g.id === id));
+}
+
+/** Los grupos de una persona, en el orden de su lista. */
+export function gruposDePersona(datos: DatosMinisterio, personaId: string): Grupo[] {
+  return idsGruposDe(datos, personaId)
+    .map((id) => datos.grupos.find((g) => g.id === id))
+    .filter((g): g is Grupo => !!g);
+}
+
+/** Los nombres de sus grupos unidos ('IGLESIA 120 Y 51 · OIKOS ALICIA'). */
+export function nombresGruposDe(datos: DatosMinisterio, personaId: string): string | undefined {
+  const nombres = gruposDePersona(datos, personaId).map((g) => g.nombre);
+  return nombres.length ? nombres.join(' · ') : undefined;
+}
+
+/** El grupo que la persona ya tiene de un tipo dado (por su clave). */
+export function grupoDeTipo(
+  datos: DatosMinisterio,
+  personaId: string,
+  claveTipo: string,
+): Grupo | undefined {
+  return gruposDePersona(datos, personaId).find((g) => claveTipoGrupo(g) === claveTipo);
+}
+
+/** Los tipos de grupo en uso, para los selectores por tipo: Iglesia
+ * y Oikos primero si existen; el tipo vacío aparece como 'Sin tipo'
+ * solo si hay grupos sin tipo. */
+export function tiposDeGrupoEnUso(datos: DatosMinisterio): { clave: string; nombre: string }[] {
+  const vistos = new Map<string, string>();
+  for (const g of datos.grupos) {
+    const clave = claveTipoGrupo(g);
+    if (!vistos.has(clave)) vistos.set(clave, tipoVisibleGrupo(g));
+  }
+  const orden = (clave: string) => (clave === 'iglesia' ? 0 : clave === 'oikos' ? 1 : clave === '' ? 3 : 2);
+  return [...vistos.entries()]
+    .map(([clave, nombre]) => ({ clave, nombre }))
+    .sort((a, b) => orden(a.clave) - orden(b.clave) || a.nombre.localeCompare(b.nombre));
+}
+
+/** Las personas asignadas a un grupo (sin filtrar bajas: eso lo
+ * decide quien muestra, como hace la página de Grupos). */
+export function idsMiembrosDeGrupo(datos: DatosMinisterio, grupoId: string): string[] {
+  const ids: string[] = [];
+  for (const p of datos.personas) {
+    if (idsGruposDe(datos, p.id).includes(grupoId)) ids.push(p.id);
+  }
+  return ids;
+}

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { aDatosMinisterio } from '../datos/aDatosMinisterio';
 import { actualizarAporte, borrarAporte, borrarDiezmador, crearDiezmador, registrarAporte } from '../datos/acciones';
+import { nombresGruposDe } from '../motor/gruposVista';
 import type { Repo } from '../datos/repo';
 import type { DatosMinisterio, Periodo } from '../modelo/tipos';
 import { resumenBienComun } from '../motor/bienComun';
@@ -94,17 +95,15 @@ export default function BienComun({ repo }: { repo: Repo }) {
     const p = personaDe(d.personaId);
     if (agruparPor === 'estado') return d.activo ? 'Activos' : 'Inactivos';
     if (agruparPor === 'grupo') {
-      const g = p?.grupoId ? datos.grupos.find((x) => x.id === p.grupoId) : undefined;
-      return g?.nombre ?? 'Sin grupo';
+      return (p ? nombresGruposDe(datos, p.id) : undefined) ?? 'Sin grupo';
     }
     return p?.zona?.trim() || 'Sin zona';
   };
   const filaDiezmador = (d: (typeof visibles)[number]) => {
     const p = personaDe(d.personaId);
-    const g = p?.grupoId ? datos.grupos.find((x) => x.id === p.grupoId) : undefined;
     const meta = [
       p?.zona ?? 'Sin zona',
-      g?.nombre,
+      p ? nombresGruposDe(datos, p.id) : undefined,
       `${resumen.porPersonaCantidad.get(d.personaId) ?? 0} aportes`,
     ].filter(Boolean).join(' · ');
     return (
@@ -129,7 +128,7 @@ export default function BienComun({ repo }: { repo: Repo }) {
     return (
       <TarjetaPersona key={d.id} nombre={`${p?.nombre ?? ''} ${p?.apellidos ?? ''}`} onClick={() => setSeleccionado(d.id)}>
         <span className="persona-meta">
-          {[p?.zona ?? 'Sin zona', p?.grupoId ? datos.grupos.find((x) => x.id === p.grupoId)?.nombre : undefined, `${resumen.porPersonaCantidad.get(d.personaId) ?? 0} aportes`].filter(Boolean).join(' · ')}
+          {[p?.zona ?? 'Sin zona', p ? nombresGruposDe(datos, p.id) : undefined, `${resumen.porPersonaCantidad.get(d.personaId) ?? 0} aportes`].filter(Boolean).join(' · ')}
         </span>
         <span className="tarjeta-valor">{formatoDinero(resumen.porPersona.get(d.personaId) ?? 0)}</span>
         <span><span className={`chip ${d.activo ? 'chip-verde' : 'chip-gris'}`}>{d.activo ? '● Activo' : '○ Inactivo'}</span></span>

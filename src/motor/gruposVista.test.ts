@@ -2,11 +2,16 @@ import { describe, expect, it } from 'vitest';
 import { CATALOGO_SEMILLA } from '../modelo/catalogo';
 import type { DatosMinisterio } from '../modelo/tipos';
 import {
+  claveTipoGrupo,
   conteoPorPasoDelGrupo,
   estadoGrupo,
+  grupoDeTipo,
+  idsGruposDe,
+  idsMiembrosDeGrupo,
   liderVisible,
   lineaReunion,
   porcentajeCapacidad,
+  tiposDeGrupoEnUso,
 } from './gruposVista';
 
 describe('estadoGrupo (la regla de la app de siempre)', () => {
@@ -67,5 +72,43 @@ describe('conteoPorPasoDelGrupo y textos', () => {
     expect(lineaReunion({ id: 'g', nombre: 'G', dia: 'Domingo', hora: '10:30', lugar: 'CASA CENTRO' })).toBe('Domingo 10:30 · CASA CENTRO');
     expect(lineaReunion({ id: 'g', nombre: 'G', lugar: 'CASA CENTRO' })).toBe('CASA CENTRO');
     expect(lineaReunion({ id: 'g', nombre: 'G' })).toBe('');
+  });
+});
+
+const datosTipos = {
+  personas: [
+    { id: 'p1', nombre: 'Luis', grupoId: 'g-iglesia' },
+    { id: 'p2', nombre: 'Ana', grupoIds: ['g-iglesia', 'g-oikos'] },
+    { id: 'p3', nombre: 'Juan', grupoIds: ['g-oikos'] },
+    { id: 'p4', nombre: 'Eva', grupoId: 'g-fantasma' },
+  ],
+  miembros: [{ id: 'm3', personaId: 'p3', grupoId: 'g-iglesia' }],
+  grupos: [
+    { id: 'g-iglesia', nombre: 'IGLESIA 120 Y 51', tipo: 'Iglesia' },
+    { id: 'g-oikos', nombre: 'OIKOS ALICIA', tipo: 'Oikos' },
+    { id: 'g-oikos2', nombre: 'OIKOS BETEL', tipo: 'oikos' },
+  ],
+  pasos: CATALOGO_SEMILLA,
+} as unknown as DatosMinisterio;
+
+describe('pertenencia con tipos (un grupo por tipo)', () => {
+  it('lee el dato viejo (grupoId) y el nuevo (grupoIds), y une ficha y miembro', () => {
+    expect(idsGruposDe(datosTipos, 'p1')).toEqual(['g-iglesia']);
+    expect(idsGruposDe(datosTipos, 'p2')).toEqual(['g-iglesia', 'g-oikos']);
+    expect(idsGruposDe(datosTipos, 'p3')).toEqual(['g-oikos', 'g-iglesia']);
+    expect(idsGruposDe(datosTipos, 'p4')).toEqual([]);
+  });
+  it('la clave del tipo ignora mayúsculas, espacios y acentos', () => {
+    expect(claveTipoGrupo({ tipo: ' Óikos ' } as never)).toBe('oikos');
+    expect(claveTipoGrupo(undefined)).toBe('');
+    expect(grupoDeTipo(datosTipos, 'p2', 'oikos')?.nombre).toBe('OIKOS ALICIA');
+    expect(grupoDeTipo(datosTipos, 'p2', 'iglesia')?.nombre).toBe('IGLESIA 120 Y 51');
+  });
+  it('los tipos en uso salen Iglesia primero y Oikos después', () => {
+    expect(tiposDeGrupoEnUso(datosTipos).map((t) => t.clave)).toEqual(['iglesia', 'oikos']);
+  });
+  it('los miembros de un grupo salen de la lista de cada persona', () => {
+    expect(idsMiembrosDeGrupo(datosTipos, 'g-oikos')).toEqual(['p2', 'p3']);
+    expect(idsMiembrosDeGrupo(datosTipos, 'g-iglesia')).toEqual(['p1', 'p2', 'p3']);
   });
 });

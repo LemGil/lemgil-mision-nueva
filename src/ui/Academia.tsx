@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { aDatosMinisterio } from '../datos/aDatosMinisterio';
 import { borrarEstudiante, crearEstudiante } from '../datos/acciones';
+import { nombresGruposDe } from '../motor/gruposVista';
 import type { Repo } from '../datos/repo';
 import type { DatosMinisterio } from '../modelo/tipos';
 import SelectorPersona from './SelectorPersona';
@@ -50,8 +51,7 @@ export default function Academia({ repo }: { repo: Repo }) {
     const p = personaDe(e.personaId);
     if (agruparPor === 'estado') return e.estado;
     if (agruparPor === 'grupo') {
-      const g = p?.grupoId ? datos.grupos.find((x) => x.id === p.grupoId) : undefined;
-      return g?.nombre ?? 'Sin grupo';
+      return (p ? nombresGruposDe(datos, p.id) : undefined) ?? 'Sin grupo';
     }
     return p?.zona?.trim() || 'Sin zona';
   };
@@ -83,11 +83,10 @@ export default function Academia({ repo }: { repo: Repo }) {
   };
   const tarjetaEstudiante = (e: (typeof visibles)[number]) => {
     const p = personaDe(e.personaId);
-    const g = p?.grupoId ? datos.grupos.find((x) => x.id === p.grupoId) : undefined;
     return (
       <Tarjeta key={e.id} nombre={`${p?.nombre ?? ''} ${p?.apellidos ?? ''}`}>
         <span><span className={`chip ${e.estado === 'Activo' ? 'chip-verde' : 'chip-gris'}`}>{e.estado}</span></span>
-        <span className="persona-meta">{[p?.zona, g?.nombre].filter(Boolean).join(' · ') || 'Sin zona ni grupo'}</span>
+        <span className="persona-meta">{[p?.zona, p ? nombresGruposDe(datos, p.id) : undefined].filter(Boolean).join(' · ') || 'Sin zona ni grupo'}</span>
         <span>
           <button className="btn" onClick={() => void alternar(e)}>
             {e.estado === 'Activo' ? 'Pasar a Inactivo' : 'Reactivar'}

@@ -7,6 +7,7 @@
 // de estados: su fecha común es el ingreso).
 
 import { pasosDeMiembros } from '../modelo/catalogo';
+import { idsGruposDe } from './gruposVista';
 import type { DatosMinisterio, Miembro, Paso } from '../modelo/tipos';
 
 export interface EstadoPaso {
@@ -39,7 +40,7 @@ export function escaleraDeMiembro(datos: DatosMinisterio, miembro: Miembro): Esc
   const cumplido = (paso: Paso): boolean => {
     switch (paso.fuente) {
       case 'grupo':
-        return !!(miembro.grupoId ?? persona?.grupoId);
+        return idsGruposDe(datos, miembro.personaId).length > 0;
       case 'diezmo':
         return diezmadoresActivos.has(miembro.personaId);
       case 'academia':

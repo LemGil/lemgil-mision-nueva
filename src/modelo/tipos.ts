@@ -23,6 +23,7 @@ export interface Persona {
   email?: string;
   contactoPreferido?: string;
   grupoId?: string | null;
+  grupoIds?: string[];
   /** personaId de su hermano mayor (uno solo). */
   hermanoMayorId?: string | null;
   bautizado?: boolean;
@@ -83,6 +84,7 @@ export interface Miembro {
   fechaIngreso: string; // su fecha común: la cohorte se mide por ella
   conversionId?: string | null;
   grupoId?: string | null;
+  grupoIds?: string[];
 }
 
 export interface Estudiante {
@@ -166,6 +168,7 @@ export interface AsignacionMinisterio {
 export interface Grupo {
   id: string;
   nombre: string;
+  tipo?: string;
   liderId?: string | null; // personaId del líder
   /** El líder en texto libre (p. ej. «Pastores Luis y Daymi»): si está
    * puesto, es el que se muestra; el de la app anterior era así. */

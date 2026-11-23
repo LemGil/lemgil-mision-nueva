@@ -18,6 +18,7 @@ import {
   pasoPorId,
 } from '../modelo/catalogo';
 import { historialOrdenado } from '../motor/mision';
+import { claveTipoGrupo, idsGruposDe } from '../motor/gruposVista';
 import {
   listaConPasoNuevo,
   moverEnLista,
@@ -629,17 +630,75 @@ export async function actualizarGrupo(repo: Repo, grupo: Grupo): Promise<void> {
   await repo.guardar('grupos', grupo);
 }
 
+// ——— Pertenencia a grupos con tipos (2026-11-23) ———
+// La lista `grupoIds` es la fuente; `grupoId` queda como espejo del
+// primero para cualquier lector viejo. Una persona puede estar en un
+// grupo de cada tipo (su Iglesia y su Oikos).
+
+/** Fija la lista completa de grupos de una persona, en su ficha y en
+ * su ficha de miembro a la vez (las dos se leen juntas). */
+export async function asignarGrupos(
+  repo: Repo,
+  datos: DatosMinisterio,
+  personaId: string,
+  grupoIds: string[],
+): Promise<void> {
+  const espejo = grupoIds[0] ?? null;
+  const persona = datos.personas.find((x) => x.id === personaId);
+  if (persona) {
+    await repo.guardar('personas', { ...persona, grupoIds, grupoId: espejo });
+  }
+  const miembro = datos.miembros.find((x) => x.personaId === personaId);
+  if (miembro) {
+    await repo.guardar('miembros', { ...miembro, grupoIds, grupoId: espejo });
+  }
+}
+
+/** Agrega a la persona al grupo, respetando la regla de un grupo por
+ * tipo: si ya estaba en otro grupo DEL MISMO tipo, sale de aquel. */
+export async function agregarAGrupo(
+  repo: Repo,
+  datos: DatosMinisterio,
+  personaId: string,
+  grupo: Grupo,
+): Promise<void> {
+  const clave = claveTipoGrupo(grupo);
+  const actuales = idsGruposDe(datos, personaId).filter((id) => {
+    if (id === grupo.id) return false;
+    const otro = datos.grupos.find((g) => g.id === id);
+    return claveTipoGrupo(otro) !== clave;
+  });
+  await asignarGrupos(repo, datos, personaId, [...actuales, grupo.id]);
+}
+
+/** Quita a la persona de un grupo (los demás grupos quedan). */
+export async function quitarDeGrupo(
+  repo: Repo,
+  datos: DatosMinisterio,
+  personaId: string,
+  grupoId: string,
+): Promise<void> {
+  const actuales = idsGruposDe(datos, personaId).filter((id) => id !== grupoId);
+  await asignarGrupos(repo, datos, personaId, actuales);
+}
+
 /** Borra el grupo y lo quita de las fichas que lo tenían. */
 export async function borrarGrupo(
   repo: Repo,
   datos: DatosMinisterio,
   id: string,
 ): Promise<void> {
-  for (const p of datos.personas.filter((x) => x.grupoId === id)) {
-    await repo.guardar('personas', { ...p, grupoId: null });
+  for (const p of datos.personas) {
+    if (idsGruposDe(datos, p.id).includes(id)) {
+      const restantes = idsGruposDe(datos, p.id).filter((g) => g !== id);
+      await repo.guardar('personas', { ...p, grupoIds: restantes, grupoId: restantes[0] ?? null });
+    }
   }
-  for (const m of datos.miembros.filter((x) => x.grupoId === id)) {
-    await repo.guardar('miembros', { ...m, grupoId: null });
+  for (const m of datos.miembros) {
+    if (idsGruposDe(datos, m.personaId).includes(id)) {
+      const restantes = idsGruposDe(datos, m.personaId).filter((g) => g !== id);
+      await repo.guardar('miembros', { ...m, grupoIds: restantes, grupoId: restantes[0] ?? null });
+    }
   }
   await repo.borrar('grupos', id);
 }

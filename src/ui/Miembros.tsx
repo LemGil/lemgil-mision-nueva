@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
 import { aDatosMinisterio } from '../datos/aDatosMinisterio';
-import { actualizarHito, actualizarMiembro, borrarHito, borrarMiembro, crearMiembro, registrarHito } from '../datos/acciones';
+import { actualizarHito, actualizarMiembro, asignarGrupos, borrarHito, borrarMiembro, crearMiembro, registrarHito } from '../datos/acciones';
 import type { Repo } from '../datos/repo';
 import { pasosDeMiembros } from '../modelo/catalogo';
 import type { DatosMinisterio, EstadoMiembro } from '../modelo/tipos';
 import { cumpleanosProximos } from '../motor/alertas';
 import { escaleraDeMiembro, estaEnElPaso, tarjetasDeMiembros } from '../motor/miembros';
 import { buscarPersonas } from '../motor/personaVista';
+import { idsGruposDe, nombresGruposDe } from '../motor/gruposVista';
+import CamposGrupos from './CamposGrupos';
 import { agrupar } from '../motor/vistas';
 import { anosConRegistros, mesesConRegistros } from '../motor/periodos';
 
@@ -87,10 +89,7 @@ export default function Miembros({ repo }: { repo: Repo }) {
     ['Líderes', tarjetas.lideres],
   ];
 
-  const grupoDeMiembro = (m: (typeof lista)[number]) => {
-    const gid = m.grupoId ?? personaDe(m.personaId)?.grupoId;
-    return gid ? datos.grupos.find((g) => g.id === gid)?.nombre : undefined;
-  };
+  const grupoDeMiembro = (m: (typeof lista)[number]) => nombresGruposDe(datos, m.personaId);
 
   const claveGrupo = (m: (typeof lista)[number]): string => {
     if (agruparPor === 'zona') return personaDe(m.personaId)?.zona?.trim() || 'Sin zona';
@@ -292,22 +291,15 @@ export default function Miembros({ repo }: { repo: Repo }) {
                 ))}
               </select>
             </label>
-            <label>
-              Grupo
-              <select
-                value={detalle.grupoId ?? ''}
-                onChange={async (e) => {
-                  await actualizarMiembro(repo, { ...detalle, grupoId: e.target.value || null });
-                  recargar();
-                }}
-              >
-                <option value="">Sin grupo</option>
-                {datos.grupos.map((g) => (
-                  <option key={g.id} value={g.id}>{g.nombre}</option>
-                ))}
-              </select>
-            </label>
           </div>
+          <CamposGrupos
+            datos={datos}
+            seleccion={idsGruposDe(datos, detalle.personaId)}
+            onCambiar={async (ids) => {
+              await asignarGrupos(repo, datos, detalle.personaId, ids);
+              recargar();
+            }}
+          />
 
           <h3>Hitos (editables)</h3>
           {hitos.length === 0 ? (
