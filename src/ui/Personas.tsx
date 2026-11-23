@@ -521,7 +521,7 @@ export default function Personas({ repo }: { repo: Repo }) {
                 {miembroEd ? (
                   <p className="check ya-esta">✔ Ya es miembro</p>
                 ) : misionEd ? (
-                  <p className="check ya-esta">El miembro nace cuando su registro de Misión llegue a Integrado.</p>
+                  <p className="check ya-esta">El miembro nace cuando su registro de Misión llegue a Añadidos.</p>
                 ) : (
                   <label className="check">
                     <input type="checkbox" checked={edAltaIntegrado} onChange={(e) => setEdAltaIntegrado(e.target.checked)} />

@@ -209,7 +209,7 @@ export default function Mision({ repo }: { repo: Repo }) {
           </button>
         </div>
       </CabeceraPagina>
-      <GuiaPagina texto="La mesa del camino: Alcanzado → Confeso → Converso → Discipulado → Bautizado → Integrado. Cuenta registros paso a paso; al llegar a Integrado, la persona nace como miembro." />
+      <GuiaPagina texto="La mesa del camino: Alcanzado → Confeso → Converso → Discipulado → Bautizado → Añadidos. Cuenta registros paso a paso; al llegar a Añadidos, la persona nace como miembro." />
 
       {editandoPasos && datos && (
         <EditorPasos
