@@ -305,3 +305,10 @@ La app actual (`lemgil-mision-apk`) sigue viva e intacta mientras tanto.
   (`CamposGrupos`); las metas de Misión, Academia y Bien Común
   muestran todos los grupos de la persona.
 - 117/117 pruebas.
+
+## Arreglo de la ventana del grupo (v35)
+
+La lista de miembros salía dos veces en la ventana del grupo (la
+lista de solo lectura «En el grupo» y la del formulario). Queda una
+sola: la del formulario, con las filas en la fila única de la
+constitución (`FilaAcciones`: nombre, aviso y ✕ Quitar).

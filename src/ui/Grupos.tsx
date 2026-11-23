@@ -12,7 +12,7 @@ import { agrupar } from '../motor/vistas';
 import BarraVistas, { type Vista } from './BarraVistas';
 
 import Modal from './Modal';
-import { Buscador, CabeceraPagina, FilaPersona, Kpi, TarjetaPersona } from './Piezas';
+import { Buscador, CabeceraPagina, FilaAcciones, FilaPersona, Kpi, TarjetaPersona } from './Piezas';
 import { coincideBusqueda } from '../motor/personaVista';
 import BorrarBoton from './BorrarBoton';
 import GuiaPagina from './GuiaPagina';
@@ -87,24 +87,26 @@ function SeccionMiembros({
       {seleccion.length === 0 ? (
         <p className="tenue">Nadie todavía: busca y agrega a los hermanos.</p>
       ) : (
-        <ul className="historial">
+        <ul className="lista-personas">
           {seleccion.map((id) => {
             const per = personaDe(id);
             const otro = grupoDeTipo(datos, id, claveNueva);
             const aviso = otro && otro.id !== grupoActualId ? otro : undefined;
             return (
               <li key={id}>
-                {per ? `${per.nombre} ${per.apellidos ?? ''}` : id}
-                {aviso && (
-                  <span className="tenue"> · ⚠ Está en {aviso.nombre} (mismo tipo): al guardar pasará a este grupo</span>
-                )}
-                <button
-                  type="button"
-                  className="btn"
-                  onClick={() => onCambiar(seleccion.filter((x) => x !== id))}
-                >
-                  ✕ Quitar
-                </button>
+                <FilaAcciones
+                  nombre={per ? `${per.nombre} ${per.apellidos ?? ''}` : id}
+                  meta={aviso ? `⚠ Está en ${aviso.nombre} (mismo tipo): al guardar pasará a este grupo` : undefined}
+                  acciones={
+                    <button
+                      type="button"
+                      className="btn"
+                      onClick={() => onCambiar(seleccion.filter((x) => x !== id))}
+                    >
+                      ✕ Quitar
+                    </button>
+                  }
+                />
               </li>
             );
           })}
@@ -334,17 +336,6 @@ export default function Grupos({ repo }: { repo: Repo }) {
             </span>
           </p>
           <StatsGrupo datos={datos} grupo={detalle} miembros={miembrosDe(detalle.id)} />
-          <h3>En el grupo</h3>
-          {miembrosDe(detalle.id).length === 0 ? (
-            <p className="tenue">Nadie asignado todavía (se agrega en el formulario de este grupo, en Miembros o en la ficha).</p>
-          ) : (
-            <ul className="historial">
-              {miembrosDe(detalle.id).map((p) => (
-                <li key={p!.id}>{p!.nombre} {p!.apellidos ?? ''}</li>
-              ))}
-            </ul>
-          )}
-
           <FormEditarGrupo
             key={detalle.id}
             repo={repo}
