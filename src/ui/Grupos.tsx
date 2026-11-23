@@ -342,6 +342,7 @@ export default function Grupos({ repo }: { repo: Repo }) {
             datos={datos}
             grupo={detalle}
             onGuardado={recargar}
+            onCerrar={() => setSeleccionado(null)}
           />
           <div className="form-acciones">
             <BorrarBoton
@@ -367,11 +368,13 @@ function FormEditarGrupo({
   datos,
   grupo,
   onGuardado,
+  onCerrar,
 }: {
   repo: Repo;
   datos: DatosMinisterio;
   grupo: Grupo;
   onGuardado: () => void;
+  onCerrar: () => void;
 }) {
   const [nombre, setNombre] = useState(grupo.nombre);
   const [tipo, setTipo] = useState(grupo.tipo ?? '');
@@ -478,8 +481,8 @@ function FormEditarGrupo({
               for (const id of iniciales) {
                 if (!miembrosSel.includes(id)) await quitarDeGrupo(repo, datos, id, grupo.id);
               }
-              setGuardado(true);
               onGuardado();
+              onCerrar();
             } catch (e) {
               setError(e instanceof Error ? e.message : String(e));
             }

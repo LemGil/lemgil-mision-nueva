@@ -312,3 +312,9 @@ La lista de miembros salía dos veces en la ventana del grupo (la
 lista de solo lectura «En el grupo» y la del formulario). Queda una
 sola: la del formulario, con las filas en la fila única de la
 constitución (`FilaAcciones`: nombre, aviso y ✕ Quitar).
+
+## Guardar cierra el formulario del grupo (v36)
+
+En la ventana del grupo, «💾 Guardar cambios» guardaba y dejaba el
+formulario abierto. Ahora, al guardar bien, la ventana se cierra
+(si hay un error, se queda abierta y lo muestra).
