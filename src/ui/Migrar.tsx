@@ -17,7 +17,7 @@ import { renombrarAnadidos } from '../migracion/renombrarAnadidos';
 import { convertirRespaldo, type InformeMigracion, type RespaldoViejo } from '../migracion/convertir';
 import { importarEnRepo, puedeImportar } from '../migracion/importar';
 import GuiaPagina from './GuiaPagina';
-import { CabeceraPagina } from './Piezas';
+import { CabeceraPagina, Pestanas } from './Piezas';
 
 interface VistaPrevia {
   datos: DatosMinisterio;
@@ -53,6 +53,9 @@ export default function Migrar({ repo }: { repo: Repo }) {
   const [completandoGrupos, setCompletandoGrupos] = useState(false);
   const [renombrando, setRenombrando] = useState(false);
   const [renombrado, setRenombrado] = useState<number | null>(null);
+  // Regla de pestañas (2026-11-23): las herramientas en pestañas,
+  // no apiladas: Importar · Completar datos · Traer · Añadidos.
+  const [seccion, setSeccion] = useState<'importar' | 'completar' | 'traer' | 'anadidos'>('importar');
 
   const cargar = useCallback(async () => {
     setActuales(await aDatosMinisterio(repo));
@@ -288,7 +291,20 @@ export default function Migrar({ repo }: { repo: Repo }) {
       {!guardia.ok && !importado && <p className="aviso aviso-rojo">{guardia.motivo}</p>}
       {error && <p className="aviso aviso-rojo">{error}</p>}
 
-      {importado ? (
+      <Pestanas
+        opciones={[
+          { id: 'importar', etiqueta: '🧳 Importar' },
+          { id: 'completar', etiqueta: '💾 Completar datos' },
+          { id: 'traer', etiqueta: '📥 Traer' },
+          { id: 'anadidos', etiqueta: '🏘️ Añadidos' },
+        ]}
+        activa={seccion}
+        onCambiar={(id) => setSeccion(id as 'importar' | 'completar' | 'traer' | 'anadidos')}
+      />
+
+      {seccion === 'importar' && (
+        <>
+          {importado ? (
         <section className="tarjeta">
           <h2>✓ Migración importada</h2>
           <p>
@@ -368,8 +384,10 @@ export default function Migrar({ repo }: { repo: Repo }) {
           )}
         </>
       )}
+        </>
+      )}
 
-      {actuales.personas.length > 0 && (
+      {seccion === 'completar' && actuales.personas.length > 0 && (
         <section className="tarjeta">
           <h2>💾 Completar datos de las personas</h2>
           <p className="tenue">
@@ -409,7 +427,9 @@ export default function Migrar({ repo }: { repo: Repo }) {
         </section>
       )}
 
-      {actuales.colaboradores.length === 0 ? (
+      {seccion === 'traer' && (
+        <>
+          {actuales.colaboradores.length === 0 ? (
         <section className="tarjeta">
           <h2>🤝 Traer la Red de Colaboradores</h2>
           <p className="tenue">
@@ -457,8 +477,12 @@ export default function Migrar({ repo }: { repo: Repo }) {
           </p>
         </section>
       )}
+        </>
+      )}
 
-      {actuales.campanas.length === 0 ? (
+      {seccion === 'traer' && (
+        <>
+          {actuales.campanas.length === 0 ? (
         <section className="tarjeta">
           <h2>👐 Traer las Campañas y Entregas de Manos Abiertas</h2>
           <p className="tenue">
@@ -507,7 +531,11 @@ export default function Migrar({ repo }: { repo: Repo }) {
           </p>
         </section>
       )}
+        </>
+      )}
 
+      {seccion === 'completar' && (
+        <>
       <section className="tarjeta">
         <h2>👐 Completar los datos de los beneficiarios</h2>
         <p className="tenue">
@@ -546,7 +574,11 @@ export default function Migrar({ repo }: { repo: Repo }) {
           </p>
         )}
       </section>
+        </>
+      )}
 
+      {seccion === 'completar' && (
+        <>
       <section className="tarjeta">
         <h2>🏠 Completar los datos de los grupos</h2>
         <p className="tenue">
@@ -584,7 +616,11 @@ export default function Migrar({ repo }: { repo: Repo }) {
           </p>
         )}
       </section>
+        </>
+      )}
 
+      {seccion === 'anadidos' && (
+        <>
       <section className="tarjeta">
         <h2>🏘️ El paso se llama Añadidos</h2>
         <p className="tenue">
@@ -603,6 +639,8 @@ export default function Migrar({ repo }: { repo: Repo }) {
           <p className="aviso aviso-verde">✓ El paso ya se llamaba Añadidos en este equipo.</p>
         )}
       </section>
+        </>
+      )}
     </div>
   );
 }

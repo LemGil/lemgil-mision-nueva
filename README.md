@@ -280,4 +280,11 @@ de un solo motor de conteo (`src/motor/`); el cuadre se verifica solo
   salió de debajo de la lista a su propia pestaña — la página
   abre con «👥 Personas · 🗺️ Zonas» (112/112).
 
+- **La regla de pestañas, completa (2026-11-23):** Migración
+  agrupa sus herramientas en Importar · Completar datos ·
+  Traer · Añadidos, y el Mapa en «🗺️ Mapa» · «📍 Por fijar
+  (N)» — el mapa se oculta sin desmontarse (Leaflet no se
+  recrea) y tocar una ficha por fijar salta al mapa con su
+  banda de fijando arriba (112/112).
+
 La app actual (`lemgil-mision-apk`) sigue viva e intacta mientras tanto.

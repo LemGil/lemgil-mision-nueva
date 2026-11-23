@@ -8,7 +8,7 @@ import type { DatosMinisterio } from '../modelo/tipos';
 import { CENTRO_DEFECTO, puntosDelMapa, sinUbicacion, type PuntoMapa } from '../motor/mapa';
 import type { VerPersonas } from '../motor/vistas';
 import GuiaPagina from './GuiaPagina';
-import { Buscador, CabeceraPagina, FilaPersona } from './Piezas';
+import { Buscador, CabeceraPagina, FilaPersona, Pestanas } from './Piezas';
 
 interface Objetivo {
   tipo: 'persona' | 'grupo';
@@ -23,6 +23,11 @@ export default function Mapa({ repo }: { repo: Repo }) {
   const [ver, setVer] = useState<VerPersonas>('activos');
   const [fijando, setFijando] = useState<Objetivo | null>(null);
   const [aviso, setAviso] = useState('');
+  // Regla de pestañas (2026-11-23): «🗺️ Mapa» y «📍 Por fijar».
+  // El mapa NO se desmonta al cambiar: se oculta con CSS y al
+  // volver se le recalcula el tamaño — desmontarlo mataría la
+  // instancia de Leaflet y las chinchetas.
+  const [seccion, setSeccion] = useState<'mapa' | 'fijar'>('mapa');
   const contenedorRef = useRef<HTMLDivElement>(null);
   const mapaRef = useRef<L.Map | null>(null);
   const capaRef = useRef<L.LayerGroup | null>(null);
@@ -75,6 +80,11 @@ export default function Mapa({ repo }: { repo: Repo }) {
     };
   }, [repo, recargar, datos]);
 
+  // Al volver a la pestaña del mapa, Leaflet recalcula su tamaño.
+  useEffect(() => {
+    if (seccion === 'mapa') mapaRef.current?.invalidateSize();
+  }, [seccion]);
+
   const puntos: PuntoMapa[] = datos ? puntosDelMapa(datos, ver) : [];
 
   // Redibujar las chinchetas cuando cambian los datos, el modo o el filtro «Ver».
@@ -124,11 +134,25 @@ export default function Mapa({ repo }: { repo: Repo }) {
   return (
     <div className="panel">
       <CabeceraPagina titulo="📍 Mapa">
-        <button className="btn" onClick={() => setEditando((v) => !v)}>
+        <button
+          className="btn"
+          onClick={() => {
+            if (!editando) setSeccion('mapa');
+            setEditando((v) => !v);
+          }}
+        >
           {editando ? '✓ Terminar edición' : '✏️ Editar ubicaciones'}
         </button>
       </CabeceraPagina>
       <GuiaPagina texto="Dónde vive cada uno. Las chinchetas se fijan a mano y se pueden arrastrar para corregirlas; ayuda a visitar y a ver la congregación por zonas." />
+      <Pestanas
+        opciones={[
+          { id: 'mapa', etiqueta: '🗺️ Mapa' },
+          { id: 'fijar', etiqueta: `📍 Por fijar (${sin.length})` },
+        ]}
+        activa={seccion}
+        onCambiar={(id) => setSeccion(id as 'mapa' | 'fijar')}
+      />
       <Buscador>
         <span className="seg" role="group" aria-label="Ver">
           <button type="button" aria-pressed={ver === 'activos'} onClick={() => setVer('activos')}>Activos</button>
@@ -143,29 +167,39 @@ export default function Mapa({ repo }: { repo: Repo }) {
       </p>
       {aviso && <p className="aviso aviso-verde">{aviso}</p>}
 
-      <div ref={contenedorRef} className="mapa-contenedor" />
+      {seccion === 'mapa' && fijando && (
+        <section className="tarjeta">
+          <p>
+            Fijando: <strong>{fijando.nombre}</strong> — toca el mapa donde vive, o usa el GPS
+            del equipo.
+          </p>
+          <div className="form-acciones">
+            <button className="btn btn-dorado" onClick={fijarConGPS}>📡 Usar mi ubicación (GPS)</button>
+            <button className="btn" onClick={() => setFijando(null)}>Cancelar</button>
+          </div>
+        </section>
+      )}
 
-      <section className="tarjeta">
-        <h2>📍 Fijar ubicación</h2>
-        {fijando ? (
-          <>
-            <p>
-              Fijando: <strong>{fijando.nombre}</strong> — toca el mapa donde vive, o usa el GPS
-              del equipo.
-            </p>
-            <div className="form-acciones">
-              <button className="btn btn-dorado" onClick={fijarConGPS}>📡 Usar mi ubicación (GPS)</button>
-              <button className="btn" onClick={() => setFijando(null)}>Cancelar</button>
-            </div>
-          </>
-        ) : (
+      <div
+        ref={contenedorRef}
+        className="mapa-contenedor"
+        style={seccion === 'mapa' ? undefined : { display: 'none' }}
+      />
+
+      {seccion === 'fijar' && (
+        <section className="tarjeta">
+          <h2>📍 Por fijar</h2>
+          <p className="tenue">Toca una ficha y te llevo al mapa para fijar su chincheta.</p>
           <ul className="lista-personas">
             {sin.map((s) => (
               <li key={s.tipo + s.id}>
                 <FilaPersona
                   nombre={`${s.tipo === 'grupo' ? '🏠' : '👤'} ${s.nombre}`}
                   meta="sin chincheta — fijar"
-                  onClick={() => setFijando(s)}
+                  onClick={() => {
+                    setFijando(s);
+                    setSeccion('mapa');
+                  }}
                 />
               </li>
             ))}
@@ -175,8 +209,8 @@ export default function Mapa({ repo }: { repo: Repo }) {
               </li>
             )}
           </ul>
-        )}
-      </section>
+        </section>
+      )}
     </div>
   );
 }
