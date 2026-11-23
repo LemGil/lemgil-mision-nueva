@@ -81,6 +81,11 @@ function SeccionMiembros({
 }) {
   const personaDe = (id: string) => datos.personas.find((x) => x.id === id);
   const claveNueva = claveTipoGrupo({ tipo: tipoTexto } as Grupo);
+  // La regla acordada de las listas: apartados, traslados y fallecidos
+  // no salen — ni en la lista ni en el buscador para agregar.
+  const idsBajas = new Set(
+    datos.personas.filter((per) => esBaja(clasificarPersona(datos, per.id).clase)).map((per) => per.id),
+  );
   return (
     <>
       <h3>👥 Miembros del grupo</h3>
@@ -114,7 +119,7 @@ function SeccionMiembros({
       )}
       <SelectorPersona
         datos={datos}
-        excluir={new Set(seleccion)}
+        excluir={new Set([...seleccion, ...idsBajas])}
         onElegir={(id) => onCambiar([...seleccion, id])}
         placeholder="🔍 Agregar un miembro…"
       />
@@ -131,7 +136,6 @@ export default function Grupos({ repo }: { repo: Repo }) {
   const [miembrosSel, setMiembrosSel] = useState<string[]>([]);
   const [zona, setZona] = useState('');
   const [liderId, setLiderId] = useState<string | null>(null);
-  const [liderTexto, setLiderTexto] = useState('');
   const [dia, setDia] = useState('');
   const [hora, setHora] = useState('');
   const [lugar, setLugar] = useState('');
@@ -250,10 +254,6 @@ export default function Grupos({ repo }: { repo: Repo }) {
           )}
         </p>
         <SelectorPersona datos={datos} onElegir={setLiderId} placeholder="🔍 Buscar al líder…" />
-        <div className="form-fila">
-          <label>Líder (texto libre)<input value={liderTexto} onChange={(e) => setLiderTexto(e.target.value)} placeholder="Ej.: Pastores Luis y Daymi" /></label>
-        </div>
-        <p className="tenue">Si escribes el texto libre, eso es lo que se muestra; si no, el nombre de la persona elegida.</p>
         <SeccionMiembros datos={datos} seleccion={miembrosSel} onCambiar={setMiembrosSel} tipoTexto={tipo} />
         <div className="form-acciones">
           <button
@@ -267,14 +267,13 @@ export default function Grupos({ repo }: { repo: Repo }) {
                 tipo: tipo.trim() || undefined,
                 zona: zona.trim() || undefined,
                 liderId,
-                liderTexto: liderTexto.trim() || undefined,
                 dia: dia.trim() || undefined,
                 hora: hora.trim() || undefined,
                 lugar: lugar.trim() || undefined,
                 capacidad: capacidadNumero(capacidad),
               });
                 for (const pid of miembrosSel) await agregarAGrupo(repo, datos, pid, creado);
-                setNombre(''); setTipo(''); setMiembrosSel([]); setZona(''); setLiderId(null); setLiderTexto(''); setDia(''); setHora(''); setLugar(''); setCapacidad('');
+                setNombre(''); setTipo(''); setMiembrosSel([]); setZona(''); setLiderId(null); setDia(''); setHora(''); setLugar(''); setCapacidad('');
               setMostrarForm(false);
                 recargar();
               } catch (e) {
@@ -378,10 +377,11 @@ function FormEditarGrupo({
 }) {
   const [nombre, setNombre] = useState(grupo.nombre);
   const [tipo, setTipo] = useState(grupo.tipo ?? '');
-  const [miembrosSel, setMiembrosSel] = useState<string[]>(() => idsMiembrosDeGrupo(datos, grupo.id));
+  const [miembrosSel, setMiembrosSel] = useState<string[]>(() =>
+    idsMiembrosDeGrupo(datos, grupo.id).filter((id) => !esBaja(clasificarPersona(datos, id).clase)),
+  );
   const [zona, setZona] = useState(grupo.zona ?? '');
   const [liderId, setLiderId] = useState<string | null>(grupo.liderId ?? null);
-  const [liderTexto, setLiderTexto] = useState(grupo.liderTexto ?? '');
   const [dia, setDia] = useState(grupo.dia ?? '');
   const [hora, setHora] = useState(grupo.hora ?? '');
   const [lugar, setLugar] = useState(grupo.lugar ?? '');
@@ -429,13 +429,6 @@ function FormEditarGrupo({
       />
       <div className="form-fila">
         <label>
-          Líder (texto libre)
-          <input value={liderTexto} onChange={(e) => { setLiderTexto(e.target.value); tocar(); }} placeholder="Ej.: Pastores Luis y Daymi" />
-        </label>
-      </div>
-      <p className="tenue">Si escribes el texto libre, eso es lo que se muestra; si no, el nombre de la persona elegida.</p>
-      <div className="form-fila">
-        <label>
           Día de reunión
           <input value={dia} onChange={(e) => { setDia(e.target.value); tocar(); }} list="dias-semana" />
         </label>
@@ -467,14 +460,16 @@ function FormEditarGrupo({
                 tipo: tipo.trim() || undefined,
                 zona: zona.trim() || undefined,
                 liderId,
-                liderTexto: liderTexto.trim() || undefined,
+                liderTexto: undefined,
                 dia: dia.trim() || undefined,
                 hora: hora.trim() || undefined,
                 lugar: lugar.trim() || undefined,
                 capacidad: capacidadNumero(capacidad),
               };
               await actualizarGrupo(repo, actualizado);
-              const iniciales = idsMiembrosDeGrupo(datos, grupo.id);
+              const iniciales = idsMiembrosDeGrupo(datos, grupo.id).filter(
+                (id) => !esBaja(clasificarPersona(datos, id).clase),
+              );
               for (const id of miembrosSel) {
                 if (!iniciales.includes(id)) await agregarAGrupo(repo, datos, id, actualizado);
               }

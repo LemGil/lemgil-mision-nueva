@@ -318,3 +318,13 @@ constitución (`FilaAcciones`: nombre, aviso y ✕ Quitar).
 En la ventana del grupo, «💾 Guardar cambios» guardaba y dejaba el
 formulario abierto. Ahora, al guardar bien, la ventana se cierra
 (si hay un error, se queda abierta y lo muestra).
+
+## Grupos: bajas fuera de la lista y líder solo de la lista (v37)
+
+- La lista de miembros del formulario sigue la regla acordada:
+  apartados, traslados y fallecidos no salen — ni en la lista ni en
+  el buscador para agregar — y al guardar, la asignación de una baja
+  no se toca.
+- El líder se agrega de UNA forma: el escogido de la lista de
+  nombres. Fuera el campo «Líder (texto libre)» de los dos
+  formularios; al guardar una edición, el texto libre viejo se va.

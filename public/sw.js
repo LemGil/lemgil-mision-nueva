@@ -4,7 +4,7 @@
 // - Archivos con hash (/assets/…): primero la copia guardada (su nombre
 //   ya cambia con cada versión), y se guardan al vuelo.
 // - Todo lo demás (Supabase, mapas): red directa, sin tocar.
-const CACHE = 'mision-nueva-v36';
+const CACHE = 'mision-nueva-v37';
 
 self.addEventListener('install', (e) => {
   e.waitUntil(
