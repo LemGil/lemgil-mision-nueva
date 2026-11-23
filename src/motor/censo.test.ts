@@ -39,7 +39,7 @@ describe('censo — el caso real de 2026', () => {
   it('bajas y demografía', () => {
     expect(censo.bajas).toEqual({ apartados: 1, traslados: 0, fallecidos: 1, otrasSalidas: 0 });
     expect(censo.demografico).toEqual({
-      hombres: 4, mujeres: 5, sinDatoSexo: 0,
+      hombres: 3, mujeres: 4, sinDatoSexo: 0, // p12 (M, 11) y p2 (F, 8) son niños: no cuentan como hombre/mujer
       ninos: 2, jovenes: 1, adultos: 3, ancianos: 2, sinEdad: 1,
     });
   });

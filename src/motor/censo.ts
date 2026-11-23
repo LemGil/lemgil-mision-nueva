@@ -89,9 +89,9 @@ export interface Censo {
     hombres: number;
     mujeres: number;
     sinDatoSexo: number;
-    ninos: number; // 0–11
-    jovenes: number; // 12–29
-    adultos: number; // 30–59
+    ninos: number; // 0–14
+    jovenes: number; // 15–30
+    adultos: number; // 31–59
     ancianos: number; // 60+
     sinEdad: number;
   };
@@ -167,13 +167,20 @@ export function calcularCenso(
 
     const enLaCongregacion = clase === 'etapa' || clase === 'miembro' || clase === 'gozne';
     if (enLaCongregacion) {
-      if (persona.sexo === 'M') demografico.hombres++;
-      else if (persona.sexo === 'F') demografico.mujeres++;
-      else demografico.sinDatoSexo++;
       const edad = edadEn(persona.fechaNacimiento, hoy);
+      // Hombres y Mujeres son los ADULTOS (decisión de LemGil,
+      // 2026-11-22): un niño no cuenta como hombre ni como mujer
+      // aunque su sexo esté registrado — el sexo es Masculino /
+      // Femenino; «hombre» y «mujer» son la edad. Sin fecha de
+      // nacimiento no se puede saber si es niño: cuenta por su
+      // sexo y queda señalado en Sin edad.
+      const esNino = edad !== null && edad <= 14;
+      if (persona.sexo === 'M') { if (!esNino) demografico.hombres++; }
+      else if (persona.sexo === 'F') { if (!esNino) demografico.mujeres++; }
+      else demografico.sinDatoSexo++;
       if (edad === null) demografico.sinEdad++;
-      else if (edad <= 11) demografico.ninos++;
-      else if (edad <= 29) demografico.jovenes++;
+      else if (edad <= 14) demografico.ninos++;
+      else if (edad <= 30) demografico.jovenes++;
       else if (edad <= 59) demografico.adultos++;
       else demografico.ancianos++;
       if (diezmadoresActivos.has(persona.id)) diezmadores++;

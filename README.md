@@ -231,4 +231,12 @@ de un solo motor de conteo (`src/motor/`); el cuadre se verifica solo
   quien llega bautizado, y su bautismo se marca en los datos de
   la persona (111/111).
 
+- **Demografía ajustada (2026-11-22, decisión de LemGil):** las
+  bandas de edad de la casa son Niños 0–14 · Jóvenes 15–30 ·
+  Adultos 31–59 · Ancianos 60+. Y «Hombres / Mujeres» cuenta
+  solo a los adultos: un niño no cuenta como hombre ni como
+  mujer aunque su sexo (Masculino/Femenino) esté registrado; sin
+  fecha de nacimiento cuenta por su sexo y queda en «Sin edad»
+  (111/111).
+
 La app actual (`lemgil-mision-apk`) sigue viva e intacta mientras tanto.
