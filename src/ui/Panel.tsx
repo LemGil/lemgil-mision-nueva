@@ -171,7 +171,7 @@ export default function Panel({ repo, sync, estadoSync, modoLocal }: Props) {
                   type="button"
                   key={e.pasoId}
                   className="franja-paso"
-                  onClick={() => navigate('/mision')}
+                  onClick={() => navigate('/mision', { state: { pasoMision: e.pasoId } })}
                   title="Ir a la mesa de Misión"
                 >
                   {e.emoji} {e.nombre} <strong>{e.cantidad}</strong>
@@ -187,31 +187,31 @@ export default function Panel({ repo, sync, estadoSync, modoLocal }: Props) {
               </button>
             </div>
             <div className="franja franja-demografia">
-              <button type="button" className="franja-paso" onClick={() => navigate('/personas')} title="Ir a la lista de Personas">
+              <button type="button" className="franja-paso" onClick={() => navigate('/personas', { state: { filtroDemo: 'hombres' } })} title="Ir a la lista de Personas">
                 👨 Hombres <strong>{censo.demografico.hombres}</strong>
               </button>
-              <button type="button" className="franja-paso" onClick={() => navigate('/personas')} title="Ir a la lista de Personas">
+              <button type="button" className="franja-paso" onClick={() => navigate('/personas', { state: { filtroDemo: 'mujeres' } })} title="Ir a la lista de Personas">
                 👩 Mujeres <strong>{censo.demografico.mujeres}</strong>
               </button>
               {censo.demografico.sinDatoSexo > 0 && (
-                <button type="button" className="franja-paso" onClick={() => navigate('/personas')} title="Ir a la lista de Personas">
+                <button type="button" className="franja-paso" onClick={() => navigate('/personas', { state: { filtroDemo: 'sinDatoSexo' } })} title="Ir a la lista de Personas">
                   ⚪ Sin dato <strong>{censo.demografico.sinDatoSexo}</strong>
                 </button>
               )}
-              <button type="button" className="franja-paso" onClick={() => navigate('/personas')} title="Ir a la lista de Personas">
+              <button type="button" className="franja-paso" onClick={() => navigate('/personas', { state: { filtroDemo: 'ninos' } })} title="Ir a la lista de Personas">
                 🧒 Niños <strong>{censo.demografico.ninos}</strong>
               </button>
-              <button type="button" className="franja-paso" onClick={() => navigate('/personas')} title="Ir a la lista de Personas">
+              <button type="button" className="franja-paso" onClick={() => navigate('/personas', { state: { filtroDemo: 'jovenes' } })} title="Ir a la lista de Personas">
                 🧑 Jóvenes <strong>{censo.demografico.jovenes}</strong>
               </button>
-              <button type="button" className="franja-paso" onClick={() => navigate('/personas')} title="Ir a la lista de Personas">
+              <button type="button" className="franja-paso" onClick={() => navigate('/personas', { state: { filtroDemo: 'adultos' } })} title="Ir a la lista de Personas">
                 👤 Adultos <strong>{censo.demografico.adultos}</strong>
               </button>
-              <button type="button" className="franja-paso" onClick={() => navigate('/personas')} title="Ir a la lista de Personas">
+              <button type="button" className="franja-paso" onClick={() => navigate('/personas', { state: { filtroDemo: 'ancianos' } })} title="Ir a la lista de Personas">
                 🧓 Ancianos <strong>{censo.demografico.ancianos}</strong>
               </button>
               {censo.demografico.sinEdad > 0 && (
-                <button type="button" className="franja-paso" onClick={() => navigate('/personas')} title="Ir a la lista de Personas">
+                <button type="button" className="franja-paso" onClick={() => navigate('/personas', { state: { filtroDemo: 'sinEdad' } })} title="Ir a la lista de Personas">
                   📆 Sin edad <strong>{censo.demografico.sinEdad}</strong>
                 </button>
               )}

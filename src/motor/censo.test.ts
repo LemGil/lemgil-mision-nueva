@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { PS_DISCIPULADO } from '../modelo/catalogo';
-import { calcularCenso, clasificarPersona } from './censo';
+import { calcularCenso, clasificarPersona, personasDemografia } from './censo';
 import { conteoMision } from './mision';
 import { CASO_2026, HOY, NOVIEMBRE_2026 } from './casos';
 
@@ -42,6 +42,14 @@ describe('censo — el caso real de 2026', () => {
       hombres: 3, mujeres: 4, sinDatoSexo: 0, // p12 (M, 11) y p2 (F, 8) son niños: no cuentan como hombre/mujer
       ninos: 2, jovenes: 1, adultos: 3, ancianos: 2, sinEdad: 1,
     });
+  });
+
+  it('personasDemografia: detrás de cada número del Panel están exactamente esas personas', () => {
+    const claves = ['hombres', 'mujeres', 'sinDatoSexo', 'ninos', 'jovenes', 'adultos', 'ancianos', 'sinEdad'] as const;
+    for (const clave of claves) {
+      expect(personasDemografia(CASO_2026, clave, HOY).size).toBe(censo.demografico[clave]);
+    }
+    expect([...personasDemografia(CASO_2026, 'ninos', HOY)].sort()).toEqual(['p12', 'p2']);
   });
 
   it('diezmadores es transversal: solo los de la congregación', () => {

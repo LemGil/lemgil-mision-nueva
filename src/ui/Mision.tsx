@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { aDatosMinisterio } from '../datos/aDatosMinisterio';
 import { avanzarConversion, borrarConversion, crearConversion, crearConversionLlegaBautizado, guardarHistorial, type EntradaMision } from '../datos/acciones';
 import type { Repo } from '../datos/repo';
@@ -46,6 +47,18 @@ export default function Mision({ repo }: { repo: Repo }) {
 
   const recargar = useCallback(() => setRecargas((x) => x + 1), []);
   const [editandoPasos, setEditandoPasos] = useState(false);
+
+  // Llegada desde el Panel: tocar una etapa de «La congregación
+  // hoy» trae aquí con el filtro de ese paso puesto en la lista.
+  const location = useLocation();
+  const navigate = useNavigate();
+  useEffect(() => {
+    const paso = (location.state as { pasoMision?: string } | null)?.pasoMision;
+    if (paso) {
+      setFiltroPaso(paso);
+      navigate(location.pathname, { replace: true, state: null });
+    }
+  }, [location.state, location.pathname, navigate]);
 
   useEffect(() => {
     let vivo = true;

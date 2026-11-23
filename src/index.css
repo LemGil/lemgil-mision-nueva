@@ -173,6 +173,12 @@ h1, h2, .menu-marca {
 }
 .congregacion-hoy button.franja-paso:hover { background: var(--oro-suave); }
 .franja-demografia { margin-top: 8px; }
+/* La banda que anuncia el filtro traído del Panel (Personas). */
+.filtro-panel {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  background: var(--oro-suave); border: 1px solid var(--dorado);
+  border-radius: var(--radio-tarjeta); padding: 10px 14px; margin: 16px 0 0;
+}
 .demografia, .periodo-lineas { color: var(--tenue); margin: 12px 0 0; }
 
 .aviso { border-radius: var(--radio-tarjeta); padding: var(--esp-3) var(--esp-4); margin: var(--esp-4) 0; }

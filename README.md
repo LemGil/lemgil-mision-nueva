@@ -256,4 +256,13 @@ de un solo motor de conteo (`src/motor/`); el cuadre se verifica solo
   Ancianos…) → Personas. Acotado a esa tarjeta: las franjas de
   las fichas no cambian (111/111).
 
+- **Del Panel a la lista filtrada (2026-11-23):** tocar una
+  píldora de demografía en «La congregación hoy» (Niños,
+  Mujeres, Ancianos…) llega a Personas con SOLO esas personas:
+  el motor ganó `personasDemografia`, que usa exactamente las
+  reglas del censo, y Personas muestra la banda «Filtro del
+  Panel» con su «✕ Quitar filtro». Las etapas llegan a Misión
+  con el filtro de ese paso puesto. Prueba de invariante: el
+  tamaño de cada grupo = el número del Panel (112/112).
+
 La app actual (`lemgil-mision-apk`) sigue viva e intacta mientras tanto.

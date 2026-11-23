@@ -225,3 +225,52 @@ export function calcularCenso(
     periodo,
   };
 }
+
+/** Cada número de la demografía del Panel, como clave. */
+export type ClaveDemografica =
+  | 'hombres' | 'mujeres' | 'sinDatoSexo'
+  | 'ninos' | 'jovenes' | 'adultos' | 'ancianos' | 'sinEdad';
+
+export const ETIQUETAS_DEMOGRAFIA: Record<ClaveDemografica, string> = {
+  hombres: '👨 Hombres',
+  mujeres: '👩 Mujeres',
+  sinDatoSexo: '⚪ Sin dato',
+  ninos: '🧒 Niños',
+  jovenes: '🧑 Jóvenes',
+  adultos: '👤 Adultos',
+  ancianos: '🧓 Ancianos',
+  sinEdad: '📆 Sin edad',
+};
+
+/**
+ * Las personas detrás de un número de la demografía (pedido de
+ * LemGil, 2026-11-23): tocar «Niños» en el Panel lleva a la lista
+ * de Personas con SOLO esos niños. Usa EXACTAMENTE las reglas del
+ * censo de arriba — solo la congregación (etapa/miembro/gozne),
+ * Hombres/Mujeres solo adultos, bandas 0–14/15–30/31–59/60+ —
+ * para que la lista y el número nunca se contradigan.
+ */
+export function personasDemografia(
+  datos: DatosMinisterio,
+  clave: ClaveDemografica,
+  hoy: string = new Date().toISOString().slice(0, 10),
+): Set<string> {
+  const ids = new Set<string>();
+  for (const persona of datos.personas) {
+    const { clase } = clasificarPersona(datos, persona.id);
+    if (clase !== 'etapa' && clase !== 'miembro' && clase !== 'gozne') continue;
+    const edad = edadEn(persona.fechaNacimiento, hoy);
+    const esNino = edad !== null && edad <= 14;
+    switch (clave) {
+      case 'hombres': if (persona.sexo === 'M' && !esNino) ids.add(persona.id); break;
+      case 'mujeres': if (persona.sexo === 'F' && !esNino) ids.add(persona.id); break;
+      case 'sinDatoSexo': if (!persona.sexo) ids.add(persona.id); break;
+      case 'ninos': if (edad !== null && edad <= 14) ids.add(persona.id); break;
+      case 'jovenes': if (edad !== null && edad >= 15 && edad <= 30) ids.add(persona.id); break;
+      case 'adultos': if (edad !== null && edad >= 31 && edad <= 59) ids.add(persona.id); break;
+      case 'ancianos': if (edad !== null && edad >= 60) ids.add(persona.id); break;
+      case 'sinEdad': if (edad === null) ids.add(persona.id); break;
+    }
+  }
+  return ids;
+}

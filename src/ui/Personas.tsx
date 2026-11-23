@@ -5,7 +5,7 @@ import { actualizarPersona, borrarPersona, darAltasDirectas, quitarZona, registr
 import type { Repo } from '../datos/repo';
 import type { DatosMinisterio, Persona, Sexo } from '../modelo/tipos';
 import { buscarPersonas, fichaDePersona, situacionDe } from '../motor/personaVista';
-import { clasificarPersona } from '../motor/censo';
+import { clasificarPersona, personasDemografia, ETIQUETAS_DEMOGRAFIA, type ClaveDemografica } from '../motor/censo';
 import { agrupar, visibleSegunVer, type VerPersonas } from '../motor/vistas';
 import BarraVistas, { type Vista } from './BarraVistas';
 import Modal from './Modal';
@@ -171,15 +171,21 @@ export default function Personas({ repo }: { repo: Repo }) {
   const [datos, setDatos] = useState<DatosMinisterio | null>(null);
   const [busqueda, setBusqueda] = useState('');
   const [seleccionada, setSeleccionada] = useState<string | null>(null);
+  // Filtro que llega del Panel: la demografía («Niños», «Mujeres»…)
+  // trae a la lista con SOLO esas personas.
+  const [filtroDemo, setFiltroDemo] = useState<ClaveDemografica | null>(null);
   // Llegada desde el Panel: tocar una alerta trae aquí con la
   // ficha pedida; se abre y se limpia el estado para no reabrirla
   // al volver atrás.
   const location = useLocation();
   const navigate = useNavigate();
   useEffect(() => {
-    const abrir = (location.state as { abrirFicha?: string } | null)?.abrirFicha;
-    if (abrir) {
-      setSeleccionada(abrir);
+    const st = location.state as { abrirFicha?: string; filtroDemo?: ClaveDemografica } | null;
+    if (st?.abrirFicha) {
+      setSeleccionada(st.abrirFicha);
+      navigate(location.pathname, { replace: true, state: null });
+    } else if (st?.filtroDemo) {
+      setFiltroDemo(st.filtroDemo);
       navigate(location.pathname, { replace: true, state: null });
     }
   }, [location.state, location.pathname, navigate]);
@@ -221,9 +227,12 @@ export default function Personas({ repo }: { repo: Repo }) {
 
   if (!datos) return <p className="cargando">Cargando…</p>;
 
-  const lista = buscarPersonas(datos, busqueda).filter((per) =>
-    visibleSegunVer(clasificarPersona(datos, per.id).clase, ver),
-  );
+  const idsDemo = filtroDemo
+    ? personasDemografia(datos, filtroDemo, new Date().toISOString().slice(0, 10))
+    : null;
+  const lista = buscarPersonas(datos, busqueda)
+    .filter((per) => visibleSegunVer(clasificarPersona(datos, per.id).clase, ver))
+    .filter((per) => !idsDemo || idsDemo.has(per.id));
   const ficha = seleccionada ? fichaDePersona(datos, seleccionada) : null;
   const nombrePasoEntrada = (e: EntradaMision) =>
     datos.pasos.find((p) => p.id === { alcanzado: 'ps-congregado', confeso: 'ps-confeso', converso: 'ps-nuevo', bautizado: 'ps-bautizado' }[e])?.nombre ?? e;
@@ -426,6 +435,18 @@ export default function Personas({ repo }: { repo: Repo }) {
             <button className="btn" type="button" onClick={() => setMostrarForm(false)}>Cancelar</button>
           </div>
         </form>
+      )}
+
+      {filtroDemo && (
+        <p className="filtro-panel">
+          <span>
+            Filtro del Panel: <strong>{ETIQUETAS_DEMOGRAFIA[filtroDemo]}</strong> —{' '}
+            {idsDemo?.size ?? 0} personas
+          </span>
+          <button type="button" className="btn" onClick={() => setFiltroDemo(null)}>
+            ✕ Quitar filtro
+          </button>
+        </p>
       )}
 
       <Buscador>
