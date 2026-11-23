@@ -274,4 +274,10 @@ de un solo motor de conteo (`src/motor/`); el cuadre se verifica solo
   tres pestañas). Helper compartido `coincideBusqueda` en
   personaVista, sin acentos como el de Personas (112/112).
 
+- **Regla de pestañas (2026-11-23):** los aspectos diferentes
+  de una página van en pestañas, no apilados (regla de oro Nº 8
+  de la Constitución Visual). Primer caso: en Personas, Zonas
+  salió de debajo de la lista a su propia pestaña — la página
+  abre con «👥 Personas · 🗺️ Zonas» (112/112).
+
 La app actual (`lemgil-mision-apk`) sigue viva e intacta mientras tanto.

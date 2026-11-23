@@ -12,7 +12,7 @@ import Modal from './Modal';
 import BorrarBoton from './BorrarBoton';
 import { InputZona } from './CamposLista';
 import GuiaPagina from './GuiaPagina';
-import { Buscador, CabeceraPagina, DatosLista, FilaAcciones, FilaPersona, TarjetaPersona } from './Piezas';
+import { Buscador, CabeceraPagina, DatosLista, FilaAcciones, FilaPersona, Pestanas, TarjetaPersona } from './Piezas';
 import { origenBautismo } from '../motor/informeMision';
 
 const hoyIso = () => new Date().toISOString().slice(0, 10);
@@ -174,6 +174,10 @@ export default function Personas({ repo }: { repo: Repo }) {
   // Filtro que llega del Panel: la demografía («Niños», «Mujeres»…)
   // trae a la lista con SOLO esas personas.
   const [filtroDemo, setFiltroDemo] = useState<ClaveDemografica | null>(null);
+  // Regla de la casa (2026-11-23): los aspectos diferentes de una
+  // página van en PESTAÑAS, no apilados — Zonas ya no se pierde
+  // debajo de la lista.
+  const [seccion, setSeccion] = useState<'personas' | 'zonas'>('personas');
   // Llegada desde el Panel: tocar una alerta trae aquí con la
   // ficha pedida; se abre y se limpia el estado para no reabrirla
   // al volver atrás.
@@ -437,6 +441,17 @@ export default function Personas({ repo }: { repo: Repo }) {
         </form>
       )}
 
+      <Pestanas
+        opciones={[
+          { id: 'personas', etiqueta: `👥 Personas (${datos.personas.length})` },
+          { id: 'zonas', etiqueta: `🗺️ Zonas (${zonas.length})` },
+        ]}
+        activa={seccion}
+        onCambiar={(id) => setSeccion(id as 'personas' | 'zonas')}
+      />
+
+      {seccion === 'personas' && (
+        <>
       {filtroDemo && (
         <p className="filtro-panel">
           <span>
@@ -495,6 +510,8 @@ export default function Personas({ repo }: { repo: Repo }) {
                 <ul className="lista-personas">{g.items.map(filaPersona)}</ul>
               </div>
             ))
+      )}
+        </>
       )}
 
       {ficha && p && (
@@ -645,6 +662,7 @@ export default function Personas({ repo }: { repo: Repo }) {
         </Modal>
       )}
 
+      {seccion === 'zonas' && (
       <section className="tarjeta">
         <h2>🗺️ Zonas</h2>
         <p className="tenue">
@@ -707,6 +725,7 @@ export default function Personas({ repo }: { repo: Repo }) {
           {zonas.length === 0 && <li className="tenue">Todavía no hay zonas en las fichas.</li>}
         </ul>
       </section>
+      )}
     </div>
   );
 }
