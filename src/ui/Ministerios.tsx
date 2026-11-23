@@ -57,9 +57,7 @@ export default function Ministerios({ repo }: { repo: Repo }) {
   return (
     <div>
       <CabeceraPagina titulo="⛪ Ministerios">
-        {!mostrarForm && (
-          <button className="btn btn-dorado" onClick={() => setMostrarForm(true)}>➕ Nuevo ministerio</button>
-        )}
+        <button className="btn btn-dorado" onClick={() => setMostrarForm((v) => !v)}>➕ Nuevo ministerio</button>
       </CabeceraPagina>
       <GuiaPagina texto="Quién sirve en cada ministerio. Al asignar a un miembro, su escalera marca sola el paso de Sirviendo." />
       <p className="tenue">

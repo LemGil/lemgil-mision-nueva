@@ -131,11 +131,11 @@ export default function BienComun({ repo }: { repo: Repo }) {
   return (
     <div className="panel">
       <CabeceraPagina titulo="🌾 Bien Común">
-        {seccion === 'diezmadores' && !mostrarForm && (
-          <button className="btn btn-dorado" onClick={() => setMostrarForm(true)}>➕ Nuevo diezmador</button>
+        {seccion === 'diezmadores' && (
+          <button className="btn btn-dorado" onClick={() => setMostrarForm((v) => !v)}>➕ Nuevo diezmador</button>
         )}
-        {seccion === 'registro' && !mostrarGeneral && (
-          <button className="btn btn-dorado" onClick={() => setMostrarGeneral(true)}>➕ Registrar aporte (general)</button>
+        {seccion === 'registro' && (
+          <button className="btn btn-dorado" onClick={() => setMostrarGeneral((v) => !v)}>➕ Registrar aporte (general)</button>
         )}
       </CabeceraPagina>
       <GuiaPagina texto="Los diezmadores y sus aportes de diezmos y ofrendas. Los aportes quedan a nombre de la persona para siempre: son historia, no se borran con su salida." />

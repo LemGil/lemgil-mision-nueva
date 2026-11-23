@@ -103,9 +103,7 @@ export default function Academia({ repo }: { repo: Repo }) {
   return (
     <div className="panel">
       <CabeceraPagina titulo="🎓 Academia">
-        {!mostrarForm && (
-          <button className="btn btn-dorado" onClick={() => setMostrarForm(true)}>➕ Nuevo estudiante</button>
-        )}
+        <button className="btn btn-dorado" onClick={() => setMostrarForm((v) => !v)}>➕ Nuevo estudiante</button>
       </CabeceraPagina>
       <GuiaPagina texto="Los estudiantes de la Academia del Espíritu: quién está activo y quién no." />
       {error && <p className="aviso aviso-rojo">{error}</p>}

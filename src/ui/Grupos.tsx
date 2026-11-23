@@ -148,9 +148,7 @@ export default function Grupos({ repo }: { repo: Repo }) {
   return (
     <div className="panel">
       <CabeceraPagina titulo="🧑‍🤝‍🧑 Grupos">
-        {!mostrarForm && (
-          <button className="btn btn-dorado" onClick={() => setMostrarForm(true)}>➕ Nuevo grupo</button>
-        )}
+        <button className="btn btn-dorado" onClick={() => setMostrarForm((v) => !v)}>➕ Nuevo grupo</button>
       </CabeceraPagina>
       <GuiaPagina texto="Los grupos de la congregación, con su líder, su reunión y su capacidad. Cada persona pertenece a un solo grupo." />
       {error && <p className="aviso aviso-rojo">{error}</p>}

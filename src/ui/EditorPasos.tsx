@@ -78,13 +78,11 @@ export default function EditorPasos({
         ))}
       </ul>
 
-      {!mostrarNuevo && (
-        <div className="form-acciones">
-          <button type="button" className="btn btn-dorado" onClick={() => setMostrarNuevo(true)}>
-            ➕ Nuevo paso
-          </button>
-        </div>
-      )}
+      <div className="form-acciones">
+        <button type="button" className="btn btn-dorado" onClick={() => setMostrarNuevo((v) => !v)}>
+          ➕ Nuevo paso
+        </button>
+      </div>
       {mostrarNuevo && (
         <div className="form-grid">
           <label>

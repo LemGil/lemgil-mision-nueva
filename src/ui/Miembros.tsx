@@ -144,9 +144,7 @@ export default function Miembros({ repo }: { repo: Repo }) {
           <button className="btn" onClick={() => setEditandoPasos(true)}>
             ⚙️ Pasos
           </button>
-          {!mostrarForm && (
-            <button className="btn btn-dorado" onClick={() => setMostrarForm(true)}>➕ Nuevo miembro</button>
-          )}
+          <button className="btn btn-dorado" onClick={() => setMostrarForm((v) => !v)}>➕ Nuevo miembro</button>
         </div>
       </CabeceraPagina>
       <GuiaPagina texto="El directorio de los integrados y su escalera: Grupo → Diezmador → Academia → Ministerio → Hermano Mayor → Liderazgo. La Integración es la puerta, no un peldaño." />

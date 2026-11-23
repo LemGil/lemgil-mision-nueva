@@ -295,14 +295,14 @@ export default function ManosAbiertas({ repo }: { repo: Repo }) {
   return (
     <div className="panel">
       <CabeceraPagina titulo="🤲 Manos Abiertas">
-        {pestana === 'beneficiarios' && !mostrarBenef && (
-          <button className="btn btn-dorado" onClick={() => setMostrarBenef(true)}>➕ Nuevo beneficiario</button>
+        {pestana === 'beneficiarios' && (
+          <button className="btn btn-dorado" onClick={() => setMostrarBenef((v) => !v)}>➕ Nuevo beneficiario</button>
         )}
-        {pestana === 'campanas' && !mostrarCamp && (
-          <button className="btn btn-dorado" onClick={() => setMostrarCamp(true)}>➕ Nueva campaña</button>
+        {pestana === 'campanas' && (
+          <button className="btn btn-dorado" onClick={() => setMostrarCamp((v) => !v)}>➕ Nueva campaña</button>
         )}
-        {pestana === 'entregas' && !mostrarEntrega && (
-          <button className="btn btn-dorado" onClick={() => setMostrarEntrega(true)}>➕ Registrar entrega</button>
+        {pestana === 'entregas' && (
+          <button className="btn btn-dorado" onClick={() => setMostrarEntrega((v) => !v)}>➕ Registrar entrega</button>
         )}
       </CabeceraPagina>
       <GuiaPagina texto="La ayuda organizada en tres mesas: a quién se ayuda (Personas, Familias y Grupos), las campañas (Desayuno con Jesús, Sopa con Jesús…) y cada entrega que se hace." />

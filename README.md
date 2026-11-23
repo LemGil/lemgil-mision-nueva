@@ -239,4 +239,11 @@ de un solo motor de conteo (`src/motor/`); el cuadre se verifica solo
   fecha de nacimiento cuenta por su sexo y queda en «Sin edad»
   (111/111).
 
+- **Botones de formulario rectificados (2026-11-22):** en
+  Academia, Bien Común, Grupos, Manos Abiertas, Miembros,
+  Ministerios, Red de Colaboradores y el Editor de pasos, el
+  botón de crear se escondía al abrir su formulario; ahora queda
+  siempre visible y alterna (abrir/cerrar), como ya hacían
+  Personas, Misión y Evangelismos (111/111).
+
 La app actual (`lemgil-mision-apk`) sigue viva e intacta mientras tanto.

@@ -148,11 +148,11 @@ export default function RedColaboradores({ repo }: { repo: Repo }) {
   return (
     <div className="panel">
       <CabeceraPagina titulo="🌐 Red de Colaboradores">
-        {seccion === 'colaboradores' && !mostrarForm && (
-          <button className="btn btn-dorado" onClick={() => setMostrarForm(true)}>➕ Nuevo colaborador</button>
+        {seccion === 'colaboradores' && (
+          <button className="btn btn-dorado" onClick={() => setMostrarForm((v) => !v)}>➕ Nuevo colaborador</button>
         )}
-        {seccion === 'registro' && !mostrarGeneral && (
-          <button className="btn btn-dorado" onClick={() => setMostrarGeneral(true)}>➕ Registrar aporte (general)</button>
+        {seccion === 'registro' && (
+          <button className="btn btn-dorado" onClick={() => setMostrarGeneral((v) => !v)}>➕ Registrar aporte (general)</button>
         )}
       </CabeceraPagina>
       <GuiaPagina texto="Apoyo externo al Ministerio: personas, iglesias y ministerios que ofrendan. No son miembros: no entran en la ficha única ni en el censo; aquí viven su propio registro y sus aportes." />
