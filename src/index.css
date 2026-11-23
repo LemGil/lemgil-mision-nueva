@@ -162,6 +162,17 @@ h1, h2, .menu-marca {
   background: var(--superficie-2); border-radius: var(--radio-pildora); padding: 4px 12px; font-size: var(--letra);
 }
 .franja-miembros { border: 1px solid var(--dorado); }
+/* Panel, «La congregación hoy» (pedido de LemGil, 2026-11-23):
+   TODAS las píldoras llevan el borde dorado de Miembros, las dos
+   líneas tienen la misma vista y cada píldora es un botón que
+   lleva a su lista, como las alertas. Acotado a esta tarjeta:
+   las franjas de las fichas (paso-hecho / paso-falta) no cambian. */
+.congregacion-hoy .franja-paso { border: 1px solid var(--dorado); }
+.congregacion-hoy button.franja-paso {
+  font: inherit; color: inherit; cursor: pointer; text-align: left;
+}
+.congregacion-hoy button.franja-paso:hover { background: var(--oro-suave); }
+.franja-demografia { margin-top: 8px; }
 .demografia, .periodo-lineas { color: var(--tenue); margin: 12px 0 0; }
 
 .aviso { border-radius: var(--radio-tarjeta); padding: var(--esp-3) var(--esp-4); margin: var(--esp-4) 0; }

@@ -163,26 +163,59 @@ export default function Panel({ repo, sync, estadoSync, modoLocal }: Props) {
             )}
           </section>
 
-          <section className="tarjeta">
+          <section className="tarjeta congregacion-hoy">
             <h2>👥 La congregación hoy</h2>
             <div className="franja">
               {censo.etapas.map((e) => (
-                <span key={e.pasoId} className="franja-paso">
+                <button
+                  type="button"
+                  key={e.pasoId}
+                  className="franja-paso"
+                  onClick={() => navigate('/mision')}
+                  title="Ir a la mesa de Misión"
+                >
                   {e.emoji} {e.nombre} <strong>{e.cantidad}</strong>
-                </span>
+                </button>
               ))}
-              <span className="franja-paso franja-miembros">
+              <button
+                type="button"
+                className="franja-paso franja-miembros"
+                onClick={() => navigate('/miembros')}
+                title="Ir a la lista de Miembros"
+              >
                 🏠 Miembros <strong>{censo.miembros}</strong>
-              </span>
+              </button>
             </div>
-            <p className="demografia">
-              Hombres {censo.demografico.hombres} · Mujeres {censo.demografico.mujeres}
-              {censo.demografico.sinDatoSexo > 0 &&
-                ` · Sin dato ${censo.demografico.sinDatoSexo}`}{' '}
-              — Niños {censo.demografico.ninos} · Jóvenes {censo.demografico.jovenes} ·
-              Adultos {censo.demografico.adultos} · Ancianos {censo.demografico.ancianos}
-              {censo.demografico.sinEdad > 0 && ` · Sin edad ${censo.demografico.sinEdad}`}
-            </p>
+            <div className="franja franja-demografia">
+              <button type="button" className="franja-paso" onClick={() => navigate('/personas')} title="Ir a la lista de Personas">
+                👨 Hombres <strong>{censo.demografico.hombres}</strong>
+              </button>
+              <button type="button" className="franja-paso" onClick={() => navigate('/personas')} title="Ir a la lista de Personas">
+                👩 Mujeres <strong>{censo.demografico.mujeres}</strong>
+              </button>
+              {censo.demografico.sinDatoSexo > 0 && (
+                <button type="button" className="franja-paso" onClick={() => navigate('/personas')} title="Ir a la lista de Personas">
+                  ⚪ Sin dato <strong>{censo.demografico.sinDatoSexo}</strong>
+                </button>
+              )}
+              <button type="button" className="franja-paso" onClick={() => navigate('/personas')} title="Ir a la lista de Personas">
+                🧒 Niños <strong>{censo.demografico.ninos}</strong>
+              </button>
+              <button type="button" className="franja-paso" onClick={() => navigate('/personas')} title="Ir a la lista de Personas">
+                🧑 Jóvenes <strong>{censo.demografico.jovenes}</strong>
+              </button>
+              <button type="button" className="franja-paso" onClick={() => navigate('/personas')} title="Ir a la lista de Personas">
+                👤 Adultos <strong>{censo.demografico.adultos}</strong>
+              </button>
+              <button type="button" className="franja-paso" onClick={() => navigate('/personas')} title="Ir a la lista de Personas">
+                🧓 Ancianos <strong>{censo.demografico.ancianos}</strong>
+              </button>
+              {censo.demografico.sinEdad > 0 && (
+                <button type="button" className="franja-paso" onClick={() => navigate('/personas')} title="Ir a la lista de Personas">
+                  📆 Sin edad <strong>{censo.demografico.sinEdad}</strong>
+                </button>
+              )}
+            </div>
           </section>
 
           {(atascados.length > 0 || cumples.length > 0) && (
