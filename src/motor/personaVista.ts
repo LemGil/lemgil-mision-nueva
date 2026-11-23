@@ -132,3 +132,17 @@ export function buscarPersonas(datos: DatosMinisterio, texto: string): Persona[]
     return false;
   });
 }
+
+/**
+ * Búsqueda libre para las listas que no son de personas (grupos,
+ * campañas, ministerios, registros…): ¿aparece el texto en alguno
+ * de los campos? Sin acentos, como buscarPersonas.
+ */
+export function coincideBusqueda(
+  texto: string,
+  ...campos: (string | undefined | null)[]
+): boolean {
+  const q = sinAcentos(texto.trim());
+  if (!q) return true;
+  return campos.some((c) => !!c && sinAcentos(c).includes(q));
+}

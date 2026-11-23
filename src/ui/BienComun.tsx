@@ -14,7 +14,8 @@ import BorrarBoton from './BorrarBoton';
 
 import Modal from './Modal';
 import GuiaPagina from './GuiaPagina';
-import { CabeceraPagina, FilaEdicion, FilaPersona, FilaRegistro, Kpi, ListaEdicion, Pestanas, TarjetaPersona } from './Piezas';
+import { Buscador, CabeceraPagina, FilaEdicion, FilaPersona, FilaRegistro, Kpi, ListaEdicion, Pestanas, TarjetaPersona } from './Piezas';
+import { buscarPersonas, coincideBusqueda } from '../motor/personaVista';
 
 const hoyIso = () => new Date().toISOString().slice(0, 10);
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
@@ -28,6 +29,7 @@ export default function BienComun({ repo }: { repo: Repo }) {
   const [editandoAporte, setEditandoAporte] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [mostrarForm, setMostrarForm] = useState(false);
+  const [busqueda, setBusqueda] = useState('');
   const [ver, setVer] = useState('activos');
   const [vista, setVista] = useState<Vista>('lista');
   const [agruparPor, setAgruparPor] = useState('zona');
@@ -57,7 +59,10 @@ export default function BienComun({ repo }: { repo: Repo }) {
 
   if (!datos) return <p className="cargando">Cargando…</p>;
 
-  const visibles = datos.diezmadores.filter((d) => ver === 'todos' || (ver === 'activos' ? d.activo : !d.activo));
+  const idsBuscadas = new Set(buscarPersonas(datos, busqueda).map((p) => p.id));
+  const visibles = datos.diezmadores.filter(
+    (d) => (ver === 'todos' || (ver === 'activos' ? d.activo : !d.activo)) && idsBuscadas.has(d.personaId),
+  );
   const periodo: Periodo | undefined =
     ano === 0
       ? undefined
@@ -78,6 +83,10 @@ export default function BienComun({ repo }: { repo: Repo }) {
     .filter((a) => !periodo || (a.fecha >= periodo.desde && a.fecha <= periodo.hasta))
     .slice()
     .sort((a, b) => (a.fecha < b.fecha ? 1 : -1));
+  const registroVisible = registroGeneral.filter((a) => {
+    const p = personaDe(a.personaId);
+    return coincideBusqueda(busqueda, p ? `${p.nombre} ${p.apellidos ?? ''}` : undefined, a.tipo);
+  });
   const fechasAportes = datos.aportes.map((a) => a.fecha);
   const mesesDisp = ano === 0 ? [] : mesesConRegistros(fechasAportes, ano);
 
@@ -181,6 +190,9 @@ export default function BienComun({ repo }: { repo: Repo }) {
         onCambiar={setSeccion}
       />
 
+      <Buscador>
+        <input placeholder="🔍 Buscar por nombre o tipo…" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} />
+      </Buscador>
       {seccion === 'registro' && (
         <section className="tarjeta">
           <h2>📋 Registro general de aportes</h2>
@@ -238,11 +250,11 @@ export default function BienComun({ repo }: { repo: Repo }) {
               <p className="tenue">El formulario queda abierto y con la persona elegida: puedes registrar varios aportes seguidos sin abrir ficha por ficha.</p>
             </>
           )}
-          {registroGeneral.length === 0 ? (
+          {registroVisible.length === 0 ? (
             <p className="tenue">Sin aportes en esta vista.</p>
           ) : (
             <ul className="lista-personas">
-              {registroGeneral.map((a) => {
+              {registroVisible.map((a) => {
                 const p = personaDe(a.personaId);
                 const d = datos.diezmadores.find((x) => x.personaId === a.personaId);
                 return (

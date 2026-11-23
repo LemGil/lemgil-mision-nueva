@@ -9,13 +9,15 @@ import Modal from './Modal';
 import BorrarBoton from './BorrarBoton';
 import SelectorPersona from './SelectorPersona';
 import GuiaPagina from './GuiaPagina';
-import { CabeceraPagina, FilaAcciones, FilaPersona, Kpi, TarjetaPersona } from './Piezas';
+import { Buscador, CabeceraPagina, FilaAcciones, FilaPersona, Kpi, TarjetaPersona } from './Piezas';
+import { coincideBusqueda } from '../motor/personaVista';
 
 export default function Ministerios({ repo }: { repo: Repo }) {
   const [datos, setDatos] = useState<DatosMinisterio | null>(null);
   const [abierto, setAbierto] = useState<string | null>(null);
   const [nuevoNombre, setNuevoNombre] = useState('');
   const [mostrarForm, setMostrarForm] = useState(false);
+  const [busqueda, setBusqueda] = useState('');
   const [personaNueva, setPersonaNueva] = useState('');
   const [error, setError] = useState('');
   const [vista, setVista] = useState<Vista>('lista');
@@ -36,8 +38,11 @@ export default function Ministerios({ repo }: { repo: Repo }) {
   }, [abierto]);
 
   if (!datos) return <p className="cargando">Cargando…</p>;
-  const ministerios = resumenMinisterios(datos);
-  const detalleMin = abierto ? ministerios.find((m) => m.nombre === abierto) : undefined;
+  const todosMinisterios = resumenMinisterios(datos);
+  const ministerios = todosMinisterios.filter((m) =>
+    coincideBusqueda(busqueda, m.nombre, ...m.miembros.map((x) => x.nombre)),
+  );
+  const detalleMin = abierto ? todosMinisterios.find((m) => m.nombre === abierto) : undefined;
   const sirviendo = new Set(datos.asignaciones.map((a) => a.personaId));
   const nombreDe = (id: string) => {
     const p = datos.personas.find((x) => x.id === id);
@@ -67,10 +72,13 @@ export default function Ministerios({ repo }: { repo: Repo }) {
       {error && <p className="aviso aviso-rojo">{error}</p>}
 
       <section className="kpis">
-        <Kpi icono="⛪" numero={ministerios.length} titulo="Ministerios" />
+        <Kpi icono="⛪" numero={todosMinisterios.length} titulo="Ministerios" />
         <Kpi icono="🤝" numero={sirviendo.size} titulo="Personas sirviendo" />
       </section>
 
+      <Buscador>
+        <input placeholder="🔍 Buscar ministerio o persona…" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} />
+      </Buscador>
       <BarraVistas
         vista={vista}
         setVista={setVista}

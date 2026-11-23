@@ -8,7 +8,8 @@ import BorrarBoton from './BorrarBoton';
 import { agrupar } from '../motor/vistas';
 import BarraVistas, { type Vista } from './BarraVistas';
 import GuiaPagina from './GuiaPagina';
-import { CabeceraPagina, FilaAcciones, Kpi, Tarjeta } from './Piezas';
+import { Buscador, CabeceraPagina, FilaAcciones, Kpi, Tarjeta } from './Piezas';
+import { coincideBusqueda } from '../motor/personaVista';
 
 
 const hoyIso = () => new Date().toISOString().slice(0, 10);
@@ -17,6 +18,7 @@ export default function Evangelismos({ repo }: { repo: Repo }) {
   const [datos, setDatos] = useState<DatosMinisterio | null>(null);
   const [recargas, setRecargas] = useState(0);
   const [mostrarForm, setMostrarForm] = useState(false);
+  const [busqueda, setBusqueda] = useState('');
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [fecha, setFecha] = useState(hoyIso());
   const [lugar, setLugar] = useState('');
@@ -42,7 +44,16 @@ export default function Evangelismos({ repo }: { repo: Repo }) {
   const mes = hoyIso().slice(0, 7);
   const esteMes = datos.evangelismos.filter((e) => e.fecha.startsWith(mes)).length;
   const participantesUnicos = new Set(datos.evangelismos.flatMap((e) => e.participanteIds)).size;
-  const lista = datos.evangelismos.slice().sort((a, b) => (a.fecha < b.fecha ? 1 : -1));
+  const nombreCompleto = (id?: string | null) => {
+    const p = id ? personaDe(id) : undefined;
+    return p ? `${p.nombre} ${p.apellidos ?? ''}` : undefined;
+  };
+  const lista = datos.evangelismos
+    .filter((e) =>
+      coincideBusqueda(busqueda, e.lugar, e.notas, nombreCompleto(e.liderId), ...e.participanteIds.map((id) => nombreCompleto(id))),
+    )
+    .slice()
+    .sort((a, b) => (a.fecha < b.fecha ? 1 : -1));
 
   const MESES_NOM = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
   const claveGrupo = (e: (typeof lista)[number]): string => {
@@ -146,6 +157,9 @@ export default function Evangelismos({ repo }: { repo: Repo }) {
         </section>
       )}
 
+      <Buscador>
+        <input placeholder="🔍 Buscar por lugar, líder o participante…" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} />
+      </Buscador>
       <BarraVistas
         vista={vista}
         setVista={setVista}

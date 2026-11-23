@@ -12,7 +12,8 @@ import { agrupar } from '../motor/vistas';
 import BarraVistas, { type Vista } from './BarraVistas';
 
 import Modal from './Modal';
-import { CabeceraPagina, FilaPersona, Kpi, TarjetaPersona } from './Piezas';
+import { Buscador, CabeceraPagina, FilaPersona, Kpi, TarjetaPersona } from './Piezas';
+import { coincideBusqueda } from '../motor/personaVista';
 import BorrarBoton from './BorrarBoton';
 import GuiaPagina from './GuiaPagina';
 import { conteoPorPasoDelGrupo, estadoGrupo, liderVisible, lineaReunion, porcentajeCapacidad } from '../motor/gruposVista';
@@ -73,6 +74,7 @@ export default function Grupos({ repo }: { repo: Repo }) {
   const [lugar, setLugar] = useState('');
   const [capacidad, setCapacidad] = useState('');
   const [mostrarForm, setMostrarForm] = useState(false);
+  const [busqueda, setBusqueda] = useState('');
   const [error, setError] = useState('');
   const [vista, setVista] = useState<Vista>('lista');
   const [agruparPor, setAgruparPor] = useState('zona');
@@ -109,6 +111,9 @@ export default function Grupos({ repo }: { repo: Repo }) {
   for (const p of datos.personas) if (p.grupoId) conGrupo.add(p.id);
   for (const id of [...conGrupo]) if (esPersonaBaja(id)) conGrupo.delete(id);
 
+  const visibles = datos.grupos.filter((g) =>
+    coincideBusqueda(busqueda, g.nombre, g.zona, g.lugar, liderVisible(datos, g)),
+  );
   const claveGrupo = (g: (typeof datos.grupos)[number]): string => {
     if (agruparPor === 'lider') {
       const l = g.liderId ? personaDe(g.liderId) : undefined;
@@ -213,6 +218,9 @@ export default function Grupos({ repo }: { repo: Repo }) {
       </section>
       )}
 
+      <Buscador>
+        <input placeholder="🔍 Buscar grupo, zona o líder…" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} />
+      </Buscador>
       <BarraVistas
         vista={vista}
         setVista={setVista}
@@ -225,19 +233,19 @@ export default function Grupos({ repo }: { repo: Repo }) {
       />
       {vista === 'lista' && (
         <ul className="lista-personas">
-          {datos.grupos.map(filaGrupo)}
-          {datos.grupos.length === 0 && <li className="tenue">Sin grupos todavía.</li>}
+          {visibles.map(filaGrupo)}
+          {visibles.length === 0 && <li className="tenue">{busqueda ? 'Sin coincidencias.' : 'Sin grupos todavía.'}</li>}
         </ul>
       )}
       {vista === 'tarjetas' && (
-        datos.grupos.length === 0
-          ? <p className="tenue">Sin grupos todavía.</p>
-          : <div className="tarjetas-grid">{datos.grupos.map(tarjetaGrupo)}</div>
+        visibles.length === 0
+          ? <p className="tenue">{busqueda ? 'Sin coincidencias.' : 'Sin grupos todavía.'}</p>
+          : <div className="tarjetas-grid">{visibles.map(tarjetaGrupo)}</div>
       )}
       {vista === 'agrupada' && (
-        datos.grupos.length === 0
-          ? <p className="tenue">Sin grupos todavía.</p>
-          : agrupar(datos.grupos, claveGrupo).map((g) => (
+        visibles.length === 0
+          ? <p className="tenue">{busqueda ? 'Sin coincidencias.' : 'Sin grupos todavía.'}</p>
+          : agrupar(visibles, claveGrupo).map((g) => (
               <div key={g.titulo}>
                 <h3 className="grupo-titulo">{g.titulo} · {g.items.length}</h3>
                 <ul className="lista-personas">{g.items.map(filaGrupo)}</ul>

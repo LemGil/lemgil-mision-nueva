@@ -19,7 +19,8 @@ import { agrupar } from '../motor/vistas';
 import BarraVistas, { type Vista } from './BarraVistas';
 import BorrarBoton from './BorrarBoton';
 import GuiaPagina from './GuiaPagina';
-import { CabeceraPagina, FilaEdicion, FilaPersona, FilaRegistro, Kpi, ListaEdicion, Pestanas, TarjetaPersona } from './Piezas';
+import { Buscador, CabeceraPagina, FilaEdicion, FilaPersona, FilaRegistro, Kpi, ListaEdicion, Pestanas, TarjetaPersona } from './Piezas';
+import { coincideBusqueda } from '../motor/personaVista';
 import Modal from './Modal';
 import { InputNombre, InputZona } from './CamposLista';
 import { nombreDeEntrega, resumenManos } from '../motor/manosAbiertas';
@@ -33,6 +34,7 @@ export default function ManosAbiertas({ repo }: { repo: Repo }) {
   const [recargas, setRecargas] = useState(0);
   const [error, setError] = useState('');
   const [pestana, setPestana] = useState<Pestana>('beneficiarios');
+  const [busqueda, setBusqueda] = useState('');
   // Beneficiarios
   const [ver, setVer] = useState('activos');
   const [vista, setVista] = useState<Vista>('lista');
@@ -123,9 +125,9 @@ export default function ManosAbiertas({ repo }: { repo: Repo }) {
   const activos = datos.beneficiarios.filter((b) => b.estado === 'Activo').length;
 
   // ── Beneficiarios ──
-  const visibles = datos.beneficiarios.filter((b) =>
-    ver === 'todos' ? true : ver === 'activos' ? b.estado === 'Activo' : b.estado !== 'Activo',
-  );
+  const visibles = datos.beneficiarios
+    .filter((b) => (ver === 'todos' ? true : ver === 'activos' ? b.estado === 'Activo' : b.estado !== 'Activo'))
+    .filter((b) => coincideBusqueda(busqueda, b.nombre, tipoDe(b), zonaDe(b)));
   const claveGrupo = (b: Beneficiario): string => {
     if (agruparPor === 'tipo') return tipoDe(b);
     if (agruparPor === 'estado') return b.estado;
@@ -173,8 +175,12 @@ export default function ManosAbiertas({ repo }: { repo: Repo }) {
   // ── Entregas (todas) ──
   const todasEntregas = datos.entregas
     .filter((e) => !filtroCampana || e.campanaId === filtroCampana)
+    .filter((e) => coincideBusqueda(busqueda, e.beneficiarioNombre, nombreCampana(e.campanaId)))
     .slice()
     .sort((a, b) => (a.fecha < b.fecha ? 1 : -1));
+  const campanasVisibles = datos.campanas.filter((c) =>
+    coincideBusqueda(busqueda, c.nombre, c.zona, c.responsable),
+  );
 
   const filaEntrega = (e: Entrega, conCampana: boolean) =>
     editandoEntrega === e.id ? (
@@ -325,6 +331,9 @@ export default function ManosAbiertas({ repo }: { repo: Repo }) {
         onCambiar={setPestana}
       />
 
+      <Buscador>
+        <input placeholder="🔍 Buscar en esta mesa…" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} />
+      </Buscador>
       {pestana === 'beneficiarios' && (
         <>
           {mostrarBenef && (
@@ -499,7 +508,7 @@ export default function ManosAbiertas({ repo }: { repo: Repo }) {
             </section>
           )}
           <ul className="lista-personas">
-            {datos.campanas.map((c) => {
+            {campanasVisibles.map((c) => {
               const r = manos.porCampana.get(c.id);
               return (
                 <li key={c.id}>
@@ -512,7 +521,7 @@ export default function ManosAbiertas({ repo }: { repo: Repo }) {
                 </li>
               );
             })}
-            {datos.campanas.length === 0 && <li className="tenue">Sin campañas todavía: crea la primera con el botón de arriba.</li>}
+            {campanasVisibles.length === 0 && <li className="tenue">{busqueda ? 'Sin coincidencias.' : 'Sin campañas todavía: crea la primera con el botón de arriba.'}</li>}
           </ul>
         </>
       )}

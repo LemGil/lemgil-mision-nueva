@@ -8,7 +8,8 @@ import { agrupar } from '../motor/vistas';
 import BarraVistas, { type Vista } from './BarraVistas';
 import BorrarBoton from './BorrarBoton';
 import GuiaPagina from './GuiaPagina';
-import { CabeceraPagina, FilaAcciones, Kpi, Tarjeta } from './Piezas';
+import { Buscador, CabeceraPagina, FilaAcciones, Kpi, Tarjeta } from './Piezas';
+import { buscarPersonas } from '../motor/personaVista';
 
 
 export default function Academia({ repo }: { repo: Repo }) {
@@ -16,6 +17,7 @@ export default function Academia({ repo }: { repo: Repo }) {
   const [recargas, setRecargas] = useState(0);
   const [error, setError] = useState('');
   const [mostrarForm, setMostrarForm] = useState(false);
+  const [busqueda, setBusqueda] = useState('');
   const [ver, setVer] = useState('activos');
   const [vista, setVista] = useState<Vista>('lista');
   const [agruparPor, setAgruparPor] = useState('zona');
@@ -33,7 +35,10 @@ export default function Academia({ repo }: { repo: Repo }) {
 
   if (!datos) return <p className="cargando">Cargando…</p>;
 
-  const visibles = datos.estudiantes.filter((e) => ver === 'todos' || (ver === 'activos' ? e.estado === 'Activo' : e.estado !== 'Activo'));
+  const idsBuscadas = new Set(buscarPersonas(datos, busqueda).map((p) => p.id));
+  const visibles = datos.estudiantes.filter(
+    (e) => (ver === 'todos' || (ver === 'activos' ? e.estado === 'Activo' : e.estado !== 'Activo')) && idsBuscadas.has(e.personaId),
+  );
   const activos = datos.estudiantes.filter((e) => e.estado === 'Activo').length;
   const personaDe = (id: string) => datos.personas.find((p) => p.id === id);
 
@@ -134,6 +139,9 @@ export default function Academia({ repo }: { repo: Repo }) {
         </div>
       </section>
       )}
+      <Buscador>
+        <input placeholder="🔍 Buscar estudiante…" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} />
+      </Buscador>
       <div className="vista-barra">
         <label>
           Ver{' '}

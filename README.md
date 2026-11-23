@@ -265,4 +265,13 @@ de un solo motor de conteo (`src/motor/`); el cuadre se verifica solo
   con el filtro de ese paso puesto. Prueba de invariante: el
   tamaño de cada grupo = el número del Panel (112/112).
 
+- **Buscador en todas las mesas (2026-11-23):** las páginas que
+  no tenían buscador lo ganaron, para que estén todas parejas:
+  Academia (por estudiante), Evangelismos (lugar, líder o
+  participante), Grupos (grupo, zona o líder), Ministerios
+  (ministerio o persona), Bien Común y Red (su lista y su
+  Registro general, por nombre o tipo) y Manos Abiertas (las
+  tres pestañas). Helper compartido `coincideBusqueda` en
+  personaVista, sin acentos como el de Personas (112/112).
+
 La app actual (`lemgil-mision-apk`) sigue viva e intacta mientras tanto.

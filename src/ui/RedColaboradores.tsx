@@ -9,7 +9,8 @@ import { formatoDinero } from '../motor/dinero';
 import { agrupar } from '../motor/vistas';
 import BarraVistas, { type Vista } from './BarraVistas';
 import GuiaPagina from './GuiaPagina';
-import { CabeceraPagina, FilaEdicion, FilaPersona, FilaRegistro, Kpi, ListaEdicion, Pestanas, TarjetaPersona } from './Piezas';
+import { Buscador, CabeceraPagina, FilaEdicion, FilaPersona, FilaRegistro, Kpi, ListaEdicion, Pestanas, TarjetaPersona } from './Piezas';
+import { coincideBusqueda } from '../motor/personaVista';
 import Modal from './Modal';
 import BorrarBoton from './BorrarBoton';
 
@@ -31,6 +32,7 @@ export default function RedColaboradores({ repo }: { repo: Repo }) {
   const [editandoAporte, setEditandoAporte] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [mostrarForm, setMostrarForm] = useState(false);
+  const [busqueda, setBusqueda] = useState('');
   const [mostrarAporte, setMostrarAporte] = useState(false);
   const [seccion, setSeccion] = useState<'colaboradores' | 'registro'>('colaboradores');
   // Formulario general de aportes (para cualquier colaborador, sin abrir su ficha)
@@ -95,7 +97,9 @@ export default function RedColaboradores({ repo }: { repo: Repo }) {
         };
   const resumen = resumenRed(datos, periodo);
   const visibles = datos.colaboradores.filter(
-    (c) => ver === 'todos' || (ver === 'activos' ? c.estado === 'Activo' : c.estado !== 'Activo'),
+    (c) =>
+      (ver === 'todos' || (ver === 'activos' ? c.estado === 'Activo' : c.estado !== 'Activo')) &&
+      coincideBusqueda(busqueda, c.nombre, c.apellido, c.tipo),
   );
   const detalle = seleccionado ? datos.colaboradores.find((c) => c.id === seleccionado) : undefined;
   const aportesDe = detalle
@@ -108,6 +112,10 @@ export default function RedColaboradores({ repo }: { repo: Repo }) {
     .filter((a) => !periodo || (a.fecha >= periodo.desde && a.fecha <= periodo.hasta))
     .slice()
     .sort((a, b) => (a.fecha < b.fecha ? 1 : -1));
+  const registroVisible = registroGeneral.filter((a) => {
+    const c = datos.colaboradores.find((x) => x.id === a.colaboradorId);
+    return coincideBusqueda(busqueda, c ? nombreColaborador(c) : undefined, a.tipo);
+  });
 
   const claveGrupo = (c: Colaborador): string => {
     if (agruparPor === 'estado') return c.estado;
@@ -196,6 +204,9 @@ export default function RedColaboradores({ repo }: { repo: Repo }) {
         onCambiar={setSeccion}
       />
 
+      <Buscador>
+        <input placeholder="🔍 Buscar por nombre o tipo…" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} />
+      </Buscador>
       {seccion === 'registro' && (
         <section className="tarjeta">
           <h2>📋 Registro general de aportes</h2>
@@ -263,11 +274,11 @@ export default function RedColaboradores({ repo }: { repo: Repo }) {
               <p className="tenue">El formulario queda abierto y con el colaborador elegido: puedes registrar varios aportes seguidos sin abrir ficha por ficha.</p>
             </>
           )}
-          {registroGeneral.length === 0 ? (
+          {registroVisible.length === 0 ? (
             <p className="tenue">Sin aportes en esta vista.</p>
           ) : (
             <ul className="lista-personas">
-              {registroGeneral.map((a) => (
+              {registroVisible.map((a) => (
                 <li key={a.id}>
                   <FilaRegistro
                     fecha={a.fecha}
