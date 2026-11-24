@@ -16,7 +16,7 @@ import { Buscador, CabeceraPagina, FilaAcciones, FilaPersona, Kpi, TarjetaPerson
 import { coincideBusqueda } from '../motor/personaVista';
 import BorrarBoton from './BorrarBoton';
 import GuiaPagina from './GuiaPagina';
-import { claveTipoGrupo, conteoPorPasoDelGrupo, esIglesia, estadoGrupo, grupoDeTipo, hijosDe, iconoGrupo, idsGruposDe, idsMiembrosDeGrupo, liderVisible, lineaReunion, ordenarGruposPorFamilia, padreDe, porcentajeCapacidad, tipoVisibleGrupo, tiposDeGrupoEnUso } from '../motor/gruposVista';
+import { claveTipoGrupo, conteoPorPasoDelGrupo, esIglesia, esOikos, estadoGrupo, grupoDeTipo, hijosDe, iconoGrupo, idsGruposDe, idsMiembrosDeGrupo, liderVisible, lineaReunion, ordenarGruposPorFamilia, padreDe, porcentajeCapacidad, tipoVisibleGrupo, tiposDeGrupoEnUso } from '../motor/gruposVista';
 
 const DIAS_SEMANA = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 
@@ -175,6 +175,16 @@ export default function Grupos({ repo }: { repo: Repo }) {
   const conGrupo = new Set<string>();
   for (const p of datos.personas) if (idsGruposDe(datos, p.id).length > 0) conGrupo.add(p.id);
   for (const id of [...conGrupo]) if (esPersonaBaja(id)) conGrupo.delete(id);
+  // El tablero: la familia y la cobertura. «Sin grupo» cuenta a las
+  // personas de la casa (en camino, en el gozne o miembros activos)
+  // que no están en ningún grupo — a quién hay que ubicar.
+  const nIglesias = datos.grupos.filter((g) => esIglesia(g)).length;
+  const oikosTodos = datos.grupos.filter((g) => esOikos(g));
+  const nOikosSinIglesia = oikosTodos.filter((g) => !padreDe(datos, g)).length;
+  const nSinGrupo = datos.personas.filter((per) => {
+    const clase = clasificarPersona(datos, per.id).clase;
+    return (clase === 'etapa' || clase === 'gozne' || clase === 'miembro') && idsGruposDe(datos, per.id).length === 0;
+  }).length;
 
   const visibles = datos.grupos.filter((g) =>
     coincideBusqueda(busqueda, g.nombre, g.zona, g.lugar, liderVisible(datos, g)),
@@ -227,7 +237,10 @@ export default function Grupos({ repo }: { repo: Repo }) {
       {error && <p className="aviso aviso-rojo">{error}</p>}
       <section className="kpis">
         <Kpi principal icono="🧑‍🤝‍🧑" numero={datos.grupos.length} titulo="Grupos" />
+        <Kpi icono="🏠" numero={nIglesias} titulo="Iglesias" />
+        <Kpi icono="🏡" numero={oikosTodos.length} titulo="Oikos" sub={nOikosSinIglesia > 0 ? `${nOikosSinIglesia} sin Iglesia` : undefined} />
         <Kpi icono="👥" numero={conGrupo.size} titulo="Personas en grupos" />
+        <Kpi icono="⚠️" numero={nSinGrupo} titulo="Sin grupo" />
       </section>
 
       {mostrarForm && (

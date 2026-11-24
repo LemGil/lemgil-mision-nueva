@@ -340,3 +340,11 @@ formulario abierto. Ahora, al guardar bien, la ventana se cierra
   tarjeta, la ventana y la chincheta del mapa; la lista se ordena por
   familia — cada Iglesia con sus Oikos indentados debajo (↳).
 - 121/121 pruebas.
+
+## El tablero de Grupos con cinco datos (v39)
+
+El tablero superior de Grupos ya no trae solo Grupos y Personas:
+🏠 Iglesias, 🏡 Oikos (con «N sin Iglesia» debajo si hay huérfanos),
+👥 Personas en grupos y ⚠️ Sin grupo — las personas de la casa (en
+camino, en el gozne o miembros activos) que no están en ningún
+grupo: a quién hay que ubicar.
