@@ -297,7 +297,7 @@ export default function Migrar({ repo }: { repo: Repo }) {
       setAvisoRestaurar(
         r.fichasRestauradas === 0 && r.aportesReubicados === 0 && r.aportesRestaurados === 0
           ? '✓ Todo está en su sitio: cada ficha y cada aporte del respaldo están con su dueño.'
-          : `✓ Reparación hecha: ${r.fichasRestauradas} ficha(s) restaurada(s), ${r.aportesReubicados} aporte(s) devueltos a su dueño, ${r.aportesRestaurados} aporte(s) restaurados. Sincroniza para subirlo.`,
+          : `✓ Reparación hecha: ${r.fichasRestauradas} ficha(s) restaurada(s), ${r.aportesReubicados} aporte(s) devueltos a su dueño, ${r.aportesRestaurados} aporte(s) restaurados${r.copiasVaciasSaltadas > 0 ? `; ${r.copiasVaciasSaltadas} copia(s) vacía(s) de la unión quedaron fuera, sin resucitar` : ''}. Sincroniza para subirlo.`,
       );
       await cargar();
     } catch (e) {

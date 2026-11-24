@@ -413,3 +413,15 @@ herramienta imprime, por cada colaborador del respaldo, el estado
 exacto de su ficha (bien, con otro nombre, borrada o ausente) y
 dónde cuelgan hoy sus aportes, contando también las tumbas. Con
 ese mapa la reparación deja de ser adivinanza. 138/138 pruebas.
+
+## Caso Isabel, resuelto el diagnóstico (v46)
+
+La verdad, por el diagnóstico v45 y la palabra de LemGil: él mismo
+había cambiado el nombre de la ficha de Isabel a «GINA HERRERA»;
+«Unir repetidos» fundió las dos fichas del mismo nombre (la de
+Isabel, con 38 aportes, quedó como principal y absorbió a la Gina
+verdadera). El Restaurar v44 sí la reparó (nombre y ficha). El
+v46 afina el Restaurar: ya no resucita las copias vacías que la
+unión fundió (sin aportes en el respaldo ni vivos), y devuelve los
+aportes que aún cuelguen de otra ficha (los 6 de Gina en Isabel).
+139/139 pruebas.

@@ -40,7 +40,7 @@ describe('restaurarRedDesdeRespaldo', () => {
     for (const a of datos.aportesRed) repo.sembrar('aportesRed', { ...a, borrado: false });
 
     const r = await restaurarRedDesdeRespaldo(repo.comoRepo(), datos, respaldo);
-    expect(r).toEqual({ fichasRestauradas: 1, aportesReubicados: 2, aportesRestaurados: 0 });
+    expect(r).toEqual({ fichasRestauradas: 1, copiasVaciasSaltadas: 0, aportesReubicados: 2, aportesRestaurados: 0 });
 
     const colabs = repo.vivos<Colaborador>('colaboradores');
     expect(colabs.map((c) => c.id).sort()).toEqual(['g1', 'i1']);
@@ -73,6 +73,34 @@ describe('restaurarRedDesdeRespaldo', () => {
     expect(isabel?.telefono).toBe('555'); // sus demás datos se conservan
   });
 
+  it('no resucita una copia vacía que la unión ya había fundido', async () => {
+    // El respaldo trae una segunda ficha del mismo nombre, sin aportes:
+    // es la copia que «Unir repetidos» fundió. Debe quedarse fuera.
+    const respaldoConCopia: RespaldoViejo = {
+      ...respaldo,
+      colaboradores: [
+        ...(respaldo.colaboradores as unknown as Record<string, unknown>[]),
+        { id: 'g2', nombre: 'GINA', apellido: 'HERRERA', estado: 'Activo', tipo: 'Iglesia' },
+      ],
+    };
+    const datos = base(
+      [
+        { id: 'i1', nombre: 'ISABEL', apellido: 'MIRANDA', estado: 'Activo', tipo: 'Persona' },
+        { id: 'g1', nombre: 'GINA', apellido: 'HERRERA', estado: 'Activo', tipo: 'Persona' },
+      ],
+      [
+        { id: 'a1', colaboradorId: 'i1', fecha: '2025-01-01', monto: 100, tipo: 'Ofrenda General' },
+        { id: 'a2', colaboradorId: 'i1', fecha: '2025-02-01', monto: 200, tipo: 'Ofrenda General' },
+        { id: 'a3', colaboradorId: 'g1', fecha: '2025-03-01', monto: 50, tipo: 'Diezmo' },
+      ],
+    );
+    const repo = new RepoFalso();
+    const r = await restaurarRedDesdeRespaldo(repo.comoRepo(), datos, respaldoConCopia);
+    expect(r.copiasVaciasSaltadas).toBe(1);
+    expect(r.fichasRestauradas).toBe(0);
+    expect(repo.vivos<Colaborador>('colaboradores').map((c) => c.id)).not.toContain('g2');
+  });
+
   it('con todo en su sitio no toca nada', async () => {
     const datos = base(
       [
@@ -87,6 +115,6 @@ describe('restaurarRedDesdeRespaldo', () => {
     );
     const repo = new RepoFalso();
     const r = await restaurarRedDesdeRespaldo(repo.comoRepo(), datos, respaldo);
-    expect(r).toEqual({ fichasRestauradas: 0, aportesReubicados: 0, aportesRestaurados: 0 });
+    expect(r).toEqual({ fichasRestauradas: 0, copiasVaciasSaltadas: 0, aportesReubicados: 0, aportesRestaurados: 0 });
   });
 });
