@@ -4,7 +4,7 @@ import { actualizarAporteRed, actualizarColaborador, borrarAporteRed, borrarCola
 import type { Repo } from '../datos/repo';
 import type { Colaborador, DatosMinisterio, Periodo } from '../modelo/tipos';
 import { anosConRegistros, mesesConRegistros } from '../motor/periodos';
-import { nombreColaborador, resumenRed } from '../motor/red';
+import { nombreColaborador, resumenRed, tiposAporteRed } from '../motor/red';
 import { formatoDinero } from '../motor/dinero';
 import { agrupar } from '../motor/vistas';
 import BarraVistas, { type Vista } from './BarraVistas';
@@ -17,7 +17,6 @@ import BorrarBoton from './BorrarBoton';
 const hoyIso = () => new Date().toISOString().slice(0, 10);
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 const TIPOS_COLABORADOR = ['Persona', 'Iglesia', 'Ministerio', 'Empresa', 'Otro'];
-const TIPOS_APORTE = ['Diezmo', 'Ofrenda', 'Donación', 'Otro'];
 const METODOS = ['Efectivo', 'Transferencia', 'Otro'];
 
 export default function RedColaboradores({ repo }: { repo: Repo }) {
@@ -96,6 +95,7 @@ export default function RedColaboradores({ repo }: { repo: Repo }) {
           })(),
         };
   const resumen = resumenRed(datos, periodo);
+  const tiposAporte = tiposAporteRed(datos);
   const visibles = datos.colaboradores.filter(
     (c) =>
       (ver === 'todos' || (ver === 'activos' ? c.estado === 'Activo' : c.estado !== 'Activo')) &&
@@ -195,6 +195,12 @@ export default function RedColaboradores({ repo }: { repo: Repo }) {
         <Kpi icono="🧾" numero={resumen.cantidadAportes} titulo={<>Aportes{periodo ? ' en el período' : ''}</>} />
       </section>
 
+      <section className="kpis">
+        {tiposAporte.map((t) => (
+          <Kpi key={t} icono="💰" dinero numero={formatoDinero(resumen.porTipo.get(t) ?? 0)} titulo={t} />
+        ))}
+      </section>
+
       <Pestanas
         opciones={[
           { id: 'colaboradores', etiqueta: `🤝 Colaboradores (${datos.colaboradores.length})` },
@@ -233,7 +239,7 @@ export default function RedColaboradores({ repo }: { repo: Repo }) {
                 <label>
                   Tipo
                   <select value={tipoG} onChange={(e) => setTipoG(e.target.value)}>
-                    {TIPOS_APORTE.map((t) => (
+                    {tiposAporte.map((t) => (
                       <option key={t} value={t}>{t}</option>
                     ))}
                   </select>
@@ -510,7 +516,7 @@ export default function RedColaboradores({ repo }: { repo: Repo }) {
             <label>
               Tipo
               <select value={tipoAporte} onChange={(e) => setTipoAporte(e.target.value)}>
-                {TIPOS_APORTE.map((t) => (
+                {tiposAporte.map((t) => (
                   <option key={t} value={t}>{t}</option>
                 ))}
               </select>
@@ -574,7 +580,7 @@ export default function RedColaboradores({ repo }: { repo: Repo }) {
                         recargar();
                       }}
                     >
-                      {TIPOS_APORTE.map((t) => (
+                      {tiposAporte.map((t) => (
                         <option key={t} value={t}>{t}</option>
                       ))}
                     </select>

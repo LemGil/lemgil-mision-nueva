@@ -359,3 +359,14 @@ abren Personas filtrada (franja «Filtro de Grupos»), con la misma
 cuenta para el número y la lista (`personasPorOikos`). El KPI de
 Piezas ahora acepta onClick y se pinta como botón.
 124/124 pruebas.
+
+## La Red con los tipos de la casa (v41)
+
+El selector de Tipo del aporte traía una lista genérica (Diezmo,
+Ofrenda, Donación, Otro) y la página no mostraba todos los tipos.
+Ahora la lista es la de LemGil — Diezmo · Ofrenda General ·
+Manos Abiertas · Misión · Ofrenda — y nace del uso: cualquier tipo
+que ya exista en los aportes se suma, para que ninguno quede fuera
+al editarlo. El tablero gana una fila de tarjetas por tipo con su
+total, siguiendo el mismo período del resto de la página.
+127/127 pruebas.
