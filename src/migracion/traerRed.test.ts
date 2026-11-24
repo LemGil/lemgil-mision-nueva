@@ -30,3 +30,41 @@ describe('convertirRed', () => {
     expect(previa.total).toBe(260);
   });
 });
+
+import { traerRed } from './traerRed';
+import { RepoFalso } from './repoFalso';
+import type { AporteRed, Colaborador } from '../modelo/tipos';
+
+describe('traerRed (restaurativa)', () => {
+  it('en una base vacía trae todo; el huérfano queda fuera', async () => {
+    const repo = new RepoFalso();
+    const r = await traerRed(repo.comoRepo(), respaldo);
+    expect(r).toEqual({ colaboradores: 2, aportes: 2, yaEstaban: 0, huerfanos: 1, total: 260 });
+    expect(repo.vivos<Colaborador>('colaboradores')).toHaveLength(2);
+    expect(repo.vivos<AporteRed>('aportesRed')).toHaveLength(2);
+  });
+
+  it('correrla dos veces no duplica: la segunda no trae nada', async () => {
+    const repo = new RepoFalso();
+    await traerRed(repo.comoRepo(), respaldo);
+    const r = await traerRed(repo.comoRepo(), respaldo);
+    expect(r.colaboradores).toBe(0);
+    expect(r.aportes).toBe(0);
+    expect(r.yaEstaban).toBe(4);
+    expect(repo.vivos<Colaborador>('colaboradores')).toHaveLength(2);
+  });
+
+  it('trae solo lo que falta y no resucita lo borrado', async () => {
+    const repo = new RepoFalso();
+    // c1 ya vive aquí (creado a mano); a2 fue borrado a propósito: su tumba manda.
+    repo.sembrar('colaboradores', { id: 'c1', nombre: 'CORBAN', apellido: 'MINISTERIO', estado: 'Activo', borrado: false });
+    repo.sembrar('aportesRed', { id: 'a2', colaboradorId: 'c2', fecha: '2026-01-20', monto: 50, tipo: 'Ofrenda', borrado: true });
+    const r = await traerRed(repo.comoRepo(), respaldo);
+    expect(r.colaboradores).toBe(1); // solo c2
+    expect(r.aportes).toBe(1); // solo a1
+    expect(r.yaEstaban).toBe(2); // c1 y la tumba de a2
+    const aportes = await repo.todosConSobre('aportesRed');
+    expect(aportes.find((a) => a.id === 'a2')?.borrado).toBe(true);
+    expect(repo.vivos<AporteRed>('aportesRed').map((a) => a.id)).toEqual(['a1']);
+  });
+});

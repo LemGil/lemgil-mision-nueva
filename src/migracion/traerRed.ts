@@ -1,8 +1,11 @@
 // Traer la Red de Colaboradores desde el respaldo de la app anterior.
 // La Red quedó fuera de la migración principal (es externa a la ficha
-// única); esta herramienta la recupera tal cual: los 8 colaboradores y
-// sus aportes, con sus ids originales. Solo trabaja si la Red está
-// vacía en la app nueva: nunca duplica ni sobrescribe.
+// única); esta herramienta la recupera tal cual: los colaboradores y
+// sus aportes, con sus ids originales. Es RESTAURATIVA: trae solo los
+// registros cuyo id aún no existe aquí — lo que ya está no se duplica
+// ni se sobrescribe, y lo que fue borrado no resucita (su tumba
+// también cuenta como «ya existe»). Se puede correr las veces que
+// haga falta hasta que la Red quede completa.
 
 import type { AporteRed, Colaborador } from '../modelo/tipos';
 import type { Repo } from '../datos/repo';
@@ -81,22 +84,51 @@ export function vistaPreviaRed(respaldo: RespaldoViejo): VistaPreviaRed {
   };
 }
 
-/** Importa la Red SOLO si aún no hay colaboradores en la base. */
+export interface ResultadoTraerRed {
+  /** Colaboradores que entraron ahora. */
+  colaboradores: number;
+  /** Aportes que entraron ahora. */
+  aportes: number;
+  /** Registros del respaldo que ya existían (vivos o borrados): no se tocaron. */
+  yaEstaban: number;
+  /** Aportes del respaldo sin colaborador: quedan fuera. */
+  huerfanos: number;
+  /** Suma de los aportes que entraron ahora. */
+  total: number;
+}
+
+/** Trae lo que falte de la Red, registro a registro por su id. */
 export async function traerRed(
   repo: Repo,
   respaldo: RespaldoViejo,
-): Promise<VistaPreviaRed> {
-  const existentes = await repo.listar<Colaborador>('colaboradores');
-  if (existentes.length > 0) {
-    throw new Error('La Red ya tiene colaboradores en la app nueva: no se trae nada para no duplicar.');
-  }
+): Promise<ResultadoTraerRed> {
   const { colaboradores, aportesRed, huerfanos } = convertirRed(respaldo);
-  for (const c of colaboradores) await repo.guardar('colaboradores', c);
-  for (const a of aportesRed) await repo.guardar('aportesRed', a);
-  return {
-    colaboradores: colaboradores.length,
-    aportes: aportesRed.length,
-    huerfanos,
-    total: aportesRed.reduce((s, a) => s + a.monto, 0),
-  };
+  const colabExistentes = new Set(
+    (await repo.todosConSobre('colaboradores')).map((f) => f.id),
+  );
+  const aportesExistentes = new Set(
+    (await repo.todosConSobre('aportesRed')).map((f) => f.id),
+  );
+  let yaEstaban = 0;
+  let colabTraidos = 0;
+  let aportesTraidos = 0;
+  let total = 0;
+  for (const c of colaboradores) {
+    if (colabExistentes.has(c.id)) {
+      yaEstaban++;
+      continue;
+    }
+    await repo.guardar('colaboradores', c);
+    colabTraidos++;
+  }
+  for (const a of aportesRed) {
+    if (aportesExistentes.has(a.id)) {
+      yaEstaban++;
+      continue;
+    }
+    await repo.guardar('aportesRed', a);
+    aportesTraidos++;
+    total += a.monto;
+  }
+  return { colaboradores: colabTraidos, aportes: aportesTraidos, yaEstaban, huerfanos, total };
 }

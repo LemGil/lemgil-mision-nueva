@@ -9,7 +9,8 @@ import {
   vistaPreviaCompletar,
   type ResumenCompletar,
 } from '../migracion/completar';
-import { traerRed, vistaPreviaRed, type VistaPreviaRed } from '../migracion/traerRed';
+import { traerRed, vistaPreviaRed, type ResultadoTraerRed, type VistaPreviaRed } from '../migracion/traerRed';
+import { unirColaboradoresRepetidos } from '../migracion/unirColaboradores';
 import { traerManos, vistaPreviaManos, type VistaPreviaManos } from '../migracion/traerManos';
 import { completarBeneficiarios, vistaPreviaCompletarBeneficiarios, type ResumenCompletarBeneficiarios } from '../migracion/completarBeneficiarios';
 import { completarGrupos, vistaPreviaCompletarGrupos, type ResumenCompletarGrupos } from '../migracion/completarGrupos';
@@ -37,7 +38,9 @@ export default function Migrar({ repo }: { repo: Repo }) {
   const [completando, setCompletando] = useState(false);
   const [respaldoRed, setRespaldoRed] = useState<RespaldoViejo | null>(null);
   const [previaRed, setPreviaRed] = useState<VistaPreviaRed | null>(null);
-  const [traidaRed, setTraidaRed] = useState<VistaPreviaRed | null>(null);
+  const [traidaRed, setTraidaRed] = useState<ResultadoTraerRed | null>(null);
+  const [uniendo, setUniendo] = useState(false);
+  const [avisoUnion, setAvisoUnion] = useState('');
   const [trayendoRed, setTrayendoRed] = useState(false);
   const [respaldoManos, setRespaldoManos] = useState<RespaldoViejo | null>(null);
   const [previaManos, setPreviaManos] = useState<VistaPreviaManos | null>(null);
@@ -261,6 +264,24 @@ export default function Migrar({ repo }: { repo: Repo }) {
     }
   };
 
+  const unirRepetidos = async () => {
+    setUniendo(true);
+    setError('');
+    try {
+      const r = await unirColaboradoresRepetidos(repo, actuales);
+      setAvisoUnion(
+        r.grupos === 0
+          ? '✓ No hay colaboradores repetidos: cada nombre aparece una sola vez.'
+          : `✓ Se unió ${r.grupos} nombre(s): ${r.absorbidas} ficha(s) copia fuera y ${r.aportesMovidos} aporte(s) pasaron a la ficha principal. Sincroniza para subirlo.`,
+      );
+      await cargar();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setUniendo(false);
+    }
+  };
+
   const traerLaRed = async () => {
     if (!respaldoRed) return;
     setTrayendoRed(true);
@@ -429,13 +450,13 @@ export default function Migrar({ repo }: { repo: Repo }) {
 
       {seccion === 'traer' && (
         <>
-          {actuales.colaboradores.length === 0 ? (
         <section className="tarjeta">
           <h2>🤝 Traer la Red de Colaboradores</h2>
           <p className="tenue">
             La Red quedó fuera de la migración principal porque es externa a la ficha única.
-            Elige el mismo respaldo y entran sus colaboradores con todos sus aportes, tal cual
-            estaban. Solo trabaja si la Red está vacía aquí: nunca duplica.
+            Elige el mismo respaldo y entra <strong>lo que falte</strong>, registro a registro
+            por su id: lo que ya está no se duplica ni se sobrescribe, y lo que borraste no
+            resucita. Se puede correr las veces que haga falta.
           </p>
           <input
             type="file"
@@ -448,8 +469,9 @@ export default function Migrar({ repo }: { repo: Repo }) {
           {previaRed && previaRed.colaboradores > 0 && (
             <>
               <p>
-                Entrarían <strong>{previaRed.colaboradores} colaboradores</strong> con{' '}
-                <strong>{previaRed.aportes} aportes</strong> (total {previaRed.total}).
+                El respaldo trae <strong>{previaRed.colaboradores} colaboradores</strong> con{' '}
+                <strong>{previaRed.aportes} aportes</strong> (total {previaRed.total}). Al
+                traer solo entra lo que falte aquí.
                 {previaRed.huerfanos > 0 &&
                   ` ${previaRed.huerfanos} aporte(s) sin colaborador quedan fuera.`}
               </p>
@@ -464,19 +486,27 @@ export default function Migrar({ repo }: { repo: Repo }) {
           {traidaRed && (
             <p className="aviso aviso-verde">
               ✓ Entraron {traidaRed.colaboradores} colaboradores con {traidaRed.aportes} aportes
-              (total {traidaRed.total}). Sincroniza para subirlos.
+              (total {traidaRed.total}).
+              {traidaRed.yaEstaban > 0 &&
+                ` ${traidaRed.yaEstaban} registro(s) del respaldo ya estaban y no se tocaron.`}
+              {' '}Sincroniza para subirlos.
             </p>
           )}
         </section>
-      ) : (
+
         <section className="tarjeta">
-          <h2>🤝 Red de Colaboradores</h2>
-          <p className="aviso aviso-verde">
-            ✓ La Red ya está en la app ({actuales.colaboradores.length} colaboradores). Su mesa
-            está en el menú: 🤝 Red de Colaboradores.
+          <h2>🤝 Unir colaboradores repetidos</h2>
+          <p className="tenue">
+            Si la misma persona o iglesia quedó dos veces en la Red, sus aportes cuelgan de
+            una sola ficha y la otra se ve en cero. Esta herramienta pasa todos los aportes
+            a la ficha con más aportes y borra las copias; los datos de contacto que le
+            falten a la principal se completan desde las copias.
           </p>
+          <button className="btn btn-dorado" disabled={uniendo} onClick={unirRepetidos}>
+            {uniendo ? 'Uniendo…' : '🤝 Unir repetidos'}
+          </button>
+          {avisoUnion && <p className="aviso aviso-verde">{avisoUnion}</p>}
         </section>
-      )}
         </>
       )}
 

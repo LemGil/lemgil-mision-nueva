@@ -370,3 +370,16 @@ que ya exista en los aportes se suma, para que ninguno quede fuera
 al editarlo. El tablero gana una fila de tarjetas por tipo con su
 total, siguiendo el mismo período del resto de la página.
 127/127 pruebas.
+
+## Recuperar la Red: traer lo que falta y unir repetidos (v42)
+
+La herramienta de traer la Red solo trabajaba con la Red vacía — y
+la página la escondía en cuanto había un colaborador —, así que una
+base con fichas creadas a mano nunca recibió la importación (se
+veían 6 fichas y 4 aportes de los 8 y 113 del respaldo). Ahora
+«Traer la Red» es restaurativa: entra solo el id que falte, sin
+duplicar ni resucitar borrados, las veces que haga falta. Y nueva
+herramienta «Unir colaboradores repetidos»: los duplicados por
+nombre (CORBAN y PASTOR YULIET ya venían dos veces del respaldo)
+pasan sus aportes a la ficha principal y las copias se borran.
+133/133 pruebas.
