@@ -1,11 +1,12 @@
 // Traer la Red de Colaboradores desde el respaldo de la app anterior.
 // La Red quedó fuera de la migración principal (es externa a la ficha
 // única); esta herramienta la recupera tal cual: los colaboradores y
-// sus aportes, con sus ids originales. Es RESTAURATIVA: trae solo los
-// registros cuyo id aún no existe aquí — lo que ya está no se duplica
-// ni se sobrescribe, y lo que fue borrado no resucita (su tumba
-// también cuenta como «ya existe»). Se puede correr las veces que
-// haga falta hasta que la Red quede completa.
+// sus aportes, con sus ids originales. Es RESTAURATIVA: trae lo que
+// falte y RESTAURA lo que haya sido borrado (su tumba se levanta),
+// porque correrla es un acto deliberado de recuperación, con el
+// respaldo en la mano. Lo que está vivo no se duplica ni se
+// sobrescribe. Se puede correr las veces que haga falta hasta que
+// la Red quede completa.
 
 import type { AporteRed, Colaborador } from '../modelo/tipos';
 import type { Repo } from '../datos/repo';
@@ -89,8 +90,10 @@ export interface ResultadoTraerRed {
   colaboradores: number;
   /** Aportes que entraron ahora. */
   aportes: number;
-  /** Registros del respaldo que ya existían (vivos o borrados): no se tocaron. */
+  /** Registros del respaldo que ya estaban vivos: no se tocaron. */
   yaEstaban: number;
+  /** Registros que habían sido borrados y esta corrida restauró. */
+  restaurados: number;
   /** Aportes del respaldo sin colaborador: quedan fuera. */
   huerfanos: number;
   /** Suma de los aportes que entraron ahora. */
@@ -103,32 +106,39 @@ export async function traerRed(
   respaldo: RespaldoViejo,
 ): Promise<ResultadoTraerRed> {
   const { colaboradores, aportesRed, huerfanos } = convertirRed(respaldo);
-  const colabExistentes = new Set(
-    (await repo.todosConSobre('colaboradores')).map((f) => f.id),
-  );
-  const aportesExistentes = new Set(
-    (await repo.todosConSobre('aportesRed')).map((f) => f.id),
-  );
+  const vivosColab = new Set<string>();
+  const tumbasColab = new Set<string>();
+  for (const f of await repo.todosConSobre('colaboradores')) {
+    (f.borrado ? tumbasColab : vivosColab).add(f.id);
+  }
+  const vivosAportes = new Set<string>();
+  const tumbasAportes = new Set<string>();
+  for (const f of await repo.todosConSobre('aportesRed')) {
+    (f.borrado ? tumbasAportes : vivosAportes).add(f.id);
+  }
   let yaEstaban = 0;
+  let restaurados = 0;
   let colabTraidos = 0;
   let aportesTraidos = 0;
   let total = 0;
   for (const c of colaboradores) {
-    if (colabExistentes.has(c.id)) {
+    if (vivosColab.has(c.id)) {
       yaEstaban++;
       continue;
     }
+    if (tumbasColab.has(c.id)) restaurados++;
     await repo.guardar('colaboradores', c);
     colabTraidos++;
   }
   for (const a of aportesRed) {
-    if (aportesExistentes.has(a.id)) {
+    if (vivosAportes.has(a.id)) {
       yaEstaban++;
       continue;
     }
+    if (tumbasAportes.has(a.id)) restaurados++;
     await repo.guardar('aportesRed', a);
     aportesTraidos++;
     total += a.monto;
   }
-  return { colaboradores: colabTraidos, aportes: aportesTraidos, yaEstaban, huerfanos, total };
+  return { colaboradores: colabTraidos, aportes: aportesTraidos, yaEstaban, restaurados, huerfanos, total };
 }

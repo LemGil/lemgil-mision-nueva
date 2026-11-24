@@ -383,3 +383,14 @@ herramienta «Unir colaboradores repetidos»: los duplicados por
 nombre (CORBAN y PASTOR YULIET ya venían dos veces del respaldo)
 pasan sus aportes a la ficha principal y las copias se borran.
 133/133 pruebas.
+
+## El Traer también restaura los borrados (v43)
+
+Caso Isabel Miranda: su ficha no aparecía ni con «Ver: Todos» — su
+id vivía como tumba (borrado lógico) y el Traer restaurativo la
+saltaba por la regla de no resucitar. Pero el Traer es una
+recuperación deliberada, con el respaldo en la mano: ahora levanta
+también las tumbas de la Red y el aviso cuenta los restaurados.
+La sincronización quedó revisada: un registro local sin subir
+manda sobre el espejo y la reconciliación nunca lo toca.
+133/133 pruebas.

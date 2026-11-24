@@ -489,6 +489,8 @@ export default function Migrar({ repo }: { repo: Repo }) {
               (total {traidaRed.total}).
               {traidaRed.yaEstaban > 0 &&
                 ` ${traidaRed.yaEstaban} registro(s) del respaldo ya estaban y no se tocaron.`}
+              {traidaRed.restaurados > 0 &&
+                ` Se restauraron ${traidaRed.restaurados} registro(s) que habían sido borrados.`}
               {' '}Sincroniza para subirlos.
             </p>
           )}
