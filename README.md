@@ -404,3 +404,12 @@ Nueva herramienta en Migración → Traer: «Restaurar la Red según el
 respaldo» — por id, cada ficha del respaldo vuelve a existir con su
 nombre y cada aporte del respaldo vuelve a su dueño; los aportes
 registrados a mano no se tocan. 136/136 pruebas.
+
+## Revisar la Red contra el respaldo (v45)
+
+Diagnóstico de solo lectura, tras el caso Isabel (el Restaurar se
+corrió y la ficha seguía sin aparecer, sin aviso recordado): la
+herramienta imprime, por cada colaborador del respaldo, el estado
+exacto de su ficha (bien, con otro nombre, borrada o ausente) y
+dónde cuelgan hoy sus aportes, contando también las tumbas. Con
+ese mapa la reparación deja de ser adivinanza. 138/138 pruebas.

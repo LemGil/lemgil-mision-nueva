@@ -12,6 +12,7 @@ import {
 import { traerRed, vistaPreviaRed, type ResultadoTraerRed, type VistaPreviaRed } from '../migracion/traerRed';
 import { unirColaboradoresRepetidos } from '../migracion/unirColaboradores';
 import { restaurarRedDesdeRespaldo } from '../migracion/restaurarRed';
+import { diagnosticoRed } from '../migracion/diagnosticoRed';
 import { traerManos, vistaPreviaManos, type VistaPreviaManos } from '../migracion/traerManos';
 import { completarBeneficiarios, vistaPreviaCompletarBeneficiarios, type ResumenCompletarBeneficiarios } from '../migracion/completarBeneficiarios';
 import { completarGrupos, vistaPreviaCompletarGrupos, type ResumenCompletarGrupos } from '../migracion/completarGrupos';
@@ -44,6 +45,8 @@ export default function Migrar({ repo }: { repo: Repo }) {
   const [avisoUnion, setAvisoUnion] = useState('');
   const [restaurando, setRestaurando] = useState(false);
   const [avisoRestaurar, setAvisoRestaurar] = useState('');
+  const [revisando, setRevisando] = useState(false);
+  const [diagnostico, setDiagnostico] = useState<string[] | null>(null);
   const [trayendoRed, setTrayendoRed] = useState(false);
   const [respaldoManos, setRespaldoManos] = useState<RespaldoViejo | null>(null);
   const [previaManos, setPreviaManos] = useState<VistaPreviaManos | null>(null);
@@ -304,6 +307,21 @@ export default function Migrar({ repo }: { repo: Repo }) {
     }
   };
 
+  const revisarLaRed = async () => {
+    if (!respaldoRed) return;
+    setRevisando(true);
+    setError('');
+    try {
+      const sobresC = await repo.todosConSobre('colaboradores');
+      const sobresA = await repo.todosConSobre('aportesRed');
+      setDiagnostico(diagnosticoRed(actuales, respaldoRed, sobresC, sobresA));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setRevisando(false);
+    }
+  };
+
   const traerLaRed = async () => {
     if (!respaldoRed) return;
     setTrayendoRed(true);
@@ -548,6 +566,27 @@ export default function Migrar({ repo }: { repo: Repo }) {
             <p className="tenue">Primero elige el respaldo arriba, en «🤝 Traer la Red de Colaboradores».</p>
           )}
           {avisoRestaurar && <p className="aviso aviso-verde">{avisoRestaurar}</p>}
+        </section>
+
+        <section className="tarjeta">
+          <h2>🔍 Revisar la Red contra el respaldo</h2>
+          <p className="tenue">
+            Solo lectura, no toca nada: dice cómo está cada ficha del respaldo (bien, con
+            otro nombre, borrada o ausente) y dónde cuelgan hoy sus aportes. Es el mapa
+            exacto de la base para reparar sin adivinar.
+          </p>
+          {respaldoRed ? (
+            <button className="btn btn-dorado" disabled={revisando} onClick={revisarLaRed}>
+              {revisando ? 'Revisando…' : '🔍 Revisar la Red'}
+            </button>
+          ) : (
+            <p className="tenue">Primero elige el respaldo arriba, en «🤝 Traer la Red de Colaboradores».</p>
+          )}
+          {diagnostico && (
+            <pre style={{ whiteSpace: 'pre-wrap', fontSize: 13, lineHeight: 1.6, marginTop: 12 }}>
+              {diagnostico.join('\n')}
+            </pre>
+          )}
         </section>
         </>
       )}
