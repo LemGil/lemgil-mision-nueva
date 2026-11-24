@@ -11,6 +11,7 @@ import {
 } from '../migracion/completar';
 import { traerRed, vistaPreviaRed, type ResultadoTraerRed, type VistaPreviaRed } from '../migracion/traerRed';
 import { unirColaboradoresRepetidos } from '../migracion/unirColaboradores';
+import { restaurarRedDesdeRespaldo } from '../migracion/restaurarRed';
 import { traerManos, vistaPreviaManos, type VistaPreviaManos } from '../migracion/traerManos';
 import { completarBeneficiarios, vistaPreviaCompletarBeneficiarios, type ResumenCompletarBeneficiarios } from '../migracion/completarBeneficiarios';
 import { completarGrupos, vistaPreviaCompletarGrupos, type ResumenCompletarGrupos } from '../migracion/completarGrupos';
@@ -41,6 +42,8 @@ export default function Migrar({ repo }: { repo: Repo }) {
   const [traidaRed, setTraidaRed] = useState<ResultadoTraerRed | null>(null);
   const [uniendo, setUniendo] = useState(false);
   const [avisoUnion, setAvisoUnion] = useState('');
+  const [restaurando, setRestaurando] = useState(false);
+  const [avisoRestaurar, setAvisoRestaurar] = useState('');
   const [trayendoRed, setTrayendoRed] = useState(false);
   const [respaldoManos, setRespaldoManos] = useState<RespaldoViejo | null>(null);
   const [previaManos, setPreviaManos] = useState<VistaPreviaManos | null>(null);
@@ -282,6 +285,25 @@ export default function Migrar({ repo }: { repo: Repo }) {
     }
   };
 
+  const restaurarLaRed = async () => {
+    if (!respaldoRed) return;
+    setRestaurando(true);
+    setError('');
+    try {
+      const r = await restaurarRedDesdeRespaldo(repo, actuales, respaldoRed);
+      setAvisoRestaurar(
+        r.fichasRestauradas === 0 && r.aportesReubicados === 0 && r.aportesRestaurados === 0
+          ? '✓ Todo está en su sitio: cada ficha y cada aporte del respaldo están con su dueño.'
+          : `✓ Reparación hecha: ${r.fichasRestauradas} ficha(s) restaurada(s), ${r.aportesReubicados} aporte(s) devueltos a su dueño, ${r.aportesRestaurados} aporte(s) restaurados. Sincroniza para subirlo.`,
+      );
+      await cargar();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setRestaurando(false);
+    }
+  };
+
   const traerLaRed = async () => {
     if (!respaldoRed) return;
     setTrayendoRed(true);
@@ -508,6 +530,24 @@ export default function Migrar({ repo }: { repo: Repo }) {
             {uniendo ? 'Uniendo…' : '🤝 Unir repetidos'}
           </button>
           {avisoUnion && <p className="aviso aviso-verde">{avisoUnion}</p>}
+        </section>
+
+        <section className="tarjeta">
+          <h2>🎯 Restaurar la Red según el respaldo</h2>
+          <p className="tenue">
+            La reparación fuerte, por id: cada colaborador del respaldo vuelve a existir con
+            su nombre, y cada aporte del respaldo vuelve a colgar de <strong>su dueño</strong>,
+            esté donde esté ahora. Los aportes registrados a mano en esta app no están en el
+            respaldo y no se tocan.
+          </p>
+          {respaldoRed ? (
+            <button className="btn btn-dorado" disabled={restaurando} onClick={restaurarLaRed}>
+              {restaurando ? 'Restaurando…' : '🎯 Restaurar según el respaldo'}
+            </button>
+          ) : (
+            <p className="tenue">Primero elige el respaldo arriba, en «🤝 Traer la Red de Colaboradores».</p>
+          )}
+          {avisoRestaurar && <p className="aviso aviso-verde">{avisoRestaurar}</p>}
         </section>
         </>
       )}

@@ -394,3 +394,13 @@ también las tumbas de la Red y el aviso cuenta los restaurados.
 La sincronización quedó revisada: un registro local sin subir
 manda sobre el espejo y la reconciliación nunca lo toca.
 133/133 pruebas.
+
+## Restaurar la Red según el respaldo (v44)
+
+Caso Isabel Miranda: tras la recuperación, su ficha no aparecía y
+sus 38 aportes ($2.124.250) quedaron colgando de la ficha de Gina
+Herrera (45 aportes = 6 de Gina + 38 de Isabel + 1 manual, exacto).
+Nueva herramienta en Migración → Traer: «Restaurar la Red según el
+respaldo» — por id, cada ficha del respaldo vuelve a existir con su
+nombre y cada aporte del respaldo vuelve a su dueño; los aportes
+registrados a mano no se tocan. 136/136 pruebas.
