@@ -16,7 +16,7 @@ import { Buscador, CabeceraPagina, FilaAcciones, FilaPersona, Kpi, TarjetaPerson
 import { coincideBusqueda } from '../motor/personaVista';
 import BorrarBoton from './BorrarBoton';
 import GuiaPagina from './GuiaPagina';
-import { claveTipoGrupo, conteoPorPasoDelGrupo, estadoGrupo, grupoDeTipo, idsGruposDe, idsMiembrosDeGrupo, liderVisible, lineaReunion, porcentajeCapacidad, tipoVisibleGrupo, tiposDeGrupoEnUso } from '../motor/gruposVista';
+import { claveTipoGrupo, conteoPorPasoDelGrupo, esIglesia, estadoGrupo, grupoDeTipo, hijosDe, iconoGrupo, idsGruposDe, idsMiembrosDeGrupo, liderVisible, lineaReunion, ordenarGruposPorFamilia, padreDe, porcentajeCapacidad, tipoVisibleGrupo, tiposDeGrupoEnUso } from '../motor/gruposVista';
 
 const DIAS_SEMANA = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 
@@ -134,6 +134,7 @@ export default function Grupos({ repo }: { repo: Repo }) {
   const [nombre, setNombre] = useState('');
   const [tipo, setTipo] = useState('');
   const [miembrosSel, setMiembrosSel] = useState<string[]>([]);
+  const [padreId, setPadreId] = useState('');
   const [zona, setZona] = useState('');
   const [liderId, setLiderId] = useState<string | null>(null);
   const [dia, setDia] = useState('');
@@ -169,6 +170,8 @@ export default function Grupos({ repo }: { repo: Repo }) {
       .map((id) => personaDe(id))
       .filter(Boolean);
   const detalle = seleccionado ? datos.grupos.find((g) => g.id === seleccionado) : undefined;
+  const padreDetalle = detalle ? padreDe(datos, detalle) : undefined;
+  const hijosDetalle = detalle ? hijosDe(datos, detalle.id) : [];
   const conGrupo = new Set<string>();
   for (const p of datos.personas) if (idsGruposDe(datos, p.id).length > 0) conGrupo.add(p.id);
   for (const id of [...conGrupo]) if (esPersonaBaja(id)) conGrupo.delete(id);
@@ -176,6 +179,7 @@ export default function Grupos({ repo }: { repo: Repo }) {
   const visibles = datos.grupos.filter((g) =>
     coincideBusqueda(busqueda, g.nombre, g.zona, g.lugar, liderVisible(datos, g)),
   );
+  const visiblesFamilia = ordenarGruposPorFamilia(datos, visibles);
   const claveGrupo = (g: (typeof datos.grupos)[number]): string => {
     if (agruparPor === 'lider') {
       const l = g.liderId ? personaDe(g.liderId) : undefined;
@@ -187,10 +191,11 @@ export default function Grupos({ repo }: { repo: Repo }) {
   const filaGrupo = (g: (typeof datos.grupos)[number]) => {
     const lider = liderVisible(datos, g);
     const reunion = lineaReunion(g);
+    const esHijo = !!padreDe(datos, g);
     return (
-      <li key={g.id}>
+      <li key={g.id} style={esHijo ? { marginLeft: 24 } : undefined}>
         <FilaPersona
-          nombre={`🏠 ${g.nombre}`}
+          nombre={`${esHijo ? '↳ ' : ''}${iconoGrupo(g)} ${g.nombre}`}
           meta={<>{g.tipo ? `${g.tipo} · ` : ''}{miembrosDe(g.id).length} personas{lider ? ` · 👤 ${lider}` : ''}{reunion ? ` · ${reunion}` : ''}{g.lat != null ? ' · 📍 en el mapa' : ''}</>}
           activa={seleccionado === g.id}
           onClick={() => setSeleccionado(g.id)}
@@ -204,7 +209,7 @@ export default function Grupos({ repo }: { repo: Repo }) {
     return (
       <TarjetaPersona
         key={g.id}
-        nombre={`🏠 ${g.nombre}`}
+        nombre={`${iconoGrupo(g)} ${g.nombre}`}
         derecha={<span className={`chip ${est.clase}`}>{est.etiqueta}</span>}
         onClick={() => setSeleccionado(g.id)}
       >
@@ -236,6 +241,19 @@ export default function Grupos({ repo }: { repo: Repo }) {
           <label>Tipo<input value={tipo} onChange={(e) => setTipo(e.target.value)} list="tipos-grupo" placeholder="Ej.: Iglesia, Oikos" /></label>
           <label>Capacidad<input type="number" min={0} value={capacidad} onChange={(e) => setCapacidad(e.target.value)} /></label>
         </div>
+        {claveTipoGrupo({ tipo } as Grupo) === 'oikos' && (
+          <div className="form-fila">
+            <label>
+              Su Iglesia
+              <select value={padreId} onChange={(e) => setPadreId(e.target.value)}>
+                <option value="">Sin Iglesia asignada</option>
+                {datos.grupos.filter((g) => esIglesia(g)).map((g) => (
+                  <option key={g.id} value={g.id}>{g.nombre}</option>
+                ))}
+              </select>
+            </label>
+          </div>
+        )}
         <div className="form-fila">
           <label>Día de reunión<input value={dia} onChange={(e) => setDia(e.target.value)} list="dias-semana" /></label>
           <label>Hora<input type="time" value={hora} onChange={(e) => setHora(e.target.value)} /></label>
@@ -265,6 +283,7 @@ export default function Grupos({ repo }: { repo: Repo }) {
                 const creado = await crearGrupo(repo, {
                 nombre: nombre.trim(),
                 tipo: tipo.trim() || undefined,
+                padreId: claveTipoGrupo({ tipo } as Grupo) === 'oikos' ? padreId || undefined : undefined,
                 zona: zona.trim() || undefined,
                 liderId,
                 dia: dia.trim() || undefined,
@@ -273,7 +292,7 @@ export default function Grupos({ repo }: { repo: Repo }) {
                 capacidad: capacidadNumero(capacidad),
               });
                 for (const pid of miembrosSel) await agregarAGrupo(repo, datos, pid, creado);
-                setNombre(''); setTipo(''); setMiembrosSel([]); setZona(''); setLiderId(null); setDia(''); setHora(''); setLugar(''); setCapacidad('');
+                setNombre(''); setTipo(''); setPadreId(''); setMiembrosSel([]); setZona(''); setLiderId(null); setDia(''); setHora(''); setLugar(''); setCapacidad('');
               setMostrarForm(false);
                 recargar();
               } catch (e) {
@@ -306,19 +325,19 @@ export default function Grupos({ repo }: { repo: Repo }) {
       />
       {vista === 'lista' && (
         <ul className="lista-personas">
-          {visibles.map(filaGrupo)}
+          {visiblesFamilia.map(filaGrupo)}
           {visibles.length === 0 && <li className="tenue">{busqueda ? 'Sin coincidencias.' : 'Sin grupos todavía.'}</li>}
         </ul>
       )}
       {vista === 'tarjetas' && (
         visibles.length === 0
           ? <p className="tenue">{busqueda ? 'Sin coincidencias.' : 'Sin grupos todavía.'}</p>
-          : <div className="tarjetas-grid">{visibles.map(tarjetaGrupo)}</div>
+          : <div className="tarjetas-grid">{visiblesFamilia.map(tarjetaGrupo)}</div>
       )}
       {vista === 'agrupada' && (
         visibles.length === 0
           ? <p className="tenue">{busqueda ? 'Sin coincidencias.' : 'Sin grupos todavía.'}</p>
-          : agrupar(visibles, claveGrupo).map((g) => (
+          : agrupar(visiblesFamilia, claveGrupo).map((g) => (
               <div key={g.titulo}>
                 <h3 className="grupo-titulo">{g.titulo} · {g.items.length}</h3>
                 <ul className="lista-personas">{g.items.map(filaGrupo)}</ul>
@@ -328,13 +347,43 @@ export default function Grupos({ repo }: { repo: Repo }) {
 
       {detalle && (
         <Modal onCerrar={() => setSeleccionado(null)}>
-          <h2>🏠 {detalle.nombre}</h2>
+          <h2>{iconoGrupo(detalle)} {detalle.nombre}</h2>
           <p>
             <span className={`chip ${estadoGrupo(miembrosDe(detalle.id).length, detalle.capacidad).clase}`}>
               {estadoGrupo(miembrosDe(detalle.id).length, detalle.capacidad).etiqueta}
             </span>
           </p>
           <StatsGrupo datos={datos} grupo={detalle} miembros={miembrosDe(detalle.id)} />
+          {padreDetalle && (
+            <>
+              <h3>Su Iglesia</h3>
+              <ul className="lista-personas">
+                <li>
+                  <FilaPersona
+                    nombre={`🏠 ${padreDetalle.nombre}`}
+                    meta="La Iglesia de la que es parte este Oikos"
+                    onClick={() => setSeleccionado(padreDetalle.id)}
+                  />
+                </li>
+              </ul>
+            </>
+          )}
+          {hijosDetalle.length > 0 && (
+            <>
+              <h3>🏡 Sus Oikos</h3>
+              <ul className="lista-personas">
+                {hijosDetalle.map((h) => (
+                  <li key={h.id}>
+                    <FilaPersona
+                      nombre={`🏡 ${h.nombre}`}
+                      meta={`${miembrosDe(h.id).length} personas`}
+                      onClick={() => setSeleccionado(h.id)}
+                    />
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
           <FormEditarGrupo
             key={detalle.id}
             repo={repo}
@@ -377,6 +426,7 @@ function FormEditarGrupo({
 }) {
   const [nombre, setNombre] = useState(grupo.nombre);
   const [tipo, setTipo] = useState(grupo.tipo ?? '');
+  const [padreId, setPadreId] = useState(grupo.padreId ?? '');
   const [miembrosSel, setMiembrosSel] = useState<string[]>(() =>
     idsMiembrosDeGrupo(datos, grupo.id).filter((id) => !esBaja(clasificarPersona(datos, id).clase)),
   );
@@ -415,6 +465,19 @@ function FormEditarGrupo({
           <input type="number" min={0} value={capacidad} onChange={(e) => { setCapacidad(e.target.value); tocar(); }} />
         </label>
       </div>
+      {claveTipoGrupo({ tipo } as Grupo) === 'oikos' && (
+        <div className="form-fila">
+          <label>
+            Su Iglesia
+            <select value={padreId} onChange={(e) => { setPadreId(e.target.value); tocar(); }}>
+              <option value="">Sin Iglesia asignada</option>
+              {datos.grupos.filter((g) => esIglesia(g) && g.id !== grupo.id).map((g) => (
+                <option key={g.id} value={g.id}>{g.nombre}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+      )}
       <h3>👤 Líder</h3>
       <p className="tenue">
         Líder: {liderId ? `${personaDe(liderId)?.nombre} ${personaDe(liderId)?.apellidos ?? ''}` : 'sin líder'}
@@ -458,6 +521,7 @@ function FormEditarGrupo({
                 ...grupo,
                 nombre: nombre.trim(),
                 tipo: tipo.trim() || undefined,
+                padreId: claveTipoGrupo({ tipo } as Grupo) === 'oikos' ? padreId || undefined : undefined,
                 zona: zona.trim() || undefined,
                 liderId,
                 liderTexto: undefined,

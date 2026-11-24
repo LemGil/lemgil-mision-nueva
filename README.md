@@ -328,3 +328,15 @@ formulario abierto. Ahora, al guardar bien, la ventana se cierra
 - El líder se agrega de UNA forma: el escogido de la lista de
   nombres. Fuera el campo «Líder (texto libre)» de los dos
   formularios; al guardar una edición, el texto libre viejo se va.
+
+## La familia de grupos: el Oikos cuelga de su Iglesia (v38)
+
+- `Grupo.padreId`: en el formulario, si el tipo es Oikos aparece el
+  selector «Su Iglesia» (solo grupos de tipo Iglesia). Dos niveles:
+  Iglesia → Oikos. Al borrar una Iglesia, sus Oikos quedan sin padre.
+- La ventana del Oikos muestra su Iglesia y la de la Iglesia lista
+  «🏡 Sus Oikos», navegables con un toque.
+- Imagen y posición: el Oikos es 🏡 (la Iglesia, 🏠) en la lista, la
+  tarjeta, la ventana y la chincheta del mapa; la lista se ordena por
+  familia — cada Iglesia con sus Oikos indentados debajo (↳).
+- 121/121 pruebas.

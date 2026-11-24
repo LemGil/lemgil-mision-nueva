@@ -9,6 +9,7 @@
 import type { DatosMinisterio } from '../modelo/tipos';
 import { clasificarPersona } from './censo';
 import { visibleSegunVer, type VerPersonas } from './vistas';
+import { iconoGrupo } from './gruposVista';
 
 export interface PuntoMapa {
   tipo: 'persona' | 'grupo';
@@ -41,7 +42,7 @@ export function puntosDelMapa(datos: DatosMinisterio, ver: VerPersonas = 'todos'
   }
   for (const g of datos.grupos) {
     if (g.lat != null && g.lng != null) {
-      puntos.push({ tipo: 'grupo', id: g.id, nombre: g.nombre, emoji: '🏠', lat: g.lat, lng: g.lng });
+      puntos.push({ tipo: 'grupo', id: g.id, nombre: g.nombre, emoji: iconoGrupo(g), lat: g.lat, lng: g.lng });
     }
   }
   return puntos;

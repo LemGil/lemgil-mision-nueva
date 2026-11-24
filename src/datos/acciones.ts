@@ -700,6 +700,11 @@ export async function borrarGrupo(
       await repo.guardar('miembros', { ...m, grupoIds: restantes, grupoId: restantes[0] ?? null });
     }
   }
+  // Los grupos que colgaban de este (sus Oikos) quedan sin padre, a
+  // la vista, para reasignarlos — no se rompen ni desaparecen.
+  for (const g of datos.grupos.filter((x) => x.padreId === id)) {
+    await repo.guardar('grupos', { ...g, padreId: null });
+  }
   await repo.borrar('grupos', id);
 }
 

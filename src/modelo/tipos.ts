@@ -169,6 +169,7 @@ export interface Grupo {
   id: string;
   nombre: string;
   tipo?: string;
+  padreId?: string | null;
   liderId?: string | null; // personaId del líder
   /** El líder en texto libre (p. ej. «Pastores Luis y Daymi»): si está
    * puesto, es el que se muestra; el de la app anterior era así. */

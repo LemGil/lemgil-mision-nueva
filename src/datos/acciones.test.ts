@@ -10,7 +10,7 @@ import {
   PS_TRASLADO,
 } from '../modelo/catalogo';
 import { aDatosMinisterio, sembrarCatalogoSiVacio } from './aDatosMinisterio';
-import { avanzarConversion, agregarAGrupo, crearConversion, crearConversionLlegaBautizado, crearMiembro, darAltasDirectas, quitarDeGrupo, registrarPersona } from './acciones';
+import { avanzarConversion, agregarAGrupo, borrarGrupo, crearConversion, crearConversionLlegaBautizado, crearMiembro, darAltasDirectas, quitarDeGrupo, registrarPersona } from './acciones';
 import { idsGruposDe } from '../motor/gruposVista';
 import { BaseLocal } from './db';
 import { Repo } from './repo';
@@ -246,5 +246,18 @@ describe('grupos con tipos: un grupo por tipo', () => {
     await quitarDeGrupo(repo, datos, 'p1', 'g-oikos2');
     datos = await aDatosMinisterio(repo);
     expect(idsGruposDe(datos, 'p1')).toEqual(['g-iglesia']);
+  });
+});
+
+describe('la familia de grupos al borrar', () => {
+  it('al borrar una Iglesia, sus Oikos quedan sin padre (no se rompen)', async () => {
+    const repo = await repoListo();
+    await repo.guardar('grupos', { id: 'g-iglesia', nombre: 'IGLESIA 120 Y 51', tipo: 'Iglesia' });
+    await repo.guardar('grupos', { id: 'g-oikos', nombre: 'OIKOS ALICIA', tipo: 'Oikos', padreId: 'g-iglesia' });
+    const datos = await aDatosMinisterio(repo);
+    await borrarGrupo(repo, datos, 'g-iglesia');
+    const datos2 = await aDatosMinisterio(repo);
+    expect(datos2.grupos.map((g) => g.id)).toEqual(['g-oikos']);
+    expect(datos2.grupos[0].padreId).toBeNull();
   });
 });

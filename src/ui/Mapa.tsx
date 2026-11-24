@@ -6,6 +6,7 @@ import { fijarUbicacion } from '../datos/acciones';
 import type { Repo } from '../datos/repo';
 import type { DatosMinisterio } from '../modelo/tipos';
 import { CENTRO_DEFECTO, puntosDelMapa, sinUbicacion, type PuntoMapa } from '../motor/mapa';
+import { iconoGrupo } from '../motor/gruposVista';
 import type { VerPersonas } from '../motor/vistas';
 import GuiaPagina from './GuiaPagina';
 import { Buscador, CabeceraPagina, FilaPersona, Pestanas } from './Piezas';
@@ -194,7 +195,7 @@ export default function Mapa({ repo }: { repo: Repo }) {
             {sin.map((s) => (
               <li key={s.tipo + s.id}>
                 <FilaPersona
-                  nombre={`${s.tipo === 'grupo' ? '🏠' : '👤'} ${s.nombre}`}
+                  nombre={`${s.tipo === 'grupo' ? iconoGrupo(datos.grupos.find((g) => g.id === s.id)) : '👤'} ${s.nombre}`}
                   meta="sin chincheta — fijar"
                   onClick={() => {
                     setFijando(s);

@@ -165,3 +165,63 @@ export function idsMiembrosDeGrupo(datos: DatosMinisterio, grupoId: string): str
   }
   return ids;
 }
+
+// ——— La familia de grupos: el Oikos cuelga de su Iglesia ———
+// (decisión de LemGil, 2026-11-23: mañana pueden ser más iglesias,
+// y cada Oikos sabe de cuál es; la lista se lee por familia y el
+// Oikos se distingue: 🏡 frente al 🏠 de la Iglesia).
+
+/** El icono del grupo según su tipo: el Oikos es la casita 🏡. */
+export function iconoGrupo(grupo?: Grupo | null): string {
+  return claveTipoGrupo(grupo) === 'oikos' ? '🏡' : '🏠';
+}
+
+/** ¿Es un grupo de tipo Iglesia? */
+export function esIglesia(grupo?: Grupo | null): boolean {
+  return claveTipoGrupo(grupo) === 'iglesia';
+}
+
+/** ¿Es un grupo de tipo Oikos? */
+export function esOikos(grupo?: Grupo | null): boolean {
+  return claveTipoGrupo(grupo) === 'oikos';
+}
+
+/** La Iglesia de la que cuelga este grupo (su padre), si la tiene. */
+export function padreDe(datos: DatosMinisterio, grupo: Grupo): Grupo | undefined {
+  return grupo.padreId ? datos.grupos.find((g) => g.id === grupo.padreId) : undefined;
+}
+
+/** Los grupos que cuelgan de este (sus Oikos), por nombre. */
+export function hijosDe(datos: DatosMinisterio, grupoId: string): Grupo[] {
+  return datos.grupos
+    .filter((g) => g.padreId === grupoId)
+    .sort((a, b) => a.nombre.localeCompare(b.nombre));
+}
+
+/** La lista ordenada por familia: cada Iglesia primero, con sus
+ * Oikos pegados debajo; después los demás grupos. Los huérfanos
+ * (padre que ya no existe) quedan como raíces, a la vista. */
+export function ordenarGruposPorFamilia(datos: DatosMinisterio, grupos: Grupo[]): Grupo[] {
+  const enLaLista = new Set(grupos.map((g) => g.id));
+  const hijos = new Map<string, Grupo[]>();
+  const raices: Grupo[] = [];
+  for (const g of [...grupos].sort((a, b) => a.nombre.localeCompare(b.nombre))) {
+    if (g.padreId && enLaLista.has(g.padreId) && datos.grupos.some((x) => x.id === g.padreId)) {
+      const lista = hijos.get(g.padreId) ?? [];
+      lista.push(g);
+      hijos.set(g.padreId, lista);
+    } else {
+      raices.push(g);
+    }
+  }
+  raices.sort(
+    (a, b) =>
+      Number(esIglesia(b)) - Number(esIglesia(a)) || a.nombre.localeCompare(b.nombre),
+  );
+  const salida: Grupo[] = [];
+  for (const r of raices) {
+    salida.push(r);
+    for (const h of hijos.get(r.id) ?? []) salida.push(h);
+  }
+  return salida;
+}

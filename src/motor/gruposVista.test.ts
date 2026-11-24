@@ -6,10 +6,14 @@ import {
   conteoPorPasoDelGrupo,
   estadoGrupo,
   grupoDeTipo,
+  hijosDe,
+  iconoGrupo,
   idsGruposDe,
   idsMiembrosDeGrupo,
   liderVisible,
   lineaReunion,
+  ordenarGruposPorFamilia,
+  padreDe,
   porcentajeCapacidad,
   tiposDeGrupoEnUso,
 } from './gruposVista';
@@ -110,5 +114,44 @@ describe('pertenencia con tipos (un grupo por tipo)', () => {
   it('los miembros de un grupo salen de la lista de cada persona', () => {
     expect(idsMiembrosDeGrupo(datosTipos, 'g-oikos')).toEqual(['p2', 'p3']);
     expect(idsMiembrosDeGrupo(datosTipos, 'g-iglesia')).toEqual(['p1', 'p2', 'p3']);
+  });
+});
+
+const datosFamilia = {
+  personas: [],
+  miembros: [],
+  grupos: [
+    { id: 'g-oikos2', nombre: 'OIKOS BETEL', tipo: 'Oikos', padreId: 'g-iglesia2' },
+    { id: 'g-iglesia', nombre: 'IGLESIA 120 Y 51', tipo: 'Iglesia' },
+    { id: 'g-oikos', nombre: 'OIKOS ALICIA', tipo: 'Oikos', padreId: 'g-iglesia' },
+    { id: 'g-iglesia2', nombre: 'IGLESIA B', tipo: 'Iglesia' },
+    { id: 'g-suelto', nombre: 'GRUPO SUELTO' },
+    { id: 'g-huerfano', nombre: 'OIKOS HUÉRFANO', tipo: 'Oikos', padreId: 'g-fantasma' },
+  ],
+  pasos: CATALOGO_SEMILLA,
+} as unknown as DatosMinisterio;
+
+describe('la familia de grupos (el Oikos cuelga de su Iglesia)', () => {
+  const grupo = (id: string) => datosFamilia.grupos.find((g) => g.id === id)!;
+  it('el icono distingue: 🏡 el Oikos, 🏠 los demás', () => {
+    expect(iconoGrupo(grupo('g-oikos'))).toBe('🏡');
+    expect(iconoGrupo(grupo('g-iglesia'))).toBe('🏠');
+    expect(iconoGrupo(grupo('g-suelto'))).toBe('🏠');
+  });
+  it('padre e hijos se leen en las dos direcciones', () => {
+    expect(padreDe(datosFamilia, grupo('g-oikos'))?.id).toBe('g-iglesia');
+    expect(padreDe(datosFamilia, grupo('g-iglesia'))).toBeUndefined();
+    expect(hijosDe(datosFamilia, 'g-iglesia').map((g) => g.id)).toEqual(['g-oikos']);
+    expect(hijosDe(datosFamilia, 'g-iglesia2').map((g) => g.id)).toEqual(['g-oikos2']);
+  });
+  it('la lista se ordena por familia: Iglesia, sus Oikos, la siguiente Iglesia', () => {
+    expect(ordenarGruposPorFamilia(datosFamilia, datosFamilia.grupos).map((g) => g.id)).toEqual([
+      'g-iglesia',
+      'g-oikos',
+      'g-iglesia2',
+      'g-oikos2',
+      'g-suelto',
+      'g-huerfano',
+    ]);
   });
 });
