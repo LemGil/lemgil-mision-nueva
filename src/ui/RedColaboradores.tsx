@@ -9,7 +9,7 @@ import { formatoDinero } from '../motor/dinero';
 import { agrupar } from '../motor/vistas';
 import BarraVistas, { type Vista } from './BarraVistas';
 import GuiaPagina from './GuiaPagina';
-import { Buscador, CabeceraPagina, FilaEdicion, FilaPersona, FilaRegistro, Kpi, ListaEdicion, Pestanas, TarjetaPersona } from './Piezas';
+import { Buscador, CabeceraPagina, DatosLista, FilaEdicion, FilaPersona, FilaRegistro, Kpi, ListaEdicion, Pestanas, TarjetaPersona } from './Piezas';
 import { coincideBusqueda } from '../motor/personaVista';
 import Modal from './Modal';
 import BorrarBoton from './BorrarBoton';
@@ -409,17 +409,31 @@ export default function RedColaboradores({ repo }: { repo: Repo }) {
       {detalle && (
         <Modal onCerrar={() => setSeleccionado(null)}>
           <h2>{nombreColaborador(detalle)}</h2>
-          <p className="tenue">
-            {detalle.tipo ?? ''}
-            {detalle.telefono ? ` · ${detalle.telefono}` : ''}
-            {detalle.email ? ` · ${detalle.email}` : ''}
+          <p>
+            <span className="chip chip-ambar">{detalle.tipo ?? 'Persona'}</span>{' '}
+            <span className={detalle.estado === 'Activo' ? 'chip chip-verde' : 'chip chip-gris'}>
+              {detalle.estado === 'Activo' ? '● Activo' : '● Inactivo'}
+            </span>
           </p>
-          {(detalle.planOfrendaTipo || detalle.planOfrendaMonto) && (
-            <p className="tenue">
-              Plan: {detalle.planOfrendaTipo ?? ''} {detalle.planOfrendaMonto ? formatoDinero(detalle.planOfrendaMonto) : ''}
-            </p>
-          )}
-          {detalle.notas && <p className="tenue">📝 {detalle.notas}</p>}
+          <DatosLista
+            filas={[
+              ...(detalle.telefono ? [['Teléfono', detalle.telefono] as [string, string]] : []),
+              ...(detalle.email ? [['Correo', detalle.email] as [string, string]] : []),
+              ...(detalle.planOfrendaTipo || detalle.planOfrendaMonto
+                ? [
+                    [
+                      'Plan de ofrenda',
+                      `${detalle.planOfrendaTipo ?? ''}${detalle.planOfrendaMonto ? ` · ${formatoDinero(detalle.planOfrendaMonto)}` : ''}`,
+                    ] as [string, string],
+                  ]
+                : []),
+              ...(detalle.notas ? [['Notas', detalle.notas] as [string, string]] : []),
+              [
+                'Aportes',
+                `${aportesDe.length} · total ${formatoDinero(aportesDe.reduce((x, a) => x + a.monto, 0))}`,
+              ] as [string, string],
+            ]}
+          />
           <button
             className="btn"
             onClick={async () => {
@@ -647,10 +661,7 @@ export default function RedColaboradores({ repo }: { repo: Repo }) {
                   </li>
                 ))}
               </ul>
-              <p className="tenue">
-                {aportesDe.length} aportes · total {formatoDinero(aportesDe.reduce((x, a) => x + a.monto, 0))}.
-                Toca un aporte para corregirlo.
-              </p>
+              <p className="tenue">Toca un aporte para corregirlo.</p>
             </>
           )}
         </Modal>

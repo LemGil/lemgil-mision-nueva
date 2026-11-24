@@ -57,11 +57,13 @@ export function FilaRegistro({
 }) {
   const dia = fecha.slice(8, 10);
   const mes = MESES_CORTO[Number(fecha.slice(5, 7)) - 1] ?? '';
+  const ano = fecha.slice(0, 4);
   return (
     <button type="button" className="persona-fila" onClick={onClick}>
       <span className="fila-fecha">
         <b>{dia}</b>
         {mes}
+        <span className="fila-ano">{ano}</span>
       </span>
       <span className="persona-main">
         <span className="persona-nombre">{nombre}</span>

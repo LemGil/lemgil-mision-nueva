@@ -446,3 +446,13 @@ bucle de aportes nunca corrió). El Restaurar ahora captura el
 error de cada registro, lo salta, lo nombra con su mensaje exacto
 y termina todo lo demás; el aviso reporta los fallos por id.
 140/140 pruebas.
+
+## El año en los registros y la ficha del colaborador (v49)
+
+La FilaRegistro (pieza única) muestra ahora día · mes · año: los
+aportes de años distintos ya no se confunden, en la Red, en Bien
+Común y en Manos Abiertas. La ficha del colaborador gana imagen:
+sellos del tipo y el estado (ámbar/verde/gris) y sus datos en la
+lista etiqueta/valor del modal (teléfono, correo, plan de ofrenda,
+notas y el resumen «N aportes · total»), en vez de las líneas
+tenues. 140/140 pruebas.
