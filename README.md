@@ -435,3 +435,14 @@ dice lo CONFIRMADO, no lo intentado: si algo sigue fuera de su
 ficha, el aviso sale como error con los conteos exactos. La
 función y sus pruebas (139/139) mueven los aportes por id; si en
 el equipo no se mueven, el aviso verificado lo dirá en el acto.
+
+## El Restaurar ya no se detiene (v48)
+
+Dos hallazgos: (1) el aviso que LemGil pegó era el del TRAER, no
+el del Restaurar — el botón del Restaurar está más abajo y pudo
+no ser el presionado; (2) la corrida del v44 dejó la huella de
+una parada a mitad del bucle de fichas (Yuliet siguió tumba y el
+bucle de aportes nunca corrió). El Restaurar ahora captura el
+error de cada registro, lo salta, lo nombra con su mensaje exacto
+y termina todo lo demás; el aviso reporta los fallos por id.
+140/140 pruebas.

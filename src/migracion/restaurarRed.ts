@@ -10,7 +10,17 @@ import type { Repo } from '../datos/repo';
 import type { RespaldoViejo } from './convertir';
 import { convertirRed } from './traerRed';
 
+export interface FalloRestaurar {
+  tabla: string;
+  id: string;
+  mensaje: string;
+}
+
 export interface ResultadoRestaurarRed {
+  /** Registros que no se pudieron escribir, con su error exacto: la
+   *  herramienta ya no se detiene en el primero; lo salta, lo nombra
+   *  y termina todo lo demás. */
+  fallos: FalloRestaurar[];
   /** Fichas que no existían (o tenían otro nombre) y volvieron a ser las del respaldo. */
   fichasRestauradas: number;
   /** Copias sin aportes que la unión ya había fundido: quedan fuera, no se resucitan. */
@@ -37,6 +47,19 @@ export async function restaurarRedDesdeRespaldo(
   respaldo: RespaldoViejo,
 ): Promise<ResultadoRestaurarRed> {
   const { colaboradores, aportesRed } = convertirRed(respaldo);
+  const fallos: FalloRestaurar[] = [];
+  const intentar = async (
+    tabla: 'colaboradores' | 'aportesRed',
+    entidad: { id: string },
+  ): Promise<boolean> => {
+    try {
+      await repo.guardar(tabla, entidad);
+      return true;
+    } catch (e) {
+      fallos.push({ tabla, id: entidad.id, mensaje: e instanceof Error ? e.message : String(e) });
+      return false;
+    }
+  };
   let fichasRestauradas = 0;
   let copiasVaciasSaltadas = 0;
   let aportesReubicados = 0;
@@ -56,11 +79,10 @@ export async function restaurarRedDesdeRespaldo(
         copiasVaciasSaltadas++;
         continue;
       }
-      await repo.guardar('colaboradores', c);
-      fichasRestauradas++;
+      if (await intentar('colaboradores', c)) fichasRestauradas++;
     } else if (nombreCompleto(viva.nombre, viva.apellido) !== nombreCompleto(c.nombre, c.apellido)) {
-      await repo.guardar('colaboradores', { ...viva, nombre: c.nombre, apellido: c.apellido });
-      fichasRestauradas++;
+      const corregida = { ...viva, nombre: c.nombre, apellido: c.apellido };
+      if (await intentar('colaboradores', corregida)) fichasRestauradas++;
     }
   }
 
@@ -68,11 +90,10 @@ export async function restaurarRedDesdeRespaldo(
   for (const a of aportesRed) {
     const actual = datos.aportesRed.find((x) => x.id === a.id);
     if (!actual) {
-      await repo.guardar('aportesRed', a);
-      aportesRestaurados++;
+      if (await intentar('aportesRed', a)) aportesRestaurados++;
     } else if (actual.colaboradorId !== a.colaboradorId) {
-      await repo.guardar('aportesRed', { ...actual, colaboradorId: a.colaboradorId });
-      aportesReubicados++;
+      const movido = { ...actual, colaboradorId: a.colaboradorId };
+      if (await intentar('aportesRed', movido)) aportesReubicados++;
     }
   }
 
@@ -92,6 +113,7 @@ export async function restaurarRedDesdeRespaldo(
   }
 
   return {
+    fallos,
     fichasRestauradas,
     copiasVaciasSaltadas,
     aportesReubicados,

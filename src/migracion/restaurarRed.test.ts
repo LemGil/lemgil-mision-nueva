@@ -40,7 +40,8 @@ describe('restaurarRedDesdeRespaldo', () => {
     for (const a of datos.aportesRed) repo.sembrar('aportesRed', { ...a, borrado: false });
 
     const r = await restaurarRedDesdeRespaldo(repo.comoRepo(), datos, respaldo);
-    expect(r).toEqual({ fichasRestauradas: 1, copiasVaciasSaltadas: 0, aportesReubicados: 2, aportesRestaurados: 0, verificacion: { siguenFuera: 0, fichasQueFaltan: 0 } });
+    expect(r.fallos).toEqual([]);
+    expect(r).toMatchObject({ fichasRestauradas: 1, copiasVaciasSaltadas: 0, aportesReubicados: 2, aportesRestaurados: 0, verificacion: { siguenFuera: 0, fichasQueFaltan: 0 } });
 
     const colabs = repo.vivos<Colaborador>('colaboradores');
     expect(colabs.map((c) => c.id).sort()).toEqual(['g1', 'i1']);
@@ -101,6 +102,36 @@ describe('restaurarRedDesdeRespaldo', () => {
     expect(repo.vivos<Colaborador>('colaboradores').map((c) => c.id)).not.toContain('g2');
   });
 
+  it('un registro que falla no detiene la reparación: se nombra y el resto sigue', async () => {
+    const datos = base(
+      [{ id: 'g1', nombre: 'GINA', apellido: 'HERRERA', estado: 'Activo', tipo: 'Persona' }],
+      [
+        { id: 'a1', colaboradorId: 'g1', fecha: '2025-01-01', monto: 100, tipo: 'Ofrenda General' },
+        { id: 'a2', colaboradorId: 'g1', fecha: '2025-02-01', monto: 200, tipo: 'Ofrenda General' },
+        { id: 'a3', colaboradorId: 'g1', fecha: '2025-03-01', monto: 50, tipo: 'Diezmo' },
+      ],
+    );
+    const repo = new RepoFalso();
+    for (const c of datos.colaboradores) repo.sembrar('colaboradores', { ...c, borrado: false });
+    for (const a of datos.aportesRed) repo.sembrar('aportesRed', { ...a, borrado: false });
+    const real = repo.comoRepo();
+    const queFalla = {
+      ...real,
+      guardar: async (tabla: never, entidad: { id: string }) => {
+        if (entidad.id === 'a2') throw new Error('error exacto de prueba');
+        return real.guardar(tabla, entidad);
+      },
+      listar: real.listar.bind(real),
+    } as unknown as typeof real;
+    const r = await restaurarRedDesdeRespaldo(queFalla, datos, respaldo);
+    expect(r.fallos).toEqual([{ tabla: 'aportesRed', id: 'a2', mensaje: 'error exacto de prueba' }]);
+    expect(r.aportesReubicados).toBe(1); // a1 sí se movió; a2 quedó nombrado
+    expect(r.verificacion.siguenFuera).toBe(1);
+    const aportes = repo.vivos<AporteRed>('aportesRed');
+    expect(aportes.find((a) => a.id === 'a1')?.colaboradorId).toBe('i1');
+    expect(aportes.find((a) => a.id === 'a2')?.colaboradorId).toBe('g1');
+  });
+
   it('con todo en su sitio no toca nada', async () => {
     const datos = base(
       [
@@ -117,6 +148,7 @@ describe('restaurarRedDesdeRespaldo', () => {
     for (const c of datos.colaboradores) repo.sembrar('colaboradores', { ...c, borrado: false });
     for (const a of datos.aportesRed) repo.sembrar('aportesRed', { ...a, borrado: false });
     const r = await restaurarRedDesdeRespaldo(repo.comoRepo(), datos, respaldo);
-    expect(r).toEqual({ fichasRestauradas: 0, copiasVaciasSaltadas: 0, aportesReubicados: 0, aportesRestaurados: 0, verificacion: { siguenFuera: 0, fichasQueFaltan: 0 } });
+    expect(r.fallos).toEqual([]);
+    expect(r).toMatchObject({ fichasRestauradas: 0, copiasVaciasSaltadas: 0, aportesReubicados: 0, aportesRestaurados: 0, verificacion: { siguenFuera: 0, fichasQueFaltan: 0 } });
   });
 });

@@ -294,7 +294,11 @@ export default function Migrar({ repo }: { repo: Repo }) {
     setError('');
     try {
       const r = await restaurarRedDesdeRespaldo(repo, actuales, respaldoRed);
-      if (r.verificacion.siguenFuera > 0 || r.verificacion.fichasQueFaltan > 0) {
+      if (r.fallos.length > 0) {
+        setError(
+          `La restauración no pudo escribir ${r.fallos.length} registro(s): ${r.fallos.map((f) => `${f.tabla} ${f.id}: ${f.mensaje}`).join(' · ')}. Al releer: ${r.verificacion.siguenFuera} aporte(s) siguen fuera de su ficha. Pásale este aviso a Leo tal cual.`,
+        );
+      } else if (r.verificacion.siguenFuera > 0 || r.verificacion.fichasQueFaltan > 0) {
         setError(
           `Escribí la reparación y al RELEER esta base quedó así: ${r.verificacion.siguenFuera} aporte(s) del respaldo siguen fuera de su ficha y ${r.verificacion.fichasQueFaltan} ficha(s) con aportes no aparecen. No es el resultado esperado: pásale este aviso a Leo tal cual.`,
         );
