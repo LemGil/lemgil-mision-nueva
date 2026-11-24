@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { aDatosMinisterio } from '../datos/aDatosMinisterio';
 import { actualizarPersona, asignarGrupos, borrarPersona, darAltasDirectas, quitarZona, registrarPersona, renombrarZona, type EntradaMision } from '../datos/acciones';
-import { idsGruposDe, nombresGruposDe } from '../motor/gruposVista';
+import { ETIQUETAS_OIKOS, idsGruposDe, nombresGruposDe, personasPorOikos, type ClaveOikos } from '../motor/gruposVista';
 import CamposGrupos from './CamposGrupos';
 import type { Repo } from '../datos/repo';
 import type { DatosMinisterio, Persona, Sexo } from '../modelo/tipos';
@@ -167,6 +167,7 @@ export default function Personas({ repo }: { repo: Repo }) {
   // Filtro que llega del Panel: la demografía («Niños», «Mujeres»…)
   // trae a la lista con SOLO esas personas.
   const [filtroDemo, setFiltroDemo] = useState<ClaveDemografica | null>(null);
+  const [filtroOikos, setFiltroOikos] = useState<ClaveOikos | null>(null);
   // Regla de la casa (2026-11-23): los aspectos diferentes de una
   // página van en PESTAÑAS, no apilados — Zonas ya no se pierde
   // debajo de la lista.
@@ -177,12 +178,15 @@ export default function Personas({ repo }: { repo: Repo }) {
   const location = useLocation();
   const navigate = useNavigate();
   useEffect(() => {
-    const st = location.state as { abrirFicha?: string; filtroDemo?: ClaveDemografica } | null;
+    const st = location.state as { abrirFicha?: string; filtroDemo?: ClaveDemografica; filtroOikos?: ClaveOikos } | null;
     if (st?.abrirFicha) {
       setSeleccionada(st.abrirFicha);
       navigate(location.pathname, { replace: true, state: null });
     } else if (st?.filtroDemo) {
       setFiltroDemo(st.filtroDemo);
+      navigate(location.pathname, { replace: true, state: null });
+    } else if (st?.filtroOikos) {
+      setFiltroOikos(st.filtroOikos);
       navigate(location.pathname, { replace: true, state: null });
     }
   }, [location.state, location.pathname, navigate]);
@@ -229,9 +233,11 @@ export default function Personas({ repo }: { repo: Repo }) {
   const idsDemo = filtroDemo
     ? personasDemografia(datos, filtroDemo, new Date().toISOString().slice(0, 10))
     : null;
+  const idsOikos = filtroOikos ? personasPorOikos(datos, filtroOikos) : null;
   const lista = buscarPersonas(datos, busqueda)
     .filter((per) => visibleSegunVer(clasificarPersona(datos, per.id).clase, ver))
-    .filter((per) => !idsDemo || idsDemo.has(per.id));
+    .filter((per) => !idsDemo || idsDemo.has(per.id))
+    .filter((per) => !idsOikos || idsOikos.has(per.id));
   const ficha = seleccionada ? fichaDePersona(datos, seleccionada) : null;
   const nombrePasoEntrada = (e: EntradaMision) =>
     datos.pasos.find((p) => p.id === { alcanzado: 'ps-congregado', confeso: 'ps-confeso', converso: 'ps-nuevo', bautizado: 'ps-bautizado' }[e])?.nombre ?? e;
@@ -465,6 +471,17 @@ export default function Personas({ repo }: { repo: Repo }) {
             {idsDemo?.size ?? 0} personas
           </span>
           <button type="button" className="btn" onClick={() => setFiltroDemo(null)}>
+            ✕ Quitar filtro
+          </button>
+        </p>
+      )}
+      {filtroOikos && (
+        <p className="filtro-panel">
+          <span>
+            Filtro de Grupos: <strong>{ETIQUETAS_OIKOS[filtroOikos]}</strong> —{' '}
+            {idsOikos?.size ?? 0} personas
+          </span>
+          <button type="button" className="btn" onClick={() => setFiltroOikos(null)}>
             ✕ Quitar filtro
           </button>
         </p>

@@ -348,3 +348,14 @@ El tablero superior de Grupos ya no trae solo Grupos y Personas:
 👥 Personas en grupos y ⚠️ Sin grupo — las personas de la casa (en
 camino, en el gozne o miembros activos) que no están en ningún
 grupo: a quién hay que ubicar.
+
+## El embudo de Grupos: congregados → su Oikos (v40)
+
+El tablero sigue el proceso de la casa (LemGil, 2026-11-23): la
+mayoría entra por la Iglesia y poco a poco cada congregado encuentra
+su Oikos. Salen «Personas en grupos» y «Sin grupo»; entran
+👥 Congregados, 🏡 En un Oikos y ⏳ Sin Oikos — estos dos se tocan y
+abren Personas filtrada (franja «Filtro de Grupos»), con la misma
+cuenta para el número y la lista (`personasPorOikos`). El KPI de
+Piezas ahora acepta onClick y se pinta como botón.
+124/124 pruebas.

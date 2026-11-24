@@ -8,12 +8,14 @@ import {
   grupoDeTipo,
   hijosDe,
   iconoGrupo,
+  idsCongregados,
   idsGruposDe,
   idsMiembrosDeGrupo,
   liderVisible,
   lineaReunion,
   ordenarGruposPorFamilia,
   padreDe,
+  personasPorOikos,
   porcentajeCapacidad,
   tiposDeGrupoEnUso,
 } from './gruposVista';
@@ -153,5 +155,41 @@ describe('la familia de grupos (el Oikos cuelga de su Iglesia)', () => {
       'g-suelto',
       'g-huerfano',
     ]);
+  });
+});
+
+const datosEmbudo = {
+  personas: [
+    { id: 'p1', nombre: 'Solo Iglesia', grupoIds: ['g-iglesia'] },
+    { id: 'p2', nombre: 'Iglesia y Oikos', grupoIds: ['g-iglesia', 'g-oikos'] },
+    { id: 'p3', nombre: 'Solo Oikos', grupoIds: ['g-oikos'] },
+    { id: 'p4', nombre: 'Apartado', grupoIds: ['g-iglesia'] },
+    { id: 'p5', nombre: 'Sin grupos' },
+  ],
+  conversiones: [
+    { id: 'c4', personaId: 'p4', estado: 'ps-apartado', fecha: '2024-01-01', historial: [] },
+  ],
+  miembros: [],
+  grupos: [
+    { id: 'g-iglesia', nombre: 'IGLESIA 120 Y 51', tipo: 'Iglesia' },
+    { id: 'g-oikos', nombre: 'OIKOS ALICIA', tipo: 'Oikos', padreId: 'g-iglesia' },
+  ],
+  pasos: CATALOGO_SEMILLA,
+} as unknown as DatosMinisterio;
+
+describe('el embudo de la casa: congregados → su oikos', () => {
+  it('congregados: los que están en una Iglesia, sin bajas', () => {
+    expect([...idsCongregados(datosEmbudo)].sort()).toEqual(['p1', 'p2']);
+  });
+  it('en un Oikos y sin Oikos parten a los congregados sin repetir ni perder a nadie', () => {
+    const en = personasPorOikos(datosEmbudo, 'en-oikos');
+    const sin = personasPorOikos(datosEmbudo, 'sin-oikos');
+    expect([...en]).toEqual(['p2']);
+    expect([...sin]).toEqual(['p1']);
+    expect(en.size + sin.size).toBe(idsCongregados(datosEmbudo).size);
+  });
+  it('quien está solo en un Oikos no cuenta como congregado integrado', () => {
+    expect(idsCongregados(datosEmbudo).has('p3')).toBe(false);
+    expect(personasPorOikos(datosEmbudo, 'en-oikos').has('p3')).toBe(false);
   });
 });

@@ -191,6 +191,7 @@ export function Kpi({
   principal,
   icono,
   dinero,
+  onClick,
 }: {
   numero: ReactNode;
   titulo: ReactNode;
@@ -198,16 +199,25 @@ export function Kpi({
   principal?: boolean;
   icono?: ReactNode;
   dinero?: boolean;
+  onClick?: () => void;
 }) {
-  return (
-    <div className={`kpi${principal ? ' kpi-principal' : ''}${dinero ? ' kpi-dinero' : ''}`}>
+  const contenido = (
+    <>
       {icono !== undefined && (
         <span className="kpi-icono" aria-hidden="true">{icono}</span>
       )}
       <span className="kpi-numero">{numero}</span>
       <span className="kpi-titulo">{titulo}</span>
       {sub !== undefined && <span className="kpi-sub">{sub}</span>}
-    </div>
+    </>
+  );
+  const clase = `kpi${principal ? ' kpi-principal' : ''}${dinero ? ' kpi-dinero' : ''}${onClick ? ' kpi-boton' : ''}`;
+  return onClick ? (
+    <button type="button" className={clase} onClick={onClick}>
+      {contenido}
+    </button>
+  ) : (
+    <div className={clase}>{contenido}</div>
   );
 }
 

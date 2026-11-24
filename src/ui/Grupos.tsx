@@ -16,7 +16,8 @@ import { Buscador, CabeceraPagina, FilaAcciones, FilaPersona, Kpi, TarjetaPerson
 import { coincideBusqueda } from '../motor/personaVista';
 import BorrarBoton from './BorrarBoton';
 import GuiaPagina from './GuiaPagina';
-import { claveTipoGrupo, conteoPorPasoDelGrupo, esIglesia, esOikos, estadoGrupo, grupoDeTipo, hijosDe, iconoGrupo, idsGruposDe, idsMiembrosDeGrupo, liderVisible, lineaReunion, ordenarGruposPorFamilia, padreDe, porcentajeCapacidad, tipoVisibleGrupo, tiposDeGrupoEnUso } from '../motor/gruposVista';
+import { claveTipoGrupo, conteoPorPasoDelGrupo, esIglesia, esOikos, estadoGrupo, grupoDeTipo, hijosDe, iconoGrupo, idsCongregados, idsGruposDe, idsMiembrosDeGrupo, liderVisible, lineaReunion, ordenarGruposPorFamilia, padreDe, personasPorOikos, porcentajeCapacidad, tipoVisibleGrupo, tiposDeGrupoEnUso } from '../motor/gruposVista';
+import { useNavigate } from 'react-router-dom';
 
 const DIAS_SEMANA = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 
@@ -147,6 +148,7 @@ export default function Grupos({ repo }: { repo: Repo }) {
   const [vista, setVista] = useState<Vista>('lista');
   const [agruparPor, setAgruparPor] = useState('zona');
   const recargar = useCallback(() => setRecargas((x) => x + 1), []);
+  const navigate = useNavigate();
   useEffect(() => {
     let vivo = true;
     void (async () => {
@@ -172,19 +174,14 @@ export default function Grupos({ repo }: { repo: Repo }) {
   const detalle = seleccionado ? datos.grupos.find((g) => g.id === seleccionado) : undefined;
   const padreDetalle = detalle ? padreDe(datos, detalle) : undefined;
   const hijosDetalle = detalle ? hijosDe(datos, detalle.id) : [];
-  const conGrupo = new Set<string>();
-  for (const p of datos.personas) if (idsGruposDe(datos, p.id).length > 0) conGrupo.add(p.id);
-  for (const id of [...conGrupo]) if (esPersonaBaja(id)) conGrupo.delete(id);
-  // El tablero: la familia y la cobertura. «Sin grupo» cuenta a las
-  // personas de la casa (en camino, en el gozne o miembros activos)
-  // que no están en ningún grupo — a quién hay que ubicar.
+  // El tablero: la familia y el embudo de la casa — congregados que
+  // ya encontraron su Oikos y congregados que aún están en el proceso.
   const nIglesias = datos.grupos.filter((g) => esIglesia(g)).length;
   const oikosTodos = datos.grupos.filter((g) => esOikos(g));
   const nOikosSinIglesia = oikosTodos.filter((g) => !padreDe(datos, g)).length;
-  const nSinGrupo = datos.personas.filter((per) => {
-    const clase = clasificarPersona(datos, per.id).clase;
-    return (clase === 'etapa' || clase === 'gozne' || clase === 'miembro') && idsGruposDe(datos, per.id).length === 0;
-  }).length;
+  const congregados = idsCongregados(datos);
+  const enOikos = personasPorOikos(datos, 'en-oikos');
+  const sinOikos = personasPorOikos(datos, 'sin-oikos');
 
   const visibles = datos.grupos.filter((g) =>
     coincideBusqueda(busqueda, g.nombre, g.zona, g.lugar, liderVisible(datos, g)),
@@ -233,14 +230,15 @@ export default function Grupos({ repo }: { repo: Repo }) {
       <CabeceraPagina titulo="🧑‍🤝‍🧑 Grupos">
         <button className="btn btn-dorado" onClick={() => setMostrarForm((v) => !v)}>➕ Nuevo grupo</button>
       </CabeceraPagina>
-      <GuiaPagina texto="Los grupos de la congregación, con su tipo, su líder, su reunión y su capacidad. Una persona puede estar en un grupo de cada tipo: su Iglesia y su Oikos." />
+      <GuiaPagina texto="Los grupos de la congregación, con su tipo, su líder, su reunión y su capacidad. El tablero sigue el proceso de la casa: cada congregado va encontrando su Oikos — toca «En un Oikos» o «Sin Oikos» para ver quiénes son." />
       {error && <p className="aviso aviso-rojo">{error}</p>}
       <section className="kpis">
         <Kpi principal icono="🧑‍🤝‍🧑" numero={datos.grupos.length} titulo="Grupos" />
         <Kpi icono="🏠" numero={nIglesias} titulo="Iglesias" />
         <Kpi icono="🏡" numero={oikosTodos.length} titulo="Oikos" sub={nOikosSinIglesia > 0 ? `${nOikosSinIglesia} sin Iglesia` : undefined} />
-        <Kpi icono="👥" numero={conGrupo.size} titulo="Personas en grupos" />
-        <Kpi icono="⚠️" numero={nSinGrupo} titulo="Sin grupo" />
+        <Kpi icono="👥" numero={congregados.size} titulo="Congregados" />
+        <Kpi icono="🏡" numero={enOikos.size} titulo="En un Oikos" onClick={() => navigate('/personas', { state: { filtroOikos: 'en-oikos' } })} />
+        <Kpi icono="⏳" numero={sinOikos.size} titulo="Sin Oikos" onClick={() => navigate('/personas', { state: { filtroOikos: 'sin-oikos' } })} />
       </section>
 
       {mostrarForm && (

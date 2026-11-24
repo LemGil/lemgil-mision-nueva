@@ -3,6 +3,8 @@
 // asignados por paso de la ruta y la barra de llenado.
 
 import { PS_BAUTIZADO, PS_CONVERSO, PS_DISCIPULADO, PS_INTEGRADO, pasoPorId } from '../modelo/catalogo';
+import { clasificarPersona } from './censo';
+import { esBaja } from './vistas';
 import type { DatosMinisterio, Grupo, Paso } from '../modelo/tipos';
 
 export interface EstadoGrupo {
@@ -222,6 +224,43 @@ export function ordenarGruposPorFamilia(datos: DatosMinisterio, grupos: Grupo[])
   for (const r of raices) {
     salida.push(r);
     for (const h of hijos.get(r.id) ?? []) salida.push(h);
+  }
+  return salida;
+}
+
+// ——— El embudo de la casa: congregados → su oikos ———
+// (LemGil, 2026-11-23: la mayoría entra primero por la reunión de la
+// Iglesia; después, poco a poco, cada congregado va encontrando su
+// oikos. Número y lista salen de ESTA cuenta, para que nunca se
+// contradigan — como el filtro demográfico del Panel.)
+
+export type ClaveOikos = 'en-oikos' | 'sin-oikos';
+
+export const ETIQUETAS_OIKOS: Record<ClaveOikos, string> = {
+  'en-oikos': 'En un Oikos',
+  'sin-oikos': 'Congregados sin Oikos',
+};
+
+const tieneGrupoDeTipo = (datos: DatosMinisterio, personaId: string, clave: string): boolean =>
+  gruposDePersona(datos, personaId).some((g) => claveTipoGrupo(g) === clave);
+
+/** Los congregados: personas (sin bajas) que están en una Iglesia. */
+export function idsCongregados(datos: DatosMinisterio): Set<string> {
+  const ids = new Set<string>();
+  for (const p of datos.personas) {
+    if (esBaja(clasificarPersona(datos, p.id).clase)) continue;
+    if (tieneGrupoDeTipo(datos, p.id, 'iglesia')) ids.add(p.id);
+  }
+  return ids;
+}
+
+/** De los congregados, los que ya están en un Oikos — o los que aún
+ * no, según la clave. Entre los dos cubren a todos los congregados. */
+export function personasPorOikos(datos: DatosMinisterio, clave: ClaveOikos): Set<string> {
+  const salida = new Set<string>();
+  for (const id of idsCongregados(datos)) {
+    const en = tieneGrupoDeTipo(datos, id, 'oikos');
+    if ((clave === 'en-oikos') === en) salida.add(id);
   }
   return salida;
 }
