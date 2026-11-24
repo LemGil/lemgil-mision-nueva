@@ -27,6 +27,10 @@ export class RepoFalso {
     if (f) this.tabla(tabla).set(id, { ...f, borrado: true });
   }
 
+  async listar<T>(tabla: Tabla): Promise<T[]> {
+    return this.vivos<T>(tabla);
+  }
+
   async todosConSobre(tabla: Tabla): Promise<FilaFalsa[]> {
     return [...this.tabla(tabla).values()];
   }

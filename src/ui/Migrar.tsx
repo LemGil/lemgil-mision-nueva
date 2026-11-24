@@ -294,11 +294,17 @@ export default function Migrar({ repo }: { repo: Repo }) {
     setError('');
     try {
       const r = await restaurarRedDesdeRespaldo(repo, actuales, respaldoRed);
-      setAvisoRestaurar(
-        r.fichasRestauradas === 0 && r.aportesReubicados === 0 && r.aportesRestaurados === 0
-          ? '✓ Todo está en su sitio: cada ficha y cada aporte del respaldo están con su dueño.'
-          : `✓ Reparación hecha: ${r.fichasRestauradas} ficha(s) restaurada(s), ${r.aportesReubicados} aporte(s) devueltos a su dueño, ${r.aportesRestaurados} aporte(s) restaurados${r.copiasVaciasSaltadas > 0 ? `; ${r.copiasVaciasSaltadas} copia(s) vacía(s) de la unión quedaron fuera, sin resucitar` : ''}. Sincroniza para subirlo.`,
-      );
+      if (r.verificacion.siguenFuera > 0 || r.verificacion.fichasQueFaltan > 0) {
+        setError(
+          `Escribí la reparación y al RELEER esta base quedó así: ${r.verificacion.siguenFuera} aporte(s) del respaldo siguen fuera de su ficha y ${r.verificacion.fichasQueFaltan} ficha(s) con aportes no aparecen. No es el resultado esperado: pásale este aviso a Leo tal cual.`,
+        );
+      } else {
+        setAvisoRestaurar(
+          r.fichasRestauradas === 0 && r.aportesReubicados === 0 && r.aportesRestaurados === 0
+            ? '✓ Todo está en su sitio, verificado al releer la base: cada ficha y cada aporte del respaldo están con su dueño.'
+            : `✓ Reparación hecha y VERIFICADA al releer la base: ${r.fichasRestauradas} ficha(s) restaurada(s), ${r.aportesReubicados} aporte(s) devueltos a su dueño, ${r.aportesRestaurados} aporte(s) restaurados${r.copiasVaciasSaltadas > 0 ? `; ${r.copiasVaciasSaltadas} copia(s) vacía(s) de la unión quedaron fuera, sin resucitar` : ''}. Sincroniza para subirlo.`,
+        );
+      }
       await cargar();
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));

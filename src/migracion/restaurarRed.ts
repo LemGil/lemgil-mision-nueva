@@ -5,7 +5,7 @@
 // Los aportes registrados a mano en la app nueva no están en el
 // respaldo y no se tocan. Todo se decide por id: es exacto.
 
-import type { DatosMinisterio } from '../modelo/tipos';
+import type { AporteRed, Colaborador, DatosMinisterio } from '../modelo/tipos';
 import type { Repo } from '../datos/repo';
 import type { RespaldoViejo } from './convertir';
 import { convertirRed } from './traerRed';
@@ -19,6 +19,13 @@ export interface ResultadoRestaurarRed {
   aportesReubicados: number;
   /** Aportes del respaldo que habían sido borrados y se restauraron. */
   aportesRestaurados: number;
+  /** La verdad tras RELEER la base al terminar de escribir. */
+  verificacion: {
+    /** Aportes del respaldo que, releyendo, siguen fuera de su ficha. */
+    siguenFuera: number;
+    /** Fichas con aportes del respaldo que, releyendo, no aparecen vivas. */
+    fichasQueFaltan: number;
+  };
 }
 
 const nombreCompleto = (nombre: string, apellido?: string): string =>
@@ -69,5 +76,26 @@ export async function restaurarRedDesdeRespaldo(
     }
   }
 
-  return { fichasRestauradas, copiasVaciasSaltadas, aportesReubicados, aportesRestaurados };
+  // 3) Verificación: releer la base y contar lo que de verdad quedó.
+  // El aviso ya no dice lo que se INTENTÓ: dice lo que se CONFIRMÓ.
+  const colabsAhora = await repo.listar<Colaborador>('colaboradores');
+  const aportesAhora = await repo.listar<AporteRed>('aportesRed');
+  let siguenFuera = 0;
+  for (const a of aportesRed) {
+    const actual = aportesAhora.find((x) => x.id === a.id);
+    if (!actual || actual.colaboradorId !== a.colaboradorId) siguenFuera++;
+  }
+  let fichasQueFaltan = 0;
+  for (const c of colaboradores) {
+    if (!conAportesRespaldo.has(c.id)) continue; // copia vacía: fuera a propósito
+    if (!colabsAhora.some((x) => x.id === c.id)) fichasQueFaltan++;
+  }
+
+  return {
+    fichasRestauradas,
+    copiasVaciasSaltadas,
+    aportesReubicados,
+    aportesRestaurados,
+    verificacion: { siguenFuera, fichasQueFaltan },
+  };
 }

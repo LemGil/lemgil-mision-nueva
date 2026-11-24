@@ -40,7 +40,7 @@ describe('restaurarRedDesdeRespaldo', () => {
     for (const a of datos.aportesRed) repo.sembrar('aportesRed', { ...a, borrado: false });
 
     const r = await restaurarRedDesdeRespaldo(repo.comoRepo(), datos, respaldo);
-    expect(r).toEqual({ fichasRestauradas: 1, copiasVaciasSaltadas: 0, aportesReubicados: 2, aportesRestaurados: 0 });
+    expect(r).toEqual({ fichasRestauradas: 1, copiasVaciasSaltadas: 0, aportesReubicados: 2, aportesRestaurados: 0, verificacion: { siguenFuera: 0, fichasQueFaltan: 0 } });
 
     const colabs = repo.vivos<Colaborador>('colaboradores');
     expect(colabs.map((c) => c.id).sort()).toEqual(['g1', 'i1']);
@@ -114,7 +114,9 @@ describe('restaurarRedDesdeRespaldo', () => {
       ],
     );
     const repo = new RepoFalso();
+    for (const c of datos.colaboradores) repo.sembrar('colaboradores', { ...c, borrado: false });
+    for (const a of datos.aportesRed) repo.sembrar('aportesRed', { ...a, borrado: false });
     const r = await restaurarRedDesdeRespaldo(repo.comoRepo(), datos, respaldo);
-    expect(r).toEqual({ fichasRestauradas: 0, copiasVaciasSaltadas: 0, aportesReubicados: 0, aportesRestaurados: 0 });
+    expect(r).toEqual({ fichasRestauradas: 0, copiasVaciasSaltadas: 0, aportesReubicados: 0, aportesRestaurados: 0, verificacion: { siguenFuera: 0, fichasQueFaltan: 0 } });
   });
 });

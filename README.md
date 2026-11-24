@@ -425,3 +425,13 @@ v46 afina el Restaurar: ya no resucita las copias vacías que la
 unión fundió (sin aportes en el respaldo ni vivos), y devuelve los
 aportes que aún cuelguen de otra ficha (los 6 de Gina en Isabel).
 139/139 pruebas.
+
+## El Restaurar se verifica a sí mismo (v47)
+
+Tras dos corridas del Restaurar sin efecto visible (y el
+diagnóstico v45 probando que los aportes seguían en la otra
+ficha), el Restaurar ahora RELEE la base al terminar y el aviso
+dice lo CONFIRMADO, no lo intentado: si algo sigue fuera de su
+ficha, el aviso sale como error con los conteos exactos. La
+función y sus pruebas (139/139) mueven los aportes por id; si en
+el equipo no se mueven, el aviso verificado lo dirá en el acto.
