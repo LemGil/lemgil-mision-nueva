@@ -98,7 +98,6 @@ export default function BienComun({ repo }: { repo: Repo }) {
   const [seleccionado, setSeleccionado] = useState<string | null>(null);
   const [editandoAporte, setEditandoAporte] = useState<string | null>(null);
   const [editandoRegistro, setEditandoRegistro] = useState<string | null>(null);
-  const [avisoParte, setAvisoParte] = useState('');
   const [error, setError] = useState('');
   const [mostrarForm, setMostrarForm] = useState(false);
   const [busqueda, setBusqueda] = useState('');
@@ -322,7 +321,6 @@ export default function BienComun({ repo }: { repo: Repo }) {
               <p className="tenue">El formulario queda abierto y con la persona elegida: puedes registrar varios aportes seguidos sin abrir ficha por ficha.</p>
             </>
           )}
-          {avisoParte && <p className="aviso">{avisoParte}</p>}
           {registroVisible.length === 0 ? (
             <p className="tenue">Sin aportes en esta vista.</p>
           ) : (
@@ -340,17 +338,7 @@ export default function BienComun({ repo }: { repo: Repo }) {
                       nombre={g ? `${iconoGrupo(g)} ${g.nombre}` : p ? `${p.nombre} ${p.apellidos ?? ''}` : 'Persona borrada'}
                       meta={g ? `Ofrenda del grupo${a.reunionId ? ' · del parte de reunión' : ''}${a.referencia ? ` · ref. ${a.referencia}` : ''}` : a.reunionId ? `${a.tipo} · del parte de reunión` : a.tipo}
                       valor={formatoDinero(a.monto)}
-                      onClick={() => {
-                        if (a.reunionId) {
-                          setAvisoParte(
-                            a.grupoId
-                              ? `Esa ofrenda nació del parte de reunión del ${a.fecha}: se corrige en Grupos, en la ficha del grupo, pestaña Reuniones.`
-                              : `Ese diezmo nació del parte de reunión del ${a.fecha}: se corrige en Grupos, en la ficha del grupo, pestaña Reuniones.`,
-                          );
-                        } else {
-                          setEditandoRegistro(a.id);
-                        }
-                      }}
+                      onClick={() => setEditandoRegistro(a.id)}
                     />
                   )}
                   </li>
@@ -430,12 +418,7 @@ export default function BienComun({ repo }: { repo: Repo }) {
       )}
 
       {detalle && (
-        <Modal
-          onCerrar={() => {
-            setSeleccionado(null);
-            setAvisoParte('');
-          }}
-        >
+        <Modal onCerrar={() => setSeleccionado(null)}>
           <h2>{personaDe(detalle.personaId)?.nombre} {personaDe(detalle.personaId)?.apellidos ?? ''}</h2>
           <button
             className="btn"
@@ -492,7 +475,6 @@ export default function BienComun({ repo }: { repo: Repo }) {
             </div>
           )}
           <h3>Aportes</h3>
-          {avisoParte && <p className="aviso">{avisoParte}</p>}
           {aportesDe.length === 0 ? (
             <p className="tenue">Sin aportes registrados.</p>
           ) : (
@@ -508,13 +490,7 @@ export default function BienComun({ repo }: { repo: Repo }) {
                         nombre={a.tipo}
                         meta={a.reunionId ? 'del parte de reunión' : undefined}
                         valor={formatoDinero(a.monto)}
-                        onClick={() => {
-                          if (a.reunionId) {
-                            setAvisoParte(`Ese diezmo nació del parte de reunión del ${a.fecha}: se corrige en Grupos, en la ficha del grupo, pestaña Reuniones.`);
-                          } else {
-                            setEditandoAporte(a.id);
-                          }
-                        }}
+                        onClick={() => setEditandoAporte(a.id)}
                       />
                     )}
                   </li>

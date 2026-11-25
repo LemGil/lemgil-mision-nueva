@@ -588,3 +588,14 @@ y sus entregas. El resumen de Reuniones y la fila de cada parte
 muestran «🌾 N diezmos ($X)». (El v59 fue el seguro del botón
 Borrar colaborador en la Red; no llevó cambio de caché.)
 162/162 pruebas.
+
+## Los registros del parte se editan como los demás (v61)
+
+Decisión de LemGil: la ofrenda del grupo y los diezmos que
+nacen de un parte ya NO muestran el aviso «se corrige en el
+parte» en Bien Común — al tocarlos se abre su editor, como
+cualquier otro registro (su regla: el registro se maneja en el
+registro). Es seguro porque el parte lee sus montos de esos
+mismos registros al abrirse. La fila conserva la marca «del
+parte de reunión»; la lista de quiénes diezman se sigue
+manejando en el parte. 162/162 pruebas.
