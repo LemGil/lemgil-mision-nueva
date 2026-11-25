@@ -529,3 +529,11 @@ quedó cargada: ahora abre con dos pestañas — «📋 Datos» (el
 resumen, la familia y el formulario de siempre) y «🗓️ Reuniones
 (N)» (el parte y su historial). Al cambiar de grupo, la ficha
 abre siempre en Datos. 151/151 pruebas.
+
+## Arreglo: pantalla en blanco en Grupos (v55)
+
+El efecto que reinicia la pestaña de la ficha quedó DESPUÉS del
+`if (!datos) return` de Grupos: al cargar los datos aparecía un
+hook de más y React cerraba la página (error #310, el mismo de
+Manos Abiertas). Movido junto a los demás hooks, antes de la
+guardia. Barrido por componentes en todas las páginas: limpio.

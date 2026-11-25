@@ -343,6 +343,10 @@ export default function Grupos({ repo }: { repo: Repo }) {
       vivo = false;
     };
   }, [repo, recargas]);
+  // Al cambiar de grupo, su ficha abre siempre en la pestaña Datos.
+  useEffect(() => {
+    setPestanaFicha('datos');
+  }, [seleccionado]);
 
   if (!datos) return <p className="cargando">Cargando…</p>;
   const personaDe = (id?: string | null) => datos.personas.find((p) => p.id === id);
@@ -355,9 +359,6 @@ export default function Grupos({ repo }: { repo: Repo }) {
       .filter((id) => !esPersonaBaja(id))
       .map((id) => personaDe(id))
       .filter(Boolean);
-  useEffect(() => {
-    setPestanaFicha('datos');
-  }, [seleccionado]);
   const detalle = seleccionado ? datos.grupos.find((g) => g.id === seleccionado) : undefined;
   const padreDetalle = detalle ? padreDe(datos, detalle) : undefined;
   const hijosDetalle = detalle ? hijosDe(datos, detalle.id) : [];
