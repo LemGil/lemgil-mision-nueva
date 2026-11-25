@@ -467,3 +467,13 @@ en Migración → Traer, «Recuperar borrados de la Red», que lista
 las tumbas de colaboradores y aportes (también los registrados a
 mano, fuera del respaldo) y restaura cada uno tal cual.
 141/141 pruebas.
+
+## El registro se maneja en el registro (v51)
+
+Regla de LemGil: tocar un registro del Registro general no debe
+cargar la ficha del colaborador para recién ahí poder borrarlo.
+Ahora el registro abre SU editor en el mismo sitio (fecha, tipo,
+método, monto, referencia y su 🗑️), en la Red y en Bien Común;
+el editor es uno solo, compartido entre la ficha y el registro.
+La ficha se sigue abriendo desde la lista de colaboradores.
+141/141 pruebas.

@@ -3,7 +3,7 @@ import { aDatosMinisterio } from '../datos/aDatosMinisterio';
 import { actualizarAporte, borrarAporte, borrarDiezmador, crearDiezmador, registrarAporte } from '../datos/acciones';
 import { nombresGruposDe } from '../motor/gruposVista';
 import type { Repo } from '../datos/repo';
-import type { DatosMinisterio, Periodo } from '../modelo/tipos';
+import type { Aporte, DatosMinisterio, Periodo } from '../modelo/tipos';
 import { resumenBienComun } from '../motor/bienComun';
 import SelectorPersona from './SelectorPersona';
 import { anosConRegistros, mesesConRegistros } from '../motor/periodos';
@@ -21,6 +21,71 @@ import { buscarPersonas, coincideBusqueda } from '../motor/personaVista';
 const hoyIso = () => new Date().toISOString().slice(0, 10);
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
+/** El editor de UN aporte: el mismo en la ficha del diezmador y en
+ * el Registro general. El registro se maneja en el registro:
+ * tocarlo lo abre aquí mismo, sin cargar la ficha de nadie. */
+function EditorAporteComun({
+  repo,
+  aporte,
+  recargar,
+  onCerrar,
+}: {
+  repo: Repo;
+  aporte: Aporte;
+  recargar: () => void;
+  onCerrar: () => void;
+}) {
+  return (
+<ListaEdicion>
+                        <FilaEdicion>
+                    <input
+                      type="date"
+                      value={aporte.fecha}
+                      onChange={async (e) => {
+                        await actualizarAporte(repo, { ...aporte, fecha: e.target.value });
+                        recargar();
+                      }}
+                    />
+                    <select
+                      value={aporte.tipo}
+                      onChange={async (e) => {
+                        await actualizarAporte(repo, { ...aporte, tipo: e.target.value as 'Diezmo' | 'Ofrenda' });
+                        recargar();
+                      }}
+                    >
+                      <option value="Diezmo">Diezmo</option>
+                      <option value="Ofrenda">Ofrenda</option>
+                    </select>
+                    <input
+                      type="number"
+                      min="0"
+                      defaultValue={aporte.monto}
+                      style={{ width: '7em' }}
+                      onBlur={async (e) => {
+                        const v = Number(e.target.value);
+                        if (v > 0 && v !== aporte.monto) {
+                          await actualizarAporte(repo, { ...aporte, monto: v });
+                          recargar();
+                        }
+                      }}
+                    />
+                    <BorrarBoton
+                      texto="🗑️"
+                      titulo="Borrar este aporte"
+                      onBorrar={async () => {
+                        await borrarAporte(repo, aporte.id);
+                        recargar();
+                      }}
+                    />
+                  
+                          <button className="btn" title="Cerrar el editor" onClick={onCerrar}>
+                            ✔
+                          </button>
+                        </FilaEdicion>
+                      </ListaEdicion>
+  );
+}
+
 export default function BienComun({ repo }: { repo: Repo }) {
   const [datos, setDatos] = useState<DatosMinisterio | null>(null);
   const [recargas, setRecargas] = useState(0);
@@ -28,6 +93,7 @@ export default function BienComun({ repo }: { repo: Repo }) {
   const [mes, setMes] = useState(0);
   const [seleccionado, setSeleccionado] = useState<string | null>(null);
   const [editandoAporte, setEditandoAporte] = useState<string | null>(null);
+  const [editandoRegistro, setEditandoRegistro] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [mostrarForm, setMostrarForm] = useState(false);
   const [busqueda, setBusqueda] = useState('');
@@ -198,7 +264,7 @@ export default function BienComun({ repo }: { repo: Repo }) {
           <p className="tenue">
             Todos los aportes registrados{periodo ? ' en el período elegido arriba' : ''}, del más
             reciente al más viejo. Total: {formatoDinero(registroGeneral.reduce((x, a) => x + a.monto, 0))}.
-            Toca un registro para abrir la ficha de su diezmador.
+            Toca un registro para corregirlo o borrarlo aquí mismo, sin entrar a la ficha.
           </p>
           {mostrarGeneral && (
             <>
@@ -258,13 +324,17 @@ export default function BienComun({ repo }: { repo: Repo }) {
                 const d = datos.diezmadores.find((x) => x.personaId === a.personaId);
                 return (
                   <li key={a.id}>
+                    {editandoRegistro === a.id ? (
+                    <EditorAporteComun repo={repo} aporte={a} recargar={recargar} onCerrar={() => setEditandoRegistro(null)} />
+                  ) : (
                     <FilaRegistro
                       fecha={a.fecha}
                       nombre={p ? `${p.nombre} ${p.apellidos ?? ''}` : 'Persona borrada'}
                       meta={a.tipo}
                       valor={formatoDinero(a.monto)}
-                      onClick={() => { if (d) setSeleccionado(d.id); }}
+                      onClick={() => setEditandoRegistro(a.id)}
                     />
+                  )}
                   </li>
                 );
               })}
@@ -407,53 +477,7 @@ export default function BienComun({ repo }: { repo: Repo }) {
                 {aportesDe.map((a) => (
                   <li key={a.id}>
                     {editandoAporte === a.id ? (
-                      <ListaEdicion>
-                        <FilaEdicion>
-                    <input
-                      type="date"
-                      value={a.fecha}
-                      onChange={async (e) => {
-                        await actualizarAporte(repo, { ...a, fecha: e.target.value });
-                        recargar();
-                      }}
-                    />
-                    <select
-                      value={a.tipo}
-                      onChange={async (e) => {
-                        await actualizarAporte(repo, { ...a, tipo: e.target.value as 'Diezmo' | 'Ofrenda' });
-                        recargar();
-                      }}
-                    >
-                      <option value="Diezmo">Diezmo</option>
-                      <option value="Ofrenda">Ofrenda</option>
-                    </select>
-                    <input
-                      type="number"
-                      min="0"
-                      defaultValue={a.monto}
-                      style={{ width: '7em' }}
-                      onBlur={async (e) => {
-                        const v = Number(e.target.value);
-                        if (v > 0 && v !== a.monto) {
-                          await actualizarAporte(repo, { ...a, monto: v });
-                          recargar();
-                        }
-                      }}
-                    />
-                    <BorrarBoton
-                      texto="🗑️"
-                      titulo="Borrar este aporte"
-                      onBorrar={async () => {
-                        await borrarAporte(repo, a.id);
-                        recargar();
-                      }}
-                    />
-                  
-                          <button className="btn" title="Cerrar el editor" onClick={() => setEditandoAporte(null)}>
-                            ✔
-                          </button>
-                        </FilaEdicion>
-                      </ListaEdicion>
+                      <EditorAporteComun repo={repo} aporte={a} recargar={recargar} onCerrar={() => setEditandoAporte(null)} />
                     ) : (
                       <FilaRegistro
                         fecha={a.fecha}

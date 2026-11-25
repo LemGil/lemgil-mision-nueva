@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { aDatosMinisterio } from '../datos/aDatosMinisterio';
 import { actualizarAporteRed, actualizarColaborador, borrarAporteRed, borrarColaborador, crearColaborador, registrarAporteRed } from '../datos/acciones';
 import type { Repo } from '../datos/repo';
-import type { Colaborador, DatosMinisterio, Periodo } from '../modelo/tipos';
+import type { AporteRed, Colaborador, DatosMinisterio, Periodo } from '../modelo/tipos';
 import { anosConRegistros, mesesConRegistros } from '../motor/periodos';
 import { nombreColaborador, resumenRed, tiposAporteRed } from '../motor/red';
 import { formatoDinero } from '../motor/dinero';
@@ -19,6 +19,98 @@ const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', '
 const TIPOS_COLABORADOR = ['Persona', 'Iglesia', 'Ministerio', 'Empresa', 'Otro'];
 const METODOS = ['Efectivo', 'Transferencia', 'Otro'];
 
+/** El editor de UN aporte: el mismo en la ficha del colaborador y
+ * en el Registro general. El registro se maneja en el registro:
+ * tocarlo lo abre aquí mismo, sin cargar la ficha de nadie. */
+function EditorAporteRed({
+  repo,
+  aporte,
+  tipos,
+  recargar,
+  onCerrar,
+}: {
+  repo: Repo;
+  aporte: AporteRed;
+  tipos: string[];
+  recargar: () => void;
+  onCerrar: () => void;
+}) {
+  return (
+<ListaEdicion>
+                        <FilaEdicion>
+                    <input
+                      type="date"
+                      value={aporte.fecha}
+                      onChange={async (e) => {
+                        await actualizarAporteRed(repo, { ...aporte, fecha: e.target.value });
+                        recargar();
+                      }}
+                    />
+                    <select
+                      value={aporte.tipo}
+                      onChange={async (e) => {
+                        await actualizarAporteRed(repo, { ...aporte, tipo: e.target.value });
+                        recargar();
+                      }}
+                    >
+                      {tipos.map((t) => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                    </select>
+                    <select
+                      value={aporte.metodo ?? 'Efectivo'}
+                      onChange={async (e) => {
+                        await actualizarAporteRed(repo, { ...aporte, metodo: e.target.value });
+                        recargar();
+                      }}
+                    >
+                      {METODOS.map((t) => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                    </select>
+                    <input
+                      type="number"
+                      min="0"
+                      defaultValue={aporte.monto}
+                      style={{ width: '7em' }}
+                      onBlur={async (e) => {
+                        const v = Number(e.target.value);
+                        if (v > 0 && v !== aporte.monto) {
+                          await actualizarAporteRed(repo, { ...aporte, monto: v });
+                          recargar();
+                        }
+                      }}
+                    />
+                    <input
+                      type="text"
+                      defaultValue={aporte.referencia ?? ''}
+                      placeholder="Referencia"
+                      style={{ width: '8em' }}
+                      onBlur={async (e) => {
+                        const v = e.target.value.trim();
+                        if (v !== (aporte.referencia ?? '')) {
+                          await actualizarAporteRed(repo, { ...aporte, referencia: v || undefined });
+                          recargar();
+                        }
+                      }}
+                    />
+                    <BorrarBoton
+                      texto="🗑️"
+                      titulo="Borrar este aporte"
+                      onBorrar={async () => {
+                        await borrarAporteRed(repo, aporte.id);
+                        recargar();
+                      }}
+                    />
+                  
+                          <button className="btn" title="Cerrar el editor" onClick={onCerrar}>
+                            ✔
+                          </button>
+                        </FilaEdicion>
+                      </ListaEdicion>
+  );
+}
+
 export default function RedColaboradores({ repo }: { repo: Repo }) {
   const [datos, setDatos] = useState<DatosMinisterio | null>(null);
   const [recargas, setRecargas] = useState(0);
@@ -29,6 +121,7 @@ export default function RedColaboradores({ repo }: { repo: Repo }) {
   const [agruparPor, setAgruparPor] = useState('tipo');
   const [seleccionado, setSeleccionado] = useState<string | null>(null);
   const [editandoAporte, setEditandoAporte] = useState<string | null>(null);
+  const [editandoRegistro, setEditandoRegistro] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [mostrarForm, setMostrarForm] = useState(false);
   const [busqueda, setBusqueda] = useState('');
@@ -219,7 +312,7 @@ export default function RedColaboradores({ repo }: { repo: Repo }) {
           <p className="tenue">
             Todos los aportes de la Red registrados{periodo ? ' en el período elegido arriba' : ''}, del
             más reciente al más viejo. Total: {formatoDinero(registroGeneral.reduce((x, a) => x + a.monto, 0))}.
-            Toca un registro para abrir la ficha de su colaborador.
+            Toca un registro para corregirlo o borrarlo aquí mismo, sin entrar a la ficha.
           </p>
           {mostrarGeneral && (
             <>
@@ -286,13 +379,17 @@ export default function RedColaboradores({ repo }: { repo: Repo }) {
             <ul className="lista-personas">
               {registroVisible.map((a) => (
                 <li key={a.id}>
-                  <FilaRegistro
+                  {editandoRegistro === a.id ? (
+                    <EditorAporteRed repo={repo} aporte={a} tipos={tiposAporte} recargar={recargar} onCerrar={() => setEditandoRegistro(null)} />
+                  ) : (
+                    <FilaRegistro
                     fecha={a.fecha}
                     nombre={nombreColaborador(datos.colaboradores.find((c) => c.id === a.colaboradorId) ?? { nombre: 'Colaborador borrado' })}
                     meta={<>{a.tipo}{a.metodo ? ` · ${a.metodo}` : ''}{a.referencia ? ` · ref. ${a.referencia}` : ''}</>}
                     valor={formatoDinero(a.monto)}
-                    onClick={() => setSeleccionado(a.colaboradorId)}
+                    onClick={() => setEditandoRegistro(a.id)}
                   />
+                  )}
                 </li>
               ))}
             </ul>
@@ -577,78 +674,7 @@ export default function RedColaboradores({ repo }: { repo: Repo }) {
                 {aportesDe.map((a) => (
                   <li key={a.id}>
                     {editandoAporte === a.id ? (
-                      <ListaEdicion>
-                        <FilaEdicion>
-                    <input
-                      type="date"
-                      value={a.fecha}
-                      onChange={async (e) => {
-                        await actualizarAporteRed(repo, { ...a, fecha: e.target.value });
-                        recargar();
-                      }}
-                    />
-                    <select
-                      value={a.tipo}
-                      onChange={async (e) => {
-                        await actualizarAporteRed(repo, { ...a, tipo: e.target.value });
-                        recargar();
-                      }}
-                    >
-                      {tiposAporte.map((t) => (
-                        <option key={t} value={t}>{t}</option>
-                      ))}
-                    </select>
-                    <select
-                      value={a.metodo ?? 'Efectivo'}
-                      onChange={async (e) => {
-                        await actualizarAporteRed(repo, { ...a, metodo: e.target.value });
-                        recargar();
-                      }}
-                    >
-                      {METODOS.map((t) => (
-                        <option key={t} value={t}>{t}</option>
-                      ))}
-                    </select>
-                    <input
-                      type="number"
-                      min="0"
-                      defaultValue={a.monto}
-                      style={{ width: '7em' }}
-                      onBlur={async (e) => {
-                        const v = Number(e.target.value);
-                        if (v > 0 && v !== a.monto) {
-                          await actualizarAporteRed(repo, { ...a, monto: v });
-                          recargar();
-                        }
-                      }}
-                    />
-                    <input
-                      type="text"
-                      defaultValue={a.referencia ?? ''}
-                      placeholder="Referencia"
-                      style={{ width: '8em' }}
-                      onBlur={async (e) => {
-                        const v = e.target.value.trim();
-                        if (v !== (a.referencia ?? '')) {
-                          await actualizarAporteRed(repo, { ...a, referencia: v || undefined });
-                          recargar();
-                        }
-                      }}
-                    />
-                    <BorrarBoton
-                      texto="🗑️"
-                      titulo="Borrar este aporte"
-                      onBorrar={async () => {
-                        await borrarAporteRed(repo, a.id);
-                        recargar();
-                      }}
-                    />
-                  
-                          <button className="btn" title="Cerrar el editor" onClick={() => setEditandoAporte(null)}>
-                            ✔
-                          </button>
-                        </FilaEdicion>
-                      </ListaEdicion>
+                      <EditorAporteRed repo={repo} aporte={a} tipos={tiposAporte} recargar={recargar} onCerrar={() => setEditandoAporte(null)} />
                     ) : (
                       <FilaRegistro
                         fecha={a.fecha}
