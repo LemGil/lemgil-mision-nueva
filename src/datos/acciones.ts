@@ -992,6 +992,12 @@ async function sincronizarOfrendaDelParte(
   if (ofrenda > 0) {
     if (previa) {
       await actualizarAporte(repo, { ...previa, fecha: reunion.fecha, monto: ofrenda });
+    } else if (
+      await adoptarOfrendaSuelta(repo, datos, reunion, ofrenda)
+    ) {
+      // La ofrenda de esa reunión ya estaba en Bien Común (las
+      // históricas entraron sin vínculo): quedó enlazada al parte
+      // en vez de crear otra. Registrar el parte viejo no duplica.
     } else {
       await registrarAporte(repo, {
         grupoId: reunion.grupoId,
@@ -1004,6 +1010,30 @@ async function sincronizarOfrendaDelParte(
   } else if (previa) {
     await borrarAporte(repo, previa.id);
   }
+}
+
+async function adoptarOfrendaSuelta(
+  repo: Repo,
+  datos: DatosMinisterio,
+  reunion: Reunion,
+  ofrenda: number,
+): Promise<boolean> {
+  const sueltas = datos.aportes.filter(
+    (a) =>
+      a.grupoId === reunion.grupoId &&
+      !a.reunionId &&
+      a.fecha === reunion.fecha &&
+      a.tipo === 'Ofrenda',
+  );
+  const adoptable = sueltas.find((a) => a.monto === ofrenda) ?? sueltas[0];
+  if (!adoptable) return false;
+  await actualizarAporte(repo, {
+    ...adoptable,
+    reunionId: reunion.id,
+    fecha: reunion.fecha,
+    monto: ofrenda,
+  });
+  return true;
 }
 
 async function sincronizarComidaDelParte(
@@ -1027,7 +1057,19 @@ async function sincronizarComidaDelParte(
       unidad: 'raciones',
       reunionId: reunion.id,
     };
-    if (previa) await actualizarEntrega(repo, { ...previa, ...base });
+    // Adopción, como con la ofrenda: una entrega suelta de esa
+    // campaña en la misma fecha es la de esta reunión.
+    const adoptable = previa
+      ? undefined
+      : datos.entregas.find(
+          (e) =>
+            !e.reunionId &&
+            e.campanaId === campana.id &&
+            e.fecha === reunion.fecha &&
+            sinAcentos(e.tipo ?? '') === sinAcentos(tipo),
+        );
+    const existente = previa ?? adoptable;
+    if (existente) await actualizarEntrega(repo, { ...existente, ...base });
     else await registrarEntrega(repo, base);
   } else if (previa) {
     await borrarEntrega(repo, previa.id);

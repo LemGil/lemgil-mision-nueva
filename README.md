@@ -558,3 +558,16 @@ casa («Almuerzo con Jesús» / «Sopa con Jesús»), después el
 nombre exacto y solo al final un nombre que contenga la
 palabra. Las entregas ya registradas se mueven solas al volver
 a guardar su parte. 152/152 pruebas.
+
+## El parte viejo no duplica (v58)
+
+Pregunta de LemGil: los registros históricos están en Bien
+Común pero no como partes en el grupo — ¿al registrar esas
+reuniones en el grupo, la ofrenda pasa OTRA VEZ a Bien Común?
+Tal como estaba, sí: duplicaba, porque las históricas entraron
+sin vínculo con ningún parte. Ahora, al guardar un parte, si en
+Bien Común hay una ofrenda del grupo SUELTA de la misma fecha,
+el parte la ADOPTA (le pone su vínculo y su monto) en vez de
+crear otra; lo mismo con las entregas de la campaña de la casa
+en la misma fecha. Registrar las reuniones anteriores es
+seguro: los totales no se mueven. 156/156 pruebas.

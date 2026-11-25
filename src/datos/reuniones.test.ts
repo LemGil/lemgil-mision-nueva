@@ -127,3 +127,46 @@ describe('la campaña de las comidas con nombres parecidos', () => {
     expect(despues.entregas.find((e) => e.tipo === 'Sopa')?.campanaId).toBe('camp-sopa');
   });
 });
+
+describe('registrar un parte viejo no duplica lo que ya está', () => {
+  it('la ofrenda histórica se enlaza al parte en vez de crearse otra', async () => {
+    const repo = new RepoFalso();
+    repo.sembrar('aportes', { id: 'ap-viejo', grupoId: 'g1', fecha: PARTE.fecha, monto: 5000, tipo: 'Ofrenda', borrado: false });
+    const reunion = await registrarReunion(repo.comoRepo(), datosDesde(repo), PARTE, 5000);
+    const d = datosDesde(repo);
+    expect(d.aportes).toHaveLength(1);
+    expect(d.aportes[0].id).toBe('ap-viejo');
+    expect(d.aportes[0].reunionId).toBe(reunion.id);
+    expect(d.aportes[0].monto).toBe(5000);
+  });
+
+  it('si el monto difiere, manda el parte y sigue siendo un solo registro', async () => {
+    const repo = new RepoFalso();
+    repo.sembrar('aportes', { id: 'ap-viejo', grupoId: 'g1', fecha: PARTE.fecha, monto: 4000, tipo: 'Ofrenda', borrado: false });
+    await registrarReunion(repo.comoRepo(), datosDesde(repo), PARTE, 5000);
+    const d = datosDesde(repo);
+    expect(d.aportes).toHaveLength(1);
+    expect(d.aportes[0].monto).toBe(5000);
+  });
+
+  it('una ofrenda suelta de otra fecha no se toca: el parte crea la suya', async () => {
+    const repo = new RepoFalso();
+    repo.sembrar('aportes', { id: 'ap-viejo', grupoId: 'g1', fecha: '2026-11-15', monto: 5000, tipo: 'Ofrenda', borrado: false });
+    await registrarReunion(repo.comoRepo(), datosDesde(repo), PARTE, 5000);
+    const d = datosDesde(repo);
+    expect(d.aportes).toHaveLength(2);
+    expect(d.aportes.find((a) => a.id === 'ap-viejo')?.reunionId).toBeUndefined();
+  });
+
+  it('la entrega histórica de la campaña se enlaza igual', async () => {
+    const repo = new RepoFalso();
+    repo.sembrar('campanas', { id: 'camp-casa', nombre: 'Almuerzo con Jesús', estado: 'En curso', borrado: false });
+    repo.sembrar('entregas', { id: 'en-vieja', campanaId: 'camp-casa', fecha: PARTE.fecha, tipo: 'almuerzo', cantidad: 99, borrado: false });
+    const reunion = await registrarReunion(repo.comoRepo(), datosDesde(repo), { ...PARTE, almuerzos: 10 }, 0);
+    const d = datosDesde(repo);
+    expect(d.entregas).toHaveLength(1);
+    expect(d.entregas[0].id).toBe('en-vieja');
+    expect(d.entregas[0].reunionId).toBe(reunion.id);
+    expect(d.entregas[0].cantidad).toBe(10);
+  });
+});
