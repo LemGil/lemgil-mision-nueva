@@ -8,6 +8,8 @@ import type { Fila } from './db';
 export interface TransporteRemoto {
   subir(tabla: string, filas: Fila[]): Promise<void>;
   bajar(tabla: string): Promise<Fila[]>;
+  /** Borrado DEFINITIVO en el espejo: la fila deja de existir. */
+  borrarFila(tabla: string, id: string): Promise<void>;
 }
 
 /** Convierte una fila local a la fila del espejo (contenido dentro de `datos`). */
@@ -54,6 +56,11 @@ export class TransporteMemoria implements TransporteRemoto {
     return [...this.tienda(tabla).values()].map(desdeFilaEspejo);
   }
 
+  async borrarFila(tabla: string, id: string): Promise<void> {
+    if (this.fallo) throw this.fallo;
+    this.tienda(tabla).delete(id);
+  }
+
   /** Lo que el espejo guarda de verdad (para verificar en pruebas). */
   crudo(tabla: string): Record<string, unknown>[] {
     return [...this.tienda(tabla).values()];
@@ -74,6 +81,10 @@ export function crearTransporteSupabase(cliente: SupabaseClient): TransporteRemo
       const { data, error } = await cliente.from(tabla).select('id, version, actualizado, borrado, datos');
       if (error) throw new Error(error.message);
       return (data ?? []).map((r) => desdeFilaEspejo(r as Record<string, unknown>));
+    },
+    async borrarFila(tabla, id) {
+      const { error } = await cliente.from(tabla).delete().eq('id', id);
+      if (error) throw new Error(error.message);
     },
   };
 }

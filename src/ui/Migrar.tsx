@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { aDatosMinisterio } from '../datos/aDatosMinisterio';
 import type { Repo } from '../datos/repo';
+import type { Sincronizador } from '../datos/sync';
 import type { DatosMinisterio } from '../modelo/tipos';
 import { verificarCuadre, type ResultadoCuadre } from '../motor/cuadre';
 import {
@@ -13,7 +14,8 @@ import { traerRed, vistaPreviaRed, type ResultadoTraerRed, type VistaPreviaRed }
 import { unirColaboradoresRepetidos } from '../migracion/unirColaboradores';
 import { restaurarRedDesdeRespaldo } from '../migracion/restaurarRed';
 import { diagnosticoRed } from '../migracion/diagnosticoRed';
-import { borradosRed, restaurarAporteBorrado, restaurarColaboradorBorrado, type BorradosRed } from '../migracion/recuperarRed';
+import { borradosRed, borrarDefinitivoAporteRed, borrarDefinitivoColaboradorRed, restaurarAporteBorrado, restaurarColaboradorBorrado, type BorradosRed } from '../migracion/recuperarRed';
+import BorrarBoton from './BorrarBoton';
 import { formatoDinero } from '../motor/dinero';
 import { traerManos, vistaPreviaManos, type VistaPreviaManos } from '../migracion/traerManos';
 import { completarBeneficiarios, vistaPreviaCompletarBeneficiarios, type ResumenCompletarBeneficiarios } from '../migracion/completarBeneficiarios';
@@ -30,7 +32,7 @@ interface VistaPrevia {
   cuadre: ResultadoCuadre;
 }
 
-export default function Migrar({ repo }: { repo: Repo }) {
+export default function Migrar({ repo, sincronizador }: { repo: Repo; sincronizador: Sincronizador | null }) {
   const [actuales, setActuales] = useState<DatosMinisterio | null>(null);
   const [previa, setPrevia] = useState<VistaPrevia | null>(null);
   const [error, setError] = useState('');
@@ -51,6 +53,7 @@ export default function Migrar({ repo }: { repo: Repo }) {
   const [diagnostico, setDiagnostico] = useState<string[] | null>(null);
   const [papelera, setPapelera] = useState<BorradosRed | null>(null);
   const [cargandoPapelera, setCargandoPapelera] = useState(false);
+  const [avisoPapelera, setAvisoPapelera] = useState('');
   const [trayendoRed, setTrayendoRed] = useState(false);
   const [respaldoManos, setRespaldoManos] = useState<RespaldoViejo | null>(null);
   const [previaManos, setPreviaManos] = useState<VistaPreviaManos | null>(null);
@@ -601,11 +604,15 @@ export default function Migrar({ repo }: { repo: Repo }) {
             borrado, no se pierde). Aquí están las fichas y los aportes de la Red hoy
             borrados — incluidos los registrados a mano, que no están en el respaldo —
             y cada uno vuelve tal cual con su botón. Si una ficha y sus aportes están
-            borrados, restaura primero la ficha y después sus aportes.
+            borrados, restaura primero la ficha y después sus aportes. Y lo que ya no
+            quieras guardar ni en la papelera se puede borrar definitivamente: sale de
+            la nube y de este equipo, para siempre (necesita conexión y la sesión
+            iniciada).
           </p>
           <button className="btn btn-dorado" disabled={cargandoPapelera} onClick={verPapelera}>
             {cargandoPapelera ? 'Buscando…' : '♻️ Ver los borrados'}
           </button>
+          {avisoPapelera && <p className="aviso aviso-verde">{avisoPapelera}</p>}
           {papelera && papelera.colaboradores.length === 0 && papelera.aportes.length === 0 && (
             <p className="tenue">La papelera está vacía: no hay nada borrado en la Red.</p>
           )}
@@ -619,16 +626,40 @@ export default function Migrar({ repo }: { repo: Repo }) {
                       nombre={`${c.nombre} ${c.apellido ?? ''}`.trim()}
                       meta={c.tipo ?? ''}
                       acciones={
-                        <button
-                          className="btn"
-                          onClick={async () => {
-                            await restaurarColaboradorBorrado(repo, c);
-                            await verPapelera();
-                            await cargar();
-                          }}
-                        >
-                          ♻️ Restaurar
-                        </button>
+                        <>
+                          <button
+                            className="btn"
+                            onClick={async () => {
+                              await restaurarColaboradorBorrado(repo, c);
+                              await verPapelera();
+                              await cargar();
+                            }}
+                          >
+                            ♻️ Restaurar
+                          </button>
+                          <BorrarBoton
+                            texto="🗑️ Definitivo"
+                            titulo="Borra para siempre esta ficha y los aportes suyos que están en la papelera. Sin vuelta atrás."
+                            onBorrar={async () => {
+                              if (!sincronizador) {
+                                setError('El borrado definitivo necesita la sesión iniciada y conexión: sal y entra de nuevo con tu correo y contraseña.');
+                                return;
+                              }
+                              setError('');
+                              setAvisoPapelera('');
+                              try {
+                                const r = await borrarDefinitivoColaboradorRed(repo, sincronizador, c);
+                                setAvisoPapelera(
+                                  `Borrado para siempre: la ficha de ${`${c.nombre} ${c.apellido ?? ''}`.trim()} y ${r.aportes} aporte(s) que estaban en la papelera.`,
+                                );
+                              } catch (e) {
+                                setError(e instanceof Error ? e.message : String(e));
+                              }
+                              await verPapelera();
+                              await cargar();
+                            }}
+                          />
+                        </>
                       }
                     />
                   </li>
@@ -650,16 +681,40 @@ export default function Migrar({ repo }: { repo: Repo }) {
                         nombre={`${a.fecha} · ${a.tipo} · ${formatoDinero(a.monto)}`}
                         meta={dueno ? `de ${`${dueno.nombre} ${dueno.apellido ?? ''}`.trim()}` : 'sin ficha'}
                         acciones={
-                          <button
-                            className="btn"
-                            onClick={async () => {
-                              await restaurarAporteBorrado(repo, a);
-                              await verPapelera();
-                              await cargar();
-                            }}
-                          >
-                            ♻️ Restaurar
-                          </button>
+                          <>
+                            <button
+                              className="btn"
+                              onClick={async () => {
+                                await restaurarAporteBorrado(repo, a);
+                                await verPapelera();
+                                await cargar();
+                              }}
+                            >
+                              ♻️ Restaurar
+                            </button>
+                            <BorrarBoton
+                              texto="🗑️ Definitivo"
+                              titulo="Borra este aporte para siempre. Sin vuelta atrás."
+                              onBorrar={async () => {
+                                if (!sincronizador) {
+                                  setError('El borrado definitivo necesita la sesión iniciada y conexión: sal y entra de nuevo con tu correo y contraseña.');
+                                  return;
+                                }
+                                setError('');
+                                setAvisoPapelera('');
+                                try {
+                                  await borrarDefinitivoAporteRed(sincronizador, a);
+                                  setAvisoPapelera(
+                                    `Borrado para siempre: el aporte del ${a.fecha} por ${formatoDinero(a.monto)}.`,
+                                  );
+                                } catch (e) {
+                                  setError(e instanceof Error ? e.message : String(e));
+                                }
+                                await verPapelera();
+                                await cargar();
+                              }}
+                            />
+                          </>
                         }
                       />
                     </li>

@@ -81,6 +81,16 @@ export class Sincronizador {
     }
   }
 
+  /** Borrado DEFINITIVO de una fila: sale del espejo y de la base
+   * local, y de la cola si estaba pendiente de subir. Primero el
+   * espejo: si no hay conexión o sesión, nada local se toca y el
+   * error dice por qué. Sin vuelta atrás. */
+  async borrarDefinitivo(tabla: Tabla, id: string): Promise<void> {
+    await this.transporte.borrarFila(tabla, id);
+    await this.repo.desencolar(tabla, id);
+    await this.repo.eliminarLocal(tabla, id);
+  }
+
   private async empujar(): Promise<void> {
     const pendientes = await this.repo.pendientes();
     const porTabla = new Map<Tabla, string[]>();

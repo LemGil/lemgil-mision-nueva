@@ -477,3 +477,15 @@ método, monto, referencia y su 🗑️), en la Red y en Bien Común;
 el editor es uno solo, compartido entre la ficha y el registro.
 La ficha se sigue abriendo desde la lista de colaboradores.
 141/141 pruebas.
+
+## La papelera también borra definitivamente (v52)
+
+Pedido de LemGil: la papelera queda permanente y gana el borrado
+definitivo. Cada ficha y cada aporte de la papelera tiene su
+«🗑️ Definitivo» (con la confirmación de dos toques): la fila sale
+del espejo en la nube y de la base local, y de la cola si estaba
+pendiente — primero la nube, así que sin conexión o sin sesión
+nada se toca y el error lo dice. Al purgar una ficha se van con
+ella los aportes suyos que están en la papelera; si la ficha
+tiene aportes vivos, se niega. TransporteRemoto.borrarFila y
+Sincronizador.borrarDefinitivo son la vía. 143/143 pruebas.

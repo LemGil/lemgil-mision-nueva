@@ -199,7 +199,7 @@ export default function App() {
             <Route path="/red" element={<RedColaboradores repo={repo} />} />
             <Route path="/manos-abiertas" element={<ManosAbiertas repo={repo} />} />
             <Route path="/mapa" element={<Mapa repo={repo} />} />
-            <Route path="/migrar" element={<Migrar repo={repo} />} />
+            <Route path="/migrar" element={<Migrar repo={repo} sincronizador={sync} />} />
           </Routes>
         </main>
       </div>

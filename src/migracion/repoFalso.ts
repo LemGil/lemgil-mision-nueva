@@ -27,6 +27,10 @@ export class RepoFalso {
     if (f) this.tabla(tabla).set(id, { ...f, borrado: true });
   }
 
+  async eliminarLocal(tabla: Tabla, id: string): Promise<void> {
+    this.tabla(tabla).delete(id);
+  }
+
   async listar<T>(tabla: Tabla): Promise<T[]> {
     return this.vivos<T>(tabla);
   }
