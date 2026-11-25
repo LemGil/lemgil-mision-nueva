@@ -456,3 +456,14 @@ sellos del tipo y el estado (ámbar/verde/gris) y sus datos en la
 lista etiqueta/valor del modal (teléfono, correo, plan de ofrenda,
 notas y el resumen «N aportes · total»), en vez de las líneas
 tenues. 140/140 pruebas.
+
+## La papelera de la Red (v50)
+
+Caso Mayli y Corban: al limpiar registros dentro de sus fichas se
+usó «Borrar colaborador» y cayeron la ficha con TODOS sus aportes
+(el borrado por aporte, verificado en código, jamás toca la
+ficha). Como el borrado es lógico, nada se perdió: nueva sección
+en Migración → Traer, «Recuperar borrados de la Red», que lista
+las tumbas de colaboradores y aportes (también los registrados a
+mano, fuera del respaldo) y restaura cada uno tal cual.
+141/141 pruebas.

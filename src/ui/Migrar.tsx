@@ -13,6 +13,8 @@ import { traerRed, vistaPreviaRed, type ResultadoTraerRed, type VistaPreviaRed }
 import { unirColaboradoresRepetidos } from '../migracion/unirColaboradores';
 import { restaurarRedDesdeRespaldo } from '../migracion/restaurarRed';
 import { diagnosticoRed } from '../migracion/diagnosticoRed';
+import { borradosRed, restaurarAporteBorrado, restaurarColaboradorBorrado, type BorradosRed } from '../migracion/recuperarRed';
+import { formatoDinero } from '../motor/dinero';
 import { traerManos, vistaPreviaManos, type VistaPreviaManos } from '../migracion/traerManos';
 import { completarBeneficiarios, vistaPreviaCompletarBeneficiarios, type ResumenCompletarBeneficiarios } from '../migracion/completarBeneficiarios';
 import { completarGrupos, vistaPreviaCompletarGrupos, type ResumenCompletarGrupos } from '../migracion/completarGrupos';
@@ -20,7 +22,7 @@ import { renombrarAnadidos } from '../migracion/renombrarAnadidos';
 import { convertirRespaldo, type InformeMigracion, type RespaldoViejo } from '../migracion/convertir';
 import { importarEnRepo, puedeImportar } from '../migracion/importar';
 import GuiaPagina from './GuiaPagina';
-import { CabeceraPagina, Pestanas } from './Piezas';
+import { FilaAcciones, CabeceraPagina, Pestanas } from './Piezas';
 
 interface VistaPrevia {
   datos: DatosMinisterio;
@@ -47,6 +49,8 @@ export default function Migrar({ repo }: { repo: Repo }) {
   const [avisoRestaurar, setAvisoRestaurar] = useState('');
   const [revisando, setRevisando] = useState(false);
   const [diagnostico, setDiagnostico] = useState<string[] | null>(null);
+  const [papelera, setPapelera] = useState<BorradosRed | null>(null);
+  const [cargandoPapelera, setCargandoPapelera] = useState(false);
   const [trayendoRed, setTrayendoRed] = useState(false);
   const [respaldoManos, setRespaldoManos] = useState<RespaldoViejo | null>(null);
   const [previaManos, setPreviaManos] = useState<VistaPreviaManos | null>(null);
@@ -317,6 +321,18 @@ export default function Migrar({ repo }: { repo: Repo }) {
     }
   };
 
+  const verPapelera = async () => {
+    setCargandoPapelera(true);
+    setError('');
+    try {
+      setPapelera(await borradosRed(repo));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setCargandoPapelera(false);
+    }
+  };
+
   const revisarLaRed = async () => {
     if (!respaldoRed) return;
     setRevisando(true);
@@ -576,6 +592,82 @@ export default function Migrar({ repo }: { repo: Repo }) {
             <p className="tenue">Primero elige el respaldo arriba, en «🤝 Traer la Red de Colaboradores».</p>
           )}
           {avisoRestaurar && <p className="aviso aviso-verde">{avisoRestaurar}</p>}
+        </section>
+
+        <section className="tarjeta">
+          <h2>♻️ Recuperar borrados de la Red</h2>
+          <p className="tenue">
+            La papelera: borrar en la app es lógico (el registro queda guardado como
+            borrado, no se pierde). Aquí están las fichas y los aportes de la Red hoy
+            borrados — incluidos los registrados a mano, que no están en el respaldo —
+            y cada uno vuelve tal cual con su botón. Si una ficha y sus aportes están
+            borrados, restaura primero la ficha y después sus aportes.
+          </p>
+          <button className="btn btn-dorado" disabled={cargandoPapelera} onClick={verPapelera}>
+            {cargandoPapelera ? 'Buscando…' : '♻️ Ver los borrados'}
+          </button>
+          {papelera && papelera.colaboradores.length === 0 && papelera.aportes.length === 0 && (
+            <p className="tenue">La papelera está vacía: no hay nada borrado en la Red.</p>
+          )}
+          {papelera && papelera.colaboradores.length > 0 && (
+            <>
+              <h3>Fichas borradas</h3>
+              <ul className="lista">
+                {papelera.colaboradores.map((c) => (
+                  <li key={c.id}>
+                    <FilaAcciones
+                      nombre={`${c.nombre} ${c.apellido ?? ''}`.trim()}
+                      meta={c.tipo ?? ''}
+                      acciones={
+                        <button
+                          className="btn"
+                          onClick={async () => {
+                            await restaurarColaboradorBorrado(repo, c);
+                            await verPapelera();
+                            await cargar();
+                          }}
+                        >
+                          ♻️ Restaurar
+                        </button>
+                      }
+                    />
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+          {papelera && papelera.aportes.length > 0 && (
+            <>
+              <h3>Aportes borrados</h3>
+              <ul className="lista">
+                {papelera.aportes.map((a) => {
+                  const dueno =
+                    actuales.colaboradores.find((c) => c.id === a.colaboradorId) ??
+                    papelera.colaboradores.find((c) => c.id === a.colaboradorId);
+                  return (
+                    <li key={a.id}>
+                      <FilaAcciones
+                        nombre={`${a.fecha} · ${a.tipo} · ${formatoDinero(a.monto)}`}
+                        meta={dueno ? `de ${`${dueno.nombre} ${dueno.apellido ?? ''}`.trim()}` : 'sin ficha'}
+                        acciones={
+                          <button
+                            className="btn"
+                            onClick={async () => {
+                              await restaurarAporteBorrado(repo, a);
+                              await verPapelera();
+                              await cargar();
+                            }}
+                          >
+                            ♻️ Restaurar
+                          </button>
+                        }
+                      />
+                    </li>
+                  );
+                })}
+              </ul>
+            </>
+          )}
         </section>
 
         <section className="tarjeta">
