@@ -1,23 +1,27 @@
 import { useCallback, useEffect, useState } from 'react';
 import { aDatosMinisterio } from '../datos/aDatosMinisterio';
-import { actualizarGrupo, agregarAGrupo, borrarGrupo, crearGrupo, quitarDeGrupo } from '../datos/acciones';
+import { actualizarGrupo, actualizarReunion, agregarAGrupo, borrarGrupo, borrarReunion, crearGrupo, quitarDeGrupo, registrarReunion } from '../datos/acciones';
 import type { Repo } from '../datos/repo';
 import type { DatosMinisterio } from '../modelo/tipos';
 import SelectorPersona from './SelectorPersona';
 import { clasificarPersona } from '../motor/censo';
 import { esBaja } from '../motor/vistas';
-import type { Grupo, Persona } from '../modelo/tipos';
+import type { Grupo, Persona, Reunion } from '../modelo/tipos';
 import { InputZona } from './CamposLista';
 import { agrupar } from '../motor/vistas';
 import BarraVistas, { type Vista } from './BarraVistas';
 
 import Modal from './Modal';
-import { Buscador, CabeceraPagina, FilaAcciones, FilaPersona, Kpi, TarjetaPersona } from './Piezas';
+import { Buscador, CabeceraPagina, FilaAcciones, FilaPersona, FilaRegistro, Kpi, TarjetaPersona } from './Piezas';
 import { coincideBusqueda } from '../motor/personaVista';
 import BorrarBoton from './BorrarBoton';
 import GuiaPagina from './GuiaPagina';
 import { claveTipoGrupo, conteoPorPasoDelGrupo, esIglesia, esOikos, estadoGrupo, grupoDeTipo, hijosDe, iconoGrupo, idsCongregados, idsGruposDe, idsMiembrosDeGrupo, liderVisible, lineaReunion, ordenarGruposPorFamilia, padreDe, personasPorOikos, porcentajeCapacidad, tipoVisibleGrupo, tiposDeGrupoEnUso } from '../motor/gruposVista';
 import { useNavigate } from 'react-router-dom';
+import { avisoCuadreParte, ofrendaDeParte, partesDeGrupo, resumenReuniones } from '../motor/reuniones';
+import { formatoDinero } from '../motor/dinero';
+
+const hoyIso = () => new Date().toISOString().slice(0, 10);
 
 const DIAS_SEMANA = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 
@@ -124,6 +128,186 @@ function SeccionMiembros({
         onElegir={(id) => onCambiar([...seleccion, id])}
         placeholder="🔍 Agregar un miembro…"
       />
+    </>
+  );
+}
+
+
+/** El formulario del parte de reunión: los conteos de la reunión,
+ * la ofrenda (que va a Bien Común como aporte del grupo) y las
+ * comidas (que van a Manos Abiertas como entregas). */
+function FormParte({
+  repo,
+  datos,
+  grupo,
+  parte,
+  onListo,
+}: {
+  repo: Repo;
+  datos: DatosMinisterio;
+  grupo: Grupo;
+  parte?: Reunion;
+  onListo: () => void;
+}) {
+  const [fecha, setFecha] = useState(parte?.fecha ?? hoyIso());
+  const [personas, setPersonas] = useState(String(parte?.personas ?? ''));
+  const [mujeres, setMujeres] = useState(String(parte?.mujeres ?? ''));
+  const [hombres, setHombres] = useState(String(parte?.hombres ?? ''));
+  const [ninos, setNinos] = useState(String(parte?.ninos ?? ''));
+  const [visitas, setVisitas] = useState(String(parte?.visitas ?? ''));
+  const [nuevos, setNuevos] = useState(String(parte?.nuevosCongregados ?? ''));
+  const [profesiones, setProfesiones] = useState(String(parte?.profesiones ?? ''));
+  const [almuerzos, setAlmuerzos] = useState(String(parte?.almuerzos ?? ''));
+  const [sopas, setSopas] = useState(String(parte?.sopas ?? ''));
+  const [ofrenda, setOfrenda] = useState(() => {
+    if (!parte) return '';
+    const a = ofrendaDeParte(datos, parte.id);
+    return a ? String(a.monto) : '';
+  });
+  const [notas, setNotas] = useState(parte?.notas ?? '');
+  const [error, setError] = useState('');
+  const n = (v: string) => Math.max(0, parseInt(v, 10) || 0);
+  const aviso = avisoCuadreParte({
+    personas: n(personas),
+    mujeres: n(mujeres),
+    hombres: n(hombres),
+    ninos: n(ninos),
+  });
+  const guardar = async () => {
+    setError('');
+    const base = {
+      grupoId: grupo.id,
+      fecha,
+      personas: n(personas),
+      mujeres: n(mujeres),
+      hombres: n(hombres),
+      ninos: n(ninos),
+      visitas: n(visitas),
+      nuevosCongregados: n(nuevos),
+      profesiones: n(profesiones),
+      almuerzos: n(almuerzos),
+      sopas: n(sopas),
+      notas: notas.trim() || undefined,
+    };
+    try {
+      if (parte) await actualizarReunion(repo, datos, { ...base, id: parte.id }, Number(ofrenda) || 0);
+      else await registrarReunion(repo, datos, base, Number(ofrenda) || 0);
+      onListo();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  };
+  return (
+    <div className="tarjeta formulario">
+      <h3>{parte ? '✏️ Corregir el parte' : '🗓️ Nuevo parte de reunión'}</h3>
+      <div className="form-fila">
+        <label>Fecha<input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} /></label>
+        <label>Personas<input type="number" min="0" value={personas} onChange={(e) => setPersonas(e.target.value)} /></label>
+      </div>
+      <div className="form-fila">
+        <label>Mujeres<input type="number" min="0" value={mujeres} onChange={(e) => setMujeres(e.target.value)} /></label>
+        <label>Hombres<input type="number" min="0" value={hombres} onChange={(e) => setHombres(e.target.value)} /></label>
+        <label>Niños<input type="number" min="0" value={ninos} onChange={(e) => setNinos(e.target.value)} /></label>
+      </div>
+      <div className="form-fila">
+        <label>Visitas<input type="number" min="0" value={visitas} onChange={(e) => setVisitas(e.target.value)} /></label>
+        <label>Nuevos congregados<input type="number" min="0" value={nuevos} onChange={(e) => setNuevos(e.target.value)} /></label>
+        <label>Profesiones de fe<input type="number" min="0" value={profesiones} onChange={(e) => setProfesiones(e.target.value)} /></label>
+      </div>
+      <div className="form-fila">
+        <label>Ofrenda recogida ($)<input type="number" min="0" value={ofrenda} onChange={(e) => setOfrenda(e.target.value)} /></label>
+        <label>Almuerzos repartidos<input type="number" min="0" value={almuerzos} onChange={(e) => setAlmuerzos(e.target.value)} /></label>
+        <label>Sopas repartidas<input type="number" min="0" value={sopas} onChange={(e) => setSopas(e.target.value)} /></label>
+      </div>
+      <div className="form-fila">
+        <label>Notas<input value={notas} onChange={(e) => setNotas(e.target.value)} /></label>
+      </div>
+      <p className="tenue">La ofrenda queda en Bien Común como aporte del grupo, y los almuerzos y sopas en Manos Abiertas como entregas de ese día.</p>
+      {aviso && <p className="aviso">{aviso}</p>}
+      {error && <p className="aviso aviso-rojo">{error}</p>}
+      <div className="form-acciones">
+        <button className="btn btn-dorado" onClick={guardar}>💾 Guardar el parte</button>
+        <button className="btn" onClick={onListo}>Cancelar</button>
+        {parte && (
+          <BorrarBoton
+            texto="🗑️ Borrar parte"
+            titulo="Borra el parte con su ofrenda y sus entregas"
+            onBorrar={async () => {
+              await borrarReunion(repo, datos, parte.id);
+              onListo();
+            }}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** La sección de Reuniones en la ficha del grupo: su resumen, el
+ * botón del parte nuevo y el historial (tocar un parte lo corrige). */
+function SeccionReuniones({
+  repo,
+  datos,
+  grupo,
+  recargar,
+}: {
+  repo: Repo;
+  datos: DatosMinisterio;
+  grupo: Grupo;
+  recargar: () => void;
+}) {
+  const [editando, setEditando] = useState<string | null>(null);
+  const partes = partesDeGrupo(datos, grupo.id);
+  const resumen = resumenReuniones(datos, grupo.id);
+  const ofrendas = datos.aportes.filter((a) => a.grupoId === grupo.id);
+  const totalOfrendas = ofrendas.reduce((x, a) => x + a.monto, 0);
+  const parteEditando =
+    editando && editando !== 'nuevo' ? partes.find((p) => p.id === editando) : undefined;
+  return (
+    <>
+      <h3>🗓️ Reuniones</h3>
+      <p className="tenue">
+        {resumen.partes === 0
+          ? 'Sin partes registrados todavía.'
+          : `${resumen.partes} parte(s) · asistencia promedio ${resumen.promedioPersonas} · ${resumen.visitas} visitas · ${resumen.nuevos} nuevos congregados · ${resumen.profesiones} profesiones · ${resumen.almuerzos} almuerzos y ${resumen.sopas} sopas repartidas.`}
+        {ofrendas.length > 0 &&
+          ` Ofrendas del grupo en Bien Común: ${ofrendas.length} · ${formatoDinero(totalOfrendas)}.`}
+      </p>
+      {editando ? (
+        <FormParte
+          key={editando}
+          repo={repo}
+          datos={datos}
+          grupo={grupo}
+          parte={parteEditando}
+          onListo={() => {
+            setEditando(null);
+            recargar();
+          }}
+        />
+      ) : (
+        <button className="btn btn-dorado" onClick={() => setEditando('nuevo')}>
+          ➕ Registrar parte
+        </button>
+      )}
+      {partes.length > 0 && (
+        <ul className="lista-personas">
+          {partes.map((p) => {
+            const of = ofrendaDeParte(datos, p.id);
+            return (
+              <li key={p.id}>
+                <FilaRegistro
+                  fecha={p.fecha}
+                  nombre={`${p.personas} personas`}
+                  meta={`${p.mujeres} mujeres · ${p.hombres} hombres · ${p.ninos} niños · ${p.visitas} visitas · ${p.profesiones} profesiones`}
+                  valor={of ? formatoDinero(of.monto) : '—'}
+                  onClick={() => setEditando(p.id)}
+                />
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </>
   );
 }
@@ -365,6 +549,7 @@ export default function Grupos({ repo }: { repo: Repo }) {
             </span>
           </p>
           <StatsGrupo datos={datos} grupo={detalle} miembros={miembrosDe(detalle.id)} />
+          <SeccionReuniones repo={repo} datos={datos} grupo={detalle} recargar={recargar} />
           {padreDetalle && (
             <>
               <h3>Su Iglesia</h3>

@@ -39,6 +39,10 @@ export class RepoFalso {
     return [...this.tabla(tabla).values()];
   }
 
+  async obtenerConSobre(tabla: Tabla, id: string): Promise<FilaFalsa | undefined> {
+    return this.tabla(tabla).get(id);
+  }
+
   /** Siembra una fila tal cual (para simular tumbas). */
   sembrar(tabla: Tabla, fila: FilaFalsa): void {
     this.tabla(tabla).set(fila.id, fila);

@@ -489,3 +489,35 @@ nada se toca y el error lo dice. Al purgar una ficha se van con
 ella los aportes suyos que están en la papelera; si la ficha
 tiene aportes vivos, se niega. TransporteRemoto.borrarFila y
 Sincronizador.borrarDefinitivo son la vía. 143/143 pruebas.
+
+## Reuniones: el parte, las ofrendas del grupo (v53)
+
+Plan «Reuniones y ofrendas del grupo», Fase 0 resuelta por LemGil
+(2026-11-24): la ofrenda se anota DENTRO del parte y la app la
+lleva a Bien Común; el parte vive en Grupos (a ver cómo se ve);
+TODO el historial es del mismo grupo (cambió de nombre/id); y que
+el parte alimente Manos Abiertas es la clave.
+
+- Tabla nueva `reuniones` (contrato uniforme; SQL en
+  sql/agregar-reuniones.sql; Dexie v4). El parte guarda los
+  conteos: personas, mujeres, hombres, niños, visitas, nuevos
+  congregados, profesiones, almuerzos, sopas. NO toca el censo ni
+  Misión: es estadística de la reunión.
+- El Aporte admite dueño grupo (grupoId) además de persona; el del
+  parte lleva reunionId. Al guardar el parte: su ofrenda se crea/
+  corrige como aporte del grupo en Bien Común, y sus almuerzos y
+  sopas como entregas de Manos Abiertas (campañas «Almuerzo con
+  Jesús» / «Sopa con Jesús», que nacen si no existen). Borrar el
+  parte borra sus dos vínculos.
+- Grupos: la ficha del grupo gana «🗓️ Reuniones» — resumen
+  (partes, asistencia promedio, visitas, nuevos, profesiones,
+  comidas, ofrendas del grupo), el formulario del parte con el
+  aviso de cuadre (mujeres + hombres + niños vs. total, sin
+  bloquear) y el historial tocable para corregir.
+- Bien Común: KPI «Ofrendas del grupo», el registro nombra las del
+  grupo por su grupo (las del parte se corrigen en el parte; las
+  históricas, en el registro mismo, solo como Ofrenda).
+- Migración → Traer: «Traer las ofrendas del grupo» — las 110 del
+  respaldo (verificado: 110 registros, $11.152.920) entran por su
+  id a nombre de IGLESIA 120 Y 51.
+151/151 pruebas.

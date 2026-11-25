@@ -143,6 +143,8 @@ export interface Entrega {
   tipo?: string;
   cantidad?: number;
   unidad?: string;
+  /** Si nació del parte de reunión, su id: el parte es su editor. */
+  reunionId?: string;
   notas?: string;
 }
 
@@ -196,10 +198,43 @@ export interface Evangelismo {
 /** Un aporte en Bien Común (diezmo u ofrenda) de un diezmador. */
 export interface Aporte {
   id: string;
-  personaId: string;
+  /** El dueño: una persona (su diezmador) O un grupo — nunca los dos.
+   * Los diezmos son siempre de persona; las ofrendas recogidas en la
+   * reunión son del grupo. */
+  personaId?: string;
+  grupoId?: string;
+  /** Si nació del parte de reunión, su id: el parte es su editor. */
+  reunionId?: string;
   fecha: string;
   monto: number;
   tipo: 'Diezmo' | 'Ofrenda';
+  metodo?: string;
+  referencia?: string;
+  notas?: string;
+}
+
+/**
+ * El parte de una reunión: los conteos que se toman en cada reunión
+ * para ver cómo va funcionando (asistencia, visitas, profesiones,
+ * comidas repartidas). Es estadística de la reunión, NO fichas de
+ * personas: no toca el censo ni los procesos de Misión. Su ofrenda
+ * vive como Aporte del grupo en Bien Común (reunionId) y sus
+ * almuerzos/sopas como Entregas en Manos Abiertas (reunionId).
+ */
+export interface Reunion {
+  id: string;
+  grupoId: string;
+  fecha: string;
+  personas: number;
+  mujeres: number;
+  hombres: number;
+  ninos: number;
+  visitas: number;
+  nuevosCongregados: number;
+  profesiones: number;
+  almuerzos: number;
+  sopas: number;
+  notas?: string;
 }
 
 /**
@@ -250,6 +285,7 @@ export interface DatosMinisterio {
   aportesRed: AporteRed[];
   campanas: Campana[];
   entregas: Entrega[];
+  reuniones: Reunion[];
   pasos: Paso[];
 }
 

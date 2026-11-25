@@ -8,6 +8,7 @@ const datos: DatosMinisterio = {
   personas: [], conversiones: [], miembros: [], estudiantes: [], diezmadores: [],
   beneficiarios: [], hitos: [], asignaciones: [], grupos: [], evangelismos: [],
   aportes: [], pasos: CATALOGO_SEMILLA, campanas: [], entregas: [],
+  reuniones: [],
   colaboradores: [
     { id: 'k1', nombre: 'CORBAN', apellido: 'MINISTERIO', estado: 'Activo', tipo: 'Iglesia', telefono: '555-1' },
     { id: 'k2', nombre: 'Corban', apellido: 'Ministerio', estado: 'Activo', tipo: 'Persona' },

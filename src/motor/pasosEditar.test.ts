@@ -30,6 +30,7 @@ const datosVacios = (conversiones: DatosMinisterio['conversiones'], hitos: Datos
     aportesRed: [],
     campanas: [],
     entregas: [],
+    reuniones: [],
   }) as DatosMinisterio;
 
 describe('moverEnLista', () => {

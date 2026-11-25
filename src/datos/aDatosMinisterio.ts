@@ -21,6 +21,7 @@ import type {
   Miembro,
   Paso,
   Persona,
+  Reunion,
 } from '../modelo/tipos';
 import type { Repo } from './repo';
 
@@ -47,6 +48,7 @@ export async function aDatosMinisterio(repo: Repo): Promise<DatosMinisterio> {
     aportesRed,
     campanas,
     entregas,
+    reuniones,
     pasos,
   ] = await Promise.all([
     repo.listar<Persona>('personas'),
@@ -64,6 +66,7 @@ export async function aDatosMinisterio(repo: Repo): Promise<DatosMinisterio> {
     repo.listar<AporteRed>('aportesRed'),
     repo.listar<Campana>('campanas'),
     repo.listar<Entrega>('entregas'),
+    repo.listar<Reunion>('reuniones'),
     repo.listar<Paso>('pasos'),
   ]);
   return {
@@ -82,6 +85,7 @@ export async function aDatosMinisterio(repo: Repo): Promise<DatosMinisterio> {
     aportesRed,
     campanas,
     entregas,
+    reuniones,
     pasos: pasos.length > 0 ? pasos : CATALOGO_SEMILLA,
   };
 }

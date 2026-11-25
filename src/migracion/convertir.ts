@@ -350,6 +350,7 @@ export function convertirRespaldo(respaldo: RespaldoViejo): {
     aportesRed: [],
     campanas: [],
     entregas: [],
+    reuniones: [],
     pasos,
   };
   return {

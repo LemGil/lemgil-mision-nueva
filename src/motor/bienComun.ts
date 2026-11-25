@@ -13,20 +13,34 @@ export interface ResumenBienComun {
   porPersona: Map<string, number>;
   /** personaId → cantidad de aportes en el período. */
   porPersonaCantidad: Map<string, number>;
+  /** Lo del grupo: las ofrendas recogidas en las reuniones. */
+  totalGrupo: number;
+  cantidadGrupo: number;
+  /** grupoId → total aportado en el período. */
+  porGrupo: Map<string, number>;
 }
 
 export function resumenBienComun(datos: DatosMinisterio, periodo?: Periodo): ResumenBienComun {
   const enPeriodo = (f: string) => !periodo || (f >= periodo.desde && f <= periodo.hasta);
   const porPersona = new Map<string, number>();
   const porPersonaCantidad = new Map<string, number>();
+  const porGrupo = new Map<string, number>();
   let total = 0;
   let cantidad = 0;
+  let totalGrupo = 0;
+  let cantidadGrupo = 0;
   for (const a of datos.aportes) {
     if (!enPeriodo(a.fecha)) continue;
     total += a.monto;
     cantidad++;
-    porPersona.set(a.personaId, (porPersona.get(a.personaId) ?? 0) + a.monto);
-    porPersonaCantidad.set(a.personaId, (porPersonaCantidad.get(a.personaId) ?? 0) + 1);
+    if (a.grupoId) {
+      totalGrupo += a.monto;
+      cantidadGrupo++;
+      porGrupo.set(a.grupoId, (porGrupo.get(a.grupoId) ?? 0) + a.monto);
+    } else if (a.personaId) {
+      porPersona.set(a.personaId, (porPersona.get(a.personaId) ?? 0) + a.monto);
+      porPersonaCantidad.set(a.personaId, (porPersonaCantidad.get(a.personaId) ?? 0) + 1);
+    }
   }
   return {
     diezmadoresActivos: datos.diezmadores.filter((d) => d.activo).length,
@@ -35,5 +49,8 @@ export function resumenBienComun(datos: DatosMinisterio, periodo?: Periodo): Res
     cantidadAportes: cantidad,
     porPersona,
     porPersonaCantidad,
+    totalGrupo,
+    cantidadGrupo,
+    porGrupo,
   };
 }

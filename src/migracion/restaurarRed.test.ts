@@ -21,6 +21,7 @@ const base = (colaboradores: Colaborador[], aportesRed: AporteRed[]): DatosMinis
   personas: [], conversiones: [], miembros: [], estudiantes: [], diezmadores: [],
   beneficiarios: [], hitos: [], asignaciones: [], grupos: [], evangelismos: [],
   aportes: [], pasos: CATALOGO_SEMILLA, campanas: [], entregas: [], colaboradores, aportesRed,
+  reuniones: [],
 });
 
 describe('restaurarRedDesdeRespaldo', () => {

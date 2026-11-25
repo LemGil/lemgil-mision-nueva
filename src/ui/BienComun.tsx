@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { aDatosMinisterio } from '../datos/aDatosMinisterio';
 import { actualizarAporte, borrarAporte, borrarDiezmador, crearDiezmador, registrarAporte } from '../datos/acciones';
-import { nombresGruposDe } from '../motor/gruposVista';
+import { iconoGrupo, nombresGruposDe } from '../motor/gruposVista';
 import type { Repo } from '../datos/repo';
 import type { Aporte, DatosMinisterio, Periodo } from '../modelo/tipos';
 import { resumenBienComun } from '../motor/bienComun';
@@ -29,11 +29,15 @@ function EditorAporteComun({
   aporte,
   recargar,
   onCerrar,
+  soloOfrenda = false,
 }: {
   repo: Repo;
   aporte: Aporte;
   recargar: () => void;
   onCerrar: () => void;
+  /** Los aportes del grupo son siempre Ofrenda: el diezmo va a
+   * nombre del diezmador. */
+  soloOfrenda?: boolean;
 }) {
   return (
 <ListaEdicion>
@@ -53,7 +57,7 @@ function EditorAporteComun({
                         recargar();
                       }}
                     >
-                      <option value="Diezmo">Diezmo</option>
+                      {!soloOfrenda && <option value="Diezmo">Diezmo</option>}
                       <option value="Ofrenda">Ofrenda</option>
                     </select>
                     <input
@@ -94,6 +98,7 @@ export default function BienComun({ repo }: { repo: Repo }) {
   const [seleccionado, setSeleccionado] = useState<string | null>(null);
   const [editandoAporte, setEditandoAporte] = useState<string | null>(null);
   const [editandoRegistro, setEditandoRegistro] = useState<string | null>(null);
+  const [avisoParte, setAvisoParte] = useState('');
   const [error, setError] = useState('');
   const [mostrarForm, setMostrarForm] = useState(false);
   const [busqueda, setBusqueda] = useState('');
@@ -151,8 +156,9 @@ export default function BienComun({ repo }: { repo: Repo }) {
     .slice()
     .sort((a, b) => (a.fecha < b.fecha ? 1 : -1));
   const registroVisible = registroGeneral.filter((a) => {
-    const p = personaDe(a.personaId);
-    return coincideBusqueda(busqueda, p ? `${p.nombre} ${p.apellidos ?? ''}` : undefined, a.tipo);
+    const p = personaDe(a.personaId ?? '');
+    const g = a.grupoId ? datos.grupos.find((x) => x.id === a.grupoId) : undefined;
+    return coincideBusqueda(busqueda, p ? `${p.nombre} ${p.apellidos ?? ''}` : undefined, g?.nombre, a.tipo);
   });
   const fechasAportes = datos.aportes.map((a) => a.fecha);
   const mesesDisp = ano === 0 ? [] : mesesConRegistros(fechasAportes, ano);
@@ -243,6 +249,7 @@ export default function BienComun({ repo }: { repo: Repo }) {
         <Kpi principal icono="👥" numero={resumen.diezmadoresActivos} titulo="Diezmadores activos" />
         <Kpi icono="○" numero={resumen.diezmadoresInactivos} titulo="Inactivos" />
         <Kpi icono="🌾" dinero numero={formatoDinero(resumen.totalAportes)} titulo={<>Total aportado{periodo ? ' en el período' : ''}</>} />
+        <Kpi icono="🏠" dinero numero={formatoDinero(resumen.totalGrupo)} titulo={<>Ofrendas del grupo{periodo ? ' en el período' : ''}</>} />
         <Kpi icono="🧾" numero={resumen.cantidadAportes} titulo={<>Aportes{periodo ? ' en el período' : ''}</>} />
       </section>
 
@@ -315,24 +322,31 @@ export default function BienComun({ repo }: { repo: Repo }) {
               <p className="tenue">El formulario queda abierto y con la persona elegida: puedes registrar varios aportes seguidos sin abrir ficha por ficha.</p>
             </>
           )}
+          {avisoParte && <p className="aviso">{avisoParte}</p>}
           {registroVisible.length === 0 ? (
             <p className="tenue">Sin aportes en esta vista.</p>
           ) : (
             <ul className="lista-personas">
               {registroVisible.map((a) => {
-                const p = personaDe(a.personaId);
-                const d = datos.diezmadores.find((x) => x.personaId === a.personaId);
+                const p = personaDe(a.personaId ?? '');
+                const g = a.grupoId ? datos.grupos.find((x) => x.id === a.grupoId) : undefined;
                 return (
                   <li key={a.id}>
                     {editandoRegistro === a.id ? (
-                    <EditorAporteComun repo={repo} aporte={a} recargar={recargar} onCerrar={() => setEditandoRegistro(null)} />
+                    <EditorAporteComun repo={repo} aporte={a} recargar={recargar} onCerrar={() => setEditandoRegistro(null)} soloOfrenda={!!a.grupoId} />
                   ) : (
                     <FilaRegistro
                       fecha={a.fecha}
-                      nombre={p ? `${p.nombre} ${p.apellidos ?? ''}` : 'Persona borrada'}
-                      meta={a.tipo}
+                      nombre={g ? `${iconoGrupo(g)} ${g.nombre}` : p ? `${p.nombre} ${p.apellidos ?? ''}` : 'Persona borrada'}
+                      meta={g ? `Ofrenda del grupo${a.reunionId ? ' · del parte de reunión' : ''}${a.referencia ? ` · ref. ${a.referencia}` : ''}` : a.tipo}
                       valor={formatoDinero(a.monto)}
-                      onClick={() => setEditandoRegistro(a.id)}
+                      onClick={() => {
+                        if (a.reunionId) {
+                          setAvisoParte(`Esa ofrenda nació del parte de reunión del ${a.fecha}: se corrige en Grupos, en la ficha del grupo, sección Reuniones.`);
+                        } else {
+                          setEditandoRegistro(a.id);
+                        }
+                      }}
                     />
                   )}
                   </li>

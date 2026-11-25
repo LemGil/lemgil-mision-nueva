@@ -15,6 +15,7 @@ const datos: DatosMinisterio = {
     { id: 'e1', campanaId: 'c1', fecha: '2026-01-04', cantidad: 20, beneficiarioNombre: 'Iglesia 120 y 51' },
     { id: 'e2', campanaId: 'c1', fecha: '2026-02-01', cantidad: 30 },
   ],
+  reuniones: [],
 };
 
 describe('resumenManos', () => {

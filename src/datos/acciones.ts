@@ -46,6 +46,7 @@ import type {
   Miembro,
   Paso,
   Persona,
+  Reunion,
 } from '../modelo/tipos';
 import type { Repo } from './repo';
 
@@ -940,4 +941,136 @@ export async function borrarPasoAccion(
     pasosDelAmbito(datos.pasos, paso.ambito).filter((p) => p.id !== paso.id),
   );
   for (const p of restantes) await repo.guardar('pasos', p);
+}
+
+// ── Reuniones: el parte, con sus dos vínculos ─────────────────────────
+// El parte guarda los conteos. Su ofrenda vive como Aporte del grupo
+// en Bien Común (reunionId) y sus almuerzos/sopas como Entregas de
+// Manos Abiertas (reunionId): el parte es el editor de los tres.
+
+const NOMBRE_CAMPANA: Record<'Almuerzo' | 'Sopa', string> = {
+  Almuerzo: 'Almuerzo con Jesús',
+  Sopa: 'Sopa con Jesús',
+};
+
+const sinAcentos = (t: string) =>
+  t.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
+
+/** La campaña de Manos Abiertas de cada comida; si no existe, nace
+ * con el nombre de la casa. */
+async function campanaDeComida(
+  repo: Repo,
+  datos: DatosMinisterio,
+  tipo: 'Almuerzo' | 'Sopa',
+  creadas: Campana[],
+): Promise<Campana> {
+  const busca = tipo === 'Almuerzo' ? 'almuerzo' : 'sopa';
+  const existente =
+    datos.campanas.find((c) => sinAcentos(c.nombre).includes(busca)) ??
+    creadas.find((c) => sinAcentos(c.nombre).includes(busca));
+  if (existente) return existente;
+  const nueva = await crearCampana(repo, { nombre: NOMBRE_CAMPANA[tipo], estado: 'En curso' });
+  creadas.push(nueva);
+  return nueva;
+}
+
+async function sincronizarOfrendaDelParte(
+  repo: Repo,
+  datos: DatosMinisterio,
+  reunion: Reunion,
+  ofrenda: number,
+): Promise<void> {
+  const previa = datos.aportes.find((a) => a.reunionId === reunion.id);
+  if (ofrenda > 0) {
+    if (previa) {
+      await actualizarAporte(repo, { ...previa, fecha: reunion.fecha, monto: ofrenda });
+    } else {
+      await registrarAporte(repo, {
+        grupoId: reunion.grupoId,
+        reunionId: reunion.id,
+        fecha: reunion.fecha,
+        monto: ofrenda,
+        tipo: 'Ofrenda',
+      });
+    }
+  } else if (previa) {
+    await borrarAporte(repo, previa.id);
+  }
+}
+
+async function sincronizarComidaDelParte(
+  repo: Repo,
+  datos: DatosMinisterio,
+  reunion: Reunion,
+  tipo: 'Almuerzo' | 'Sopa',
+  cantidad: number,
+  creadas: Campana[],
+): Promise<void> {
+  const previa = datos.entregas.find((e) => e.reunionId === reunion.id && e.tipo === tipo);
+  if (cantidad > 0) {
+    const campana = await campanaDeComida(repo, datos, tipo, creadas);
+    const grupo = datos.grupos.find((g) => g.id === reunion.grupoId);
+    const base: Omit<Entrega, 'id'> = {
+      campanaId: campana.id,
+      beneficiarioNombre: grupo?.nombre,
+      fecha: reunion.fecha,
+      tipo,
+      cantidad,
+      unidad: 'raciones',
+      reunionId: reunion.id,
+    };
+    if (previa) await actualizarEntrega(repo, { ...previa, ...base });
+    else await registrarEntrega(repo, base);
+  } else if (previa) {
+    await borrarEntrega(repo, previa.id);
+  }
+}
+
+async function sincronizarVinculosDelParte(
+  repo: Repo,
+  datos: DatosMinisterio,
+  reunion: Reunion,
+  ofrenda: number,
+): Promise<void> {
+  const creadas: Campana[] = [];
+  await sincronizarOfrendaDelParte(repo, datos, reunion, ofrenda);
+  await sincronizarComidaDelParte(repo, datos, reunion, 'Almuerzo', reunion.almuerzos, creadas);
+  await sincronizarComidaDelParte(repo, datos, reunion, 'Sopa', reunion.sopas, creadas);
+}
+
+export async function registrarReunion(
+  repo: Repo,
+  datos: DatosMinisterio,
+  entrada: Omit<Reunion, 'id'>,
+  ofrenda: number,
+): Promise<Reunion> {
+  const completa: Reunion = { ...entrada, id: nuevoId() };
+  await repo.guardar('reuniones', completa);
+  await sincronizarVinculosDelParte(repo, datos, completa, ofrenda);
+  return completa;
+}
+
+export async function actualizarReunion(
+  repo: Repo,
+  datos: DatosMinisterio,
+  reunion: Reunion,
+  ofrenda: number,
+): Promise<void> {
+  await repo.guardar('reuniones', reunion);
+  await sincronizarVinculosDelParte(repo, datos, reunion, ofrenda);
+}
+
+/** Borrar el parte borra también su ofrenda y sus entregas: son el
+ * mismo hecho contado en tres libros. */
+export async function borrarReunion(
+  repo: Repo,
+  datos: DatosMinisterio,
+  id: string,
+): Promise<void> {
+  const aporte = datos.aportes.find((a) => a.reunionId === id);
+  if (aporte) await borrarAporte(repo, aporte.id);
+  for (const e of datos.entregas.filter((x) => x.reunionId === id)) {
+    await borrarEntrega(repo, e.id);
+  }
+  await repo.borrar('reuniones', id);
 }

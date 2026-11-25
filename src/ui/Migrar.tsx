@@ -15,6 +15,7 @@ import { unirColaboradoresRepetidos } from '../migracion/unirColaboradores';
 import { restaurarRedDesdeRespaldo } from '../migracion/restaurarRed';
 import { diagnosticoRed } from '../migracion/diagnosticoRed';
 import { borradosRed, borrarDefinitivoAporteRed, borrarDefinitivoColaboradorRed, restaurarAporteBorrado, restaurarColaboradorBorrado, type BorradosRed } from '../migracion/recuperarRed';
+import { previaOfrendasGrupo, traerOfrendasGrupo } from '../migracion/traerOfrendasGrupo';
 import BorrarBoton from './BorrarBoton';
 import { formatoDinero } from '../motor/dinero';
 import { traerManos, vistaPreviaManos, type VistaPreviaManos } from '../migracion/traerManos';
@@ -54,6 +55,8 @@ export default function Migrar({ repo, sincronizador }: { repo: Repo; sincroniza
   const [papelera, setPapelera] = useState<BorradosRed | null>(null);
   const [cargandoPapelera, setCargandoPapelera] = useState(false);
   const [avisoPapelera, setAvisoPapelera] = useState('');
+  const [trayendoOfrendas, setTrayendoOfrendas] = useState(false);
+  const [avisoOfrendas, setAvisoOfrendas] = useState('');
   const [trayendoRed, setTrayendoRed] = useState(false);
   const [respaldoManos, setRespaldoManos] = useState<RespaldoViejo | null>(null);
   const [previaManos, setPreviaManos] = useState<VistaPreviaManos | null>(null);
@@ -722,6 +725,59 @@ export default function Migrar({ repo, sincronizador }: { repo: Repo; sincroniza
                 })}
               </ul>
             </>
+          )}
+        </section>
+
+        <section className="tarjeta">
+          <h2>🏠 Ofrendas del grupo (del respaldo)</h2>
+          <p className="tenue">
+            En la app anterior, las ofrendas recogidas en las reuniones se registraban
+            a nombre del grupo, y en la migración quedaron fuera. Aquí entran a Bien
+            Común a nombre del grupo de hoy — LemGil confirmó que los registros viejos
+            son del mismo grupo, que cambió de nombre en el camino.
+          </p>
+          {respaldoRed ? (
+            <>
+              {(() => {
+                const previa = previaOfrendasGrupo(respaldoRed, actuales);
+                return (
+                  <p>
+                    En el respaldo hay <strong>{previa.registros} ofrendas del grupo</strong> por{' '}
+                    <strong>{formatoDinero(previa.total)}</strong>
+                    {previa.destino ? (
+                      <> — entran a nombre de <strong>{previa.destino.nombre}</strong>.</>
+                    ) : (
+                      <> — pero no hay ningún grupo creado en la app: crea primero el grupo.</>
+                    )}
+                  </p>
+                );
+              })()}
+              <button
+                className="btn btn-dorado"
+                disabled={trayendoOfrendas}
+                onClick={async () => {
+                  setTrayendoOfrendas(true);
+                  setError('');
+                  setAvisoOfrendas('');
+                  try {
+                    const r = await traerOfrendasGrupo(repo, respaldoRed, actuales);
+                    setAvisoOfrendas(
+                      `✓ Ofrendas del grupo en Bien Común: entraron ${r.entraron}, ya estaban ${r.yaEstaban}, restauradas ${r.restaurados} — a nombre de ${r.destino}.`,
+                    );
+                    await cargar();
+                  } catch (e) {
+                    setError(e instanceof Error ? e.message : String(e));
+                  } finally {
+                    setTrayendoOfrendas(false);
+                  }
+                }}
+              >
+                {trayendoOfrendas ? 'Trayendo…' : '🏠 Traer las ofrendas del grupo'}
+              </button>
+              {avisoOfrendas && <p className="aviso aviso-verde">{avisoOfrendas}</p>}
+            </>
+          ) : (
+            <p className="tenue">Primero elige el archivo del respaldo en la sección de la Red, arriba.</p>
           )}
         </section>
 
