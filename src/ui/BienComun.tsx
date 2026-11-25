@@ -338,11 +338,15 @@ export default function BienComun({ repo }: { repo: Repo }) {
                     <FilaRegistro
                       fecha={a.fecha}
                       nombre={g ? `${iconoGrupo(g)} ${g.nombre}` : p ? `${p.nombre} ${p.apellidos ?? ''}` : 'Persona borrada'}
-                      meta={g ? `Ofrenda del grupo${a.reunionId ? ' · del parte de reunión' : ''}${a.referencia ? ` · ref. ${a.referencia}` : ''}` : a.tipo}
+                      meta={g ? `Ofrenda del grupo${a.reunionId ? ' · del parte de reunión' : ''}${a.referencia ? ` · ref. ${a.referencia}` : ''}` : a.reunionId ? `${a.tipo} · del parte de reunión` : a.tipo}
                       valor={formatoDinero(a.monto)}
                       onClick={() => {
                         if (a.reunionId) {
-                          setAvisoParte(`Esa ofrenda nació del parte de reunión del ${a.fecha}: se corrige en Grupos, en la ficha del grupo, sección Reuniones.`);
+                          setAvisoParte(
+                            a.grupoId
+                              ? `Esa ofrenda nació del parte de reunión del ${a.fecha}: se corrige en Grupos, en la ficha del grupo, pestaña Reuniones.`
+                              : `Ese diezmo nació del parte de reunión del ${a.fecha}: se corrige en Grupos, en la ficha del grupo, pestaña Reuniones.`,
+                          );
                         } else {
                           setEditandoRegistro(a.id);
                         }
@@ -426,7 +430,12 @@ export default function BienComun({ repo }: { repo: Repo }) {
       )}
 
       {detalle && (
-        <Modal onCerrar={() => setSeleccionado(null)}>
+        <Modal
+          onCerrar={() => {
+            setSeleccionado(null);
+            setAvisoParte('');
+          }}
+        >
           <h2>{personaDe(detalle.personaId)?.nombre} {personaDe(detalle.personaId)?.apellidos ?? ''}</h2>
           <button
             className="btn"
@@ -483,6 +492,7 @@ export default function BienComun({ repo }: { repo: Repo }) {
             </div>
           )}
           <h3>Aportes</h3>
+          {avisoParte && <p className="aviso">{avisoParte}</p>}
           {aportesDe.length === 0 ? (
             <p className="tenue">Sin aportes registrados.</p>
           ) : (
@@ -496,8 +506,15 @@ export default function BienComun({ repo }: { repo: Repo }) {
                       <FilaRegistro
                         fecha={a.fecha}
                         nombre={a.tipo}
+                        meta={a.reunionId ? 'del parte de reunión' : undefined}
                         valor={formatoDinero(a.monto)}
-                        onClick={() => setEditandoAporte(a.id)}
+                        onClick={() => {
+                          if (a.reunionId) {
+                            setAvisoParte(`Ese diezmo nació del parte de reunión del ${a.fecha}: se corrige en Grupos, en la ficha del grupo, pestaña Reuniones.`);
+                          } else {
+                            setEditandoAporte(a.id);
+                          }
+                        }}
                       />
                     )}
                   </li>

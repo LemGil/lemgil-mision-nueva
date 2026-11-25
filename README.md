@@ -571,3 +571,20 @@ el parte la ADOPTA (le pone su vínculo y su monto) en vez de
 crear otra; lo mismo con las entregas de la campaña de la casa
 en la misma fecha. Registrar las reuniones anteriores es
 seguro: los totales no se mueven. 156/156 pruebas.
+
+## Los diezmos del parte pasan a Bien Común (v60)
+
+Pedido de LemGil: el parte de reunión anota también a las
+personas que diezman. El formulario del parte gana la sección
+«🌾 Diezmos» (persona + monto); al guardar, cada diezmo pasa a
+Bien Común como el aporte de Diezmo de esa persona en la fecha
+de la reunión, enlazado al parte (reunionId), y si la persona
+no tenía ficha de diezmador, nace activa con su primer diezmo.
+Se corrige en el parte: en Bien Común (registro y ficha) tocar
+ese diezmo avisa que nació del parte. Con la adopción de v58:
+un diezmo suelto de la misma persona y fecha se enlaza en vez
+de duplicarse. Al borrar el parte caen su ofrenda, sus diezmos
+y sus entregas. El resumen de Reuniones y la fila de cada parte
+muestran «🌾 N diezmos ($X)». (El v59 fue el seguro del botón
+Borrar colaborador en la Red; no llevó cambio de caché.)
+162/162 pruebas.

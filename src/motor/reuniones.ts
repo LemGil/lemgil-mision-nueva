@@ -22,6 +22,9 @@ export interface ResumenReuniones {
   profesiones: number;
   almuerzos: number;
   sopas: number;
+  /** Los diezmos anotados en los partes: cuántos y su total. */
+  diezmos: number;
+  totalDiezmos: number;
 }
 
 /** El resumen del período: cómo van funcionando las reuniones. */
@@ -34,6 +37,8 @@ export function resumenReuniones(
     (r) => (!grupoId || r.grupoId === grupoId) && enPeriodo(r.fecha, periodo),
   );
   const suma = (f: (r: Reunion) => number) => partes.reduce((x, r) => x + f(r), 0);
+  const ids = new Set(partes.map((p) => p.id));
+  const diez = datos.aportes.filter((a) => a.reunionId && ids.has(a.reunionId) && a.personaId);
   return {
     partes: partes.length,
     promedioPersonas:
@@ -43,6 +48,8 @@ export function resumenReuniones(
     profesiones: suma((r) => r.profesiones),
     almuerzos: suma((r) => r.almuerzos),
     sopas: suma((r) => r.sopas),
+    diezmos: diez.length,
+    totalDiezmos: diez.reduce((x, a) => x + a.monto, 0),
   };
 }
 
@@ -59,7 +66,14 @@ export function avisoCuadreParte(p: {
   return `El desglose suma ${suma} (mujeres + hombres + niños) y el total dice ${p.personas}: revísalo antes de guardar.`;
 }
 
-/** La ofrenda que un parte llevó a Bien Común, si la hubo. */
+/** La ofrenda que un parte llevó a Bien Común, si la hubo (la
+ * del grupo: los diezmos del parte también llevan reunionId). */
 export function ofrendaDeParte(datos: DatosMinisterio, reunionId: string): Aporte | undefined {
-  return datos.aportes.find((a) => a.reunionId === reunionId);
+  return datos.aportes.find((a) => a.reunionId === reunionId && a.grupoId);
+}
+
+/** Los diezmos que un parte llevó a Bien Común, a nombre de
+ * cada persona. */
+export function diezmosDeParte(datos: DatosMinisterio, reunionId: string): Aporte[] {
+  return datos.aportes.filter((a) => a.reunionId === reunionId && a.personaId);
 }

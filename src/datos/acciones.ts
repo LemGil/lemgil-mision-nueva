@@ -988,7 +988,7 @@ async function sincronizarOfrendaDelParte(
   reunion: Reunion,
   ofrenda: number,
 ): Promise<void> {
-  const previa = datos.aportes.find((a) => a.reunionId === reunion.id);
+  const previa = datos.aportes.find((a) => a.reunionId === reunion.id && a.grupoId);
   if (ofrenda > 0) {
     if (previa) {
       await actualizarAporte(repo, { ...previa, fecha: reunion.fecha, monto: ofrenda });
@@ -1076,14 +1076,75 @@ async function sincronizarComidaDelParte(
   }
 }
 
+/** Un diezmo anotado en el parte: la persona y su monto. Al
+ * guardar, pasa a Bien Común como su aporte de Diezmo de esa
+ * fecha, enlazado al parte (reunionId). */
+export interface DiezmoDelParte {
+  personaId: string;
+  monto: number;
+}
+
+async function sincronizarDiezmosDelParte(
+  repo: Repo,
+  datos: DatosMinisterio,
+  reunion: Reunion,
+  diezmos: DiezmoDelParte[],
+): Promise<void> {
+  const delParte = datos.aportes.filter((a) => a.reunionId === reunion.id && a.personaId);
+  const reclamados = new Set<string>();
+  const conFicha = new Set(datos.diezmadores.map((d) => d.personaId));
+  for (const d of diezmos) {
+    if (!d.personaId || !(d.monto > 0)) continue;
+    const propio = delParte.find((a) => a.personaId === d.personaId);
+    if (propio) {
+      reclamados.add(propio.id);
+      await actualizarAporte(repo, { ...propio, fecha: reunion.fecha, monto: d.monto, tipo: 'Diezmo' });
+    } else {
+      // Adopción (como la ofrenda en v58): un diezmo suelto de la
+      // misma persona y la misma fecha es el de esta reunión.
+      const suelto = datos.aportes.find(
+        (a) =>
+          !a.reunionId &&
+          !reclamados.has(a.id) &&
+          a.personaId === d.personaId &&
+          a.fecha === reunion.fecha &&
+          a.tipo === 'Diezmo',
+      );
+      if (suelto) {
+        reclamados.add(suelto.id);
+        await actualizarAporte(repo, { ...suelto, reunionId: reunion.id, monto: d.monto });
+      } else {
+        await registrarAporte(repo, {
+          personaId: d.personaId,
+          reunionId: reunion.id,
+          fecha: reunion.fecha,
+          monto: d.monto,
+          tipo: 'Diezmo',
+        });
+      }
+    }
+    // Quien diezma queda de diezmador: su ficha nace con el diezmo.
+    if (!conFicha.has(d.personaId)) {
+      await crearDiezmador(repo, datos, d.personaId);
+      conFicha.add(d.personaId);
+    }
+  }
+  // Los que el parte ya no trae, se borran: el parte es su editor.
+  for (const a of delParte) {
+    if (!reclamados.has(a.id)) await borrarAporte(repo, a.id);
+  }
+}
+
 async function sincronizarVinculosDelParte(
   repo: Repo,
   datos: DatosMinisterio,
   reunion: Reunion,
   ofrenda: number,
+  diezmos: DiezmoDelParte[],
 ): Promise<void> {
   const creadas: Campana[] = [];
   await sincronizarOfrendaDelParte(repo, datos, reunion, ofrenda);
+  await sincronizarDiezmosDelParte(repo, datos, reunion, diezmos);
   await sincronizarComidaDelParte(repo, datos, reunion, 'Almuerzo', reunion.almuerzos, creadas);
   await sincronizarComidaDelParte(repo, datos, reunion, 'Sopa', reunion.sopas, creadas);
 }
@@ -1093,10 +1154,11 @@ export async function registrarReunion(
   datos: DatosMinisterio,
   entrada: Omit<Reunion, 'id'>,
   ofrenda: number,
+  diezmos: DiezmoDelParte[] = [],
 ): Promise<Reunion> {
   const completa: Reunion = { ...entrada, id: nuevoId() };
   await repo.guardar('reuniones', completa);
-  await sincronizarVinculosDelParte(repo, datos, completa, ofrenda);
+  await sincronizarVinculosDelParte(repo, datos, completa, ofrenda, diezmos);
   return completa;
 }
 
@@ -1105,9 +1167,10 @@ export async function actualizarReunion(
   datos: DatosMinisterio,
   reunion: Reunion,
   ofrenda: number,
+  diezmos: DiezmoDelParte[] = [],
 ): Promise<void> {
   await repo.guardar('reuniones', reunion);
-  await sincronizarVinculosDelParte(repo, datos, reunion, ofrenda);
+  await sincronizarVinculosDelParte(repo, datos, reunion, ofrenda, diezmos);
 }
 
 /** Borrar el parte borra también su ofrenda y sus entregas: son el
@@ -1117,8 +1180,9 @@ export async function borrarReunion(
   datos: DatosMinisterio,
   id: string,
 ): Promise<void> {
-  const aporte = datos.aportes.find((a) => a.reunionId === id);
-  if (aporte) await borrarAporte(repo, aporte.id);
+  for (const a of datos.aportes.filter((x) => x.reunionId === id)) {
+    await borrarAporte(repo, a.id);
+  }
   for (const e of datos.entregas.filter((x) => x.reunionId === id)) {
     await borrarEntrega(repo, e.id);
   }

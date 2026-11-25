@@ -18,7 +18,7 @@ import BorrarBoton from './BorrarBoton';
 import GuiaPagina from './GuiaPagina';
 import { claveTipoGrupo, conteoPorPasoDelGrupo, esIglesia, esOikos, estadoGrupo, grupoDeTipo, hijosDe, iconoGrupo, idsCongregados, idsGruposDe, idsMiembrosDeGrupo, liderVisible, lineaReunion, ordenarGruposPorFamilia, padreDe, personasPorOikos, porcentajeCapacidad, tipoVisibleGrupo, tiposDeGrupoEnUso } from '../motor/gruposVista';
 import { useNavigate } from 'react-router-dom';
-import { avisoCuadreParte, ofrendaDeParte, partesDeGrupo, resumenReuniones } from '../motor/reuniones';
+import { avisoCuadreParte, diezmosDeParte, ofrendaDeParte, partesDeGrupo, resumenReuniones } from '../motor/reuniones';
 import { formatoDinero } from '../motor/dinero';
 
 const hoyIso = () => new Date().toISOString().slice(0, 10);
@@ -164,8 +164,20 @@ function FormParte({
     const a = ofrendaDeParte(datos, parte.id);
     return a ? String(a.monto) : '';
   });
+  const [diezmos, setDiezmos] = useState<{ personaId: string; monto: string }[]>(() =>
+    parte
+      ? diezmosDeParte(datos, parte.id).map((a) => ({
+          personaId: a.personaId as string,
+          monto: String(a.monto),
+        }))
+      : [],
+  );
   const [notas, setNotas] = useState(parte?.notas ?? '');
   const [error, setError] = useState('');
+  const nombreDe = (id: string) => {
+    const p = datos.personas.find((x) => x.id === id);
+    return p ? `${p.nombre} ${p.apellidos ?? ''}`.trim() : 'Persona borrada';
+  };
   const n = (v: string) => Math.max(0, parseInt(v, 10) || 0);
   const aviso = avisoCuadreParte({
     personas: n(personas),
@@ -175,6 +187,12 @@ function FormParte({
   });
   const guardar = async () => {
     setError('');
+    const sinMonto = diezmos.find((d) => !(Number(d.monto) > 0));
+    if (sinMonto) {
+      setError(`Falta el monto del diezmo de ${nombreDe(sinMonto.personaId)}.`);
+      return;
+    }
+    const listaDiezmos = diezmos.map((d) => ({ personaId: d.personaId, monto: Number(d.monto) }));
     const base = {
       grupoId: grupo.id,
       fecha,
@@ -190,8 +208,8 @@ function FormParte({
       notas: notas.trim() || undefined,
     };
     try {
-      if (parte) await actualizarReunion(repo, datos, { ...base, id: parte.id }, Number(ofrenda) || 0);
-      else await registrarReunion(repo, datos, base, Number(ofrenda) || 0);
+      if (parte) await actualizarReunion(repo, datos, { ...base, id: parte.id }, Number(ofrenda) || 0, listaDiezmos);
+      else await registrarReunion(repo, datos, base, Number(ofrenda) || 0, listaDiezmos);
       onListo();
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -219,10 +237,45 @@ function FormParte({
         <label>Almuerzos repartidos<input type="number" min="0" value={almuerzos} onChange={(e) => setAlmuerzos(e.target.value)} /></label>
         <label>Sopas repartidas<input type="number" min="0" value={sopas} onChange={(e) => setSopas(e.target.value)} /></label>
       </div>
+      <div>
+        <p>
+          <strong>🌾 Diezmos</strong>{' '}
+          <span className="tenue">— pasan a Bien Común a nombre de cada persona</span>
+        </p>
+        {diezmos.map((d) => (
+          <div className="form-fila" key={d.personaId}>
+            <span>{nombreDe(d.personaId)}</span>
+            <label>
+              Monto ($)
+              <input
+                type="number"
+                min="0"
+                value={d.monto}
+                onChange={(e) =>
+                  setDiezmos(diezmos.map((x) => (x.personaId === d.personaId ? { ...x, monto: e.target.value } : x)))
+                }
+              />
+            </label>
+            <button
+              type="button"
+              className="btn"
+              onClick={() => setDiezmos(diezmos.filter((x) => x.personaId !== d.personaId))}
+            >
+              ✕
+            </button>
+          </div>
+        ))}
+        <SelectorPersona
+          datos={datos}
+          excluir={new Set(diezmos.map((d) => d.personaId))}
+          onElegir={(id) => setDiezmos([...diezmos, { personaId: id, monto: '' }])}
+          placeholder="Añadir a quien diezmó…"
+        />
+      </div>
       <div className="form-fila">
         <label>Notas<input value={notas} onChange={(e) => setNotas(e.target.value)} /></label>
       </div>
-      <p className="tenue">La ofrenda queda en Bien Común como aporte del grupo, y los almuerzos y sopas en Manos Abiertas como entregas de ese día.</p>
+      <p className="tenue">La ofrenda queda en Bien Común como aporte del grupo, los diezmos a nombre de cada persona, y los almuerzos y sopas en Manos Abiertas como entregas de ese día.</p>
       {aviso && <p className="aviso">{aviso}</p>}
       {error && <p className="aviso aviso-rojo">{error}</p>}
       <div className="form-acciones">
@@ -231,7 +284,7 @@ function FormParte({
         {parte && (
           <BorrarBoton
             texto="🗑️ Borrar parte"
-            titulo="Borra el parte con su ofrenda y sus entregas"
+            titulo="Borra el parte con su ofrenda, sus diezmos y sus entregas"
             onBorrar={async () => {
               await borrarReunion(repo, datos, parte.id);
               onListo();
@@ -268,7 +321,7 @@ function SeccionReuniones({
       <p className="tenue">
         {resumen.partes === 0
           ? 'Sin partes registrados todavía.'
-          : `${resumen.partes} parte(s) · asistencia promedio ${resumen.promedioPersonas} · ${resumen.visitas} visitas · ${resumen.nuevos} nuevos congregados · ${resumen.profesiones} profesiones · ${resumen.almuerzos} almuerzos y ${resumen.sopas} sopas repartidas.`}
+          : `${resumen.partes} parte(s) · asistencia promedio ${resumen.promedioPersonas} · ${resumen.visitas} visitas · ${resumen.nuevos} nuevos congregados · ${resumen.profesiones} profesiones · ${resumen.almuerzos} almuerzos y ${resumen.sopas} sopas repartidas.${resumen.diezmos > 0 ? ` Diezmos anotados: ${resumen.diezmos} · ${formatoDinero(resumen.totalDiezmos)}.` : ''}`}
         {ofrendas.length > 0 &&
           ` Ofrendas del grupo en Bien Común: ${ofrendas.length} · ${formatoDinero(totalOfrendas)}.`}
       </p>
@@ -293,12 +346,13 @@ function SeccionReuniones({
         <ul className="lista-personas">
           {partes.map((p) => {
             const of = ofrendaDeParte(datos, p.id);
+            const dz = diezmosDeParte(datos, p.id);
             return (
               <li key={p.id}>
                 <FilaRegistro
                   fecha={p.fecha}
                   nombre={`${p.personas} personas`}
-                  meta={`${p.mujeres} mujeres · ${p.hombres} hombres · ${p.ninos} niños · ${p.visitas} visitas · ${p.profesiones} profesiones`}
+                  meta={`${p.mujeres} mujeres · ${p.hombres} hombres · ${p.ninos} niños · ${p.visitas} visitas · ${p.profesiones} profesiones${dz.length > 0 ? ` · 🌾 ${dz.length} diezmos (${formatoDinero(dz.reduce((x, a) => x + a.monto, 0))})` : ''}`}
                   valor={of ? formatoDinero(of.monto) : '—'}
                   onClick={() => setEditando(p.id)}
                 />

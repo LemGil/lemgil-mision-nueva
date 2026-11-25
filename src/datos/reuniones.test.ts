@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Aporte, Campana, DatosMinisterio, Entrega, Reunion } from '../modelo/tipos';
 import { RepoFalso } from '../migracion/repoFalso';
 import { actualizarReunion, borrarReunion, registrarReunion } from './acciones';
-import { avisoCuadreParte, partesDeGrupo, resumenReuniones } from '../motor/reuniones';
+import { avisoCuadreParte, ofrendaDeParte, partesDeGrupo, resumenReuniones } from '../motor/reuniones';
 import { resumenBienComun } from '../motor/bienComun';
 
 const GRUPO = { id: 'g1', nombre: 'IGLESIA 120 Y 51', tipo: 'Iglesia' };
@@ -168,5 +168,83 @@ describe('registrar un parte viejo no duplica lo que ya está', () => {
     expect(d.entregas[0].id).toBe('en-vieja');
     expect(d.entregas[0].reunionId).toBe(reunion.id);
     expect(d.entregas[0].cantidad).toBe(10);
+  });
+});
+
+describe('los diezmos del parte pasan a Bien Común', () => {
+  const DIEZMOS = [
+    { personaId: 'p1', monto: 3000 },
+    { personaId: 'p2', monto: 1500 },
+  ];
+
+  it('al registrar: cada diezmo es un aporte a su nombre, enlazado al parte, y su ficha de diezmador nace', async () => {
+    const repo = new RepoFalso();
+    const reunion = await registrarReunion(repo.comoRepo(), datosDesde(repo), PARTE, 5000, DIEZMOS);
+    const d = datosDesde(repo);
+    const diezmos = d.aportes.filter((a) => a.personaId);
+    expect(diezmos).toHaveLength(2);
+    expect(diezmos.every((a) => a.tipo === 'Diezmo' && a.reunionId === reunion.id && a.fecha === PARTE.fecha)).toBe(true);
+    expect(diezmos.reduce((x, a) => x + a.monto, 0)).toBe(4500);
+    // la ofrenda del grupo sigue siendo suya, sin confundirse
+    expect(ofrendaDeParte(d, reunion.id)?.monto).toBe(5000);
+    expect(repo.vivos<{ personaId: string }>('diezmadores').map((x) => x.personaId).sort()).toEqual(['p1', 'p2']);
+    // y Bien Común los cuenta por persona
+    const resumen = resumenBienComun(d);
+    expect(resumen.porPersona.get('p1')).toBe(3000);
+    expect(resumen.totalGrupo).toBe(5000);
+  });
+
+  it('al corregir: cambiar un monto, quitar uno y añadir otro deja la lista exacta', async () => {
+    const repo = new RepoFalso();
+    const r = repo.comoRepo();
+    const reunion = await registrarReunion(r, datosDesde(repo), PARTE, 0, DIEZMOS);
+    await actualizarReunion(r, datosDesde(repo), reunion, 0, [
+      { personaId: 'p1', monto: 3500 },
+      { personaId: 'p3', monto: 700 },
+    ]);
+    const d = datosDesde(repo);
+    const diezmos = d.aportes.filter((a) => a.personaId);
+    expect(diezmos).toHaveLength(2);
+    expect(diezmos.find((a) => a.personaId === 'p1')?.monto).toBe(3500);
+    expect(diezmos.find((a) => a.personaId === 'p3')?.monto).toBe(700);
+    expect(diezmos.some((a) => a.personaId === 'p2')).toBe(false);
+  });
+
+  it('un diezmo suelto de la misma persona y fecha se adopta, no se duplica', async () => {
+    const repo = new RepoFalso();
+    repo.sembrar('aportes', { id: 'ap-suelto', personaId: 'p1', fecha: PARTE.fecha, monto: 3000, tipo: 'Diezmo', borrado: false });
+    const reunion = await registrarReunion(repo.comoRepo(), datosDesde(repo), PARTE, 0, DIEZMOS);
+    const d = datosDesde(repo);
+    const deP1 = d.aportes.filter((a) => a.personaId === 'p1');
+    expect(deP1).toHaveLength(1);
+    expect(deP1[0].id).toBe('ap-suelto');
+    expect(deP1[0].reunionId).toBe(reunion.id);
+  });
+
+  it('si la persona ya es diezmador, no se le crea otra ficha', async () => {
+    const repo = new RepoFalso();
+    repo.sembrar('diezmadores', { id: 'dz1', personaId: 'p1', activo: true, borrado: false });
+    const datos = { ...datosDesde(repo), diezmadores: [{ id: 'dz1', personaId: 'p1', activo: true }] };
+    await registrarReunion(repo.comoRepo(), datos, PARTE, 0, DIEZMOS);
+    expect(repo.vivos('diezmadores').filter((x) => (x as { personaId: string }).personaId === 'p1')).toHaveLength(1);
+    expect(repo.vivos('diezmadores')).toHaveLength(2);
+  });
+
+  it('al borrar el parte caen también sus diezmos', async () => {
+    const repo = new RepoFalso();
+    const r = repo.comoRepo();
+    const reunion = await registrarReunion(r, datosDesde(repo), PARTE, 5000, DIEZMOS);
+    await borrarReunion(r, datosDesde(repo), reunion.id);
+    const d = datosDesde(repo);
+    expect(d.aportes).toHaveLength(0);
+    expect(d.reuniones).toHaveLength(0);
+  });
+
+  it('el resumen de reuniones cuenta los diezmos de los partes', async () => {
+    const repo = new RepoFalso();
+    await registrarReunion(repo.comoRepo(), datosDesde(repo), PARTE, 0, DIEZMOS);
+    const resumen = resumenReuniones(datosDesde(repo), 'g1');
+    expect(resumen.diezmos).toBe(2);
+    expect(resumen.totalDiezmos).toBe(4500);
   });
 });
