@@ -537,3 +537,13 @@ El efecto que reinicia la pestaña de la ficha quedó DESPUÉS del
 hook de más y React cerraba la página (error #310, el mismo de
 Manos Abiertas). Movido junto a los demás hooks, antes de la
 guardia. Barrido por componentes en todas las páginas: limpio.
+
+## La ficha de la Iglesia gana la pestaña de Oikos (v56)
+
+Pedido de LemGil: la ficha de la Iglesia tiene ahora tres
+pestañas — «📋 Datos», «🏡 Oikos (N)» y «🗓️ Reuniones (N)». La
+de Oikos trae el embudo de la casa (congregados en un Oikos y
+aún sin Oikos) y la lista de sus Oikos con personas, líder,
+reunión y estado; tocar uno abre su ficha. La sección «Sus
+Oikos» salió de Datos. La ficha de un Oikos no lleva esa
+pestaña (su Iglesia sigue en Datos). 151/151 pruebas.

@@ -315,7 +315,7 @@ export default function Grupos({ repo }: { repo: Repo }) {
   const [datos, setDatos] = useState<DatosMinisterio | null>(null);
   const [recargas, setRecargas] = useState(0);
   const [seleccionado, setSeleccionado] = useState<string | null>(null);
-  const [pestanaFicha, setPestanaFicha] = useState<'datos' | 'reuniones'>('datos');
+  const [pestanaFicha, setPestanaFicha] = useState<'datos' | 'oikos' | 'reuniones'>('datos');
   const [nombre, setNombre] = useState('');
   const [tipo, setTipo] = useState('');
   const [miembrosSel, setMiembrosSel] = useState<string[]>([]);
@@ -362,6 +362,8 @@ export default function Grupos({ repo }: { repo: Repo }) {
   const detalle = seleccionado ? datos.grupos.find((g) => g.id === seleccionado) : undefined;
   const padreDetalle = detalle ? padreDe(datos, detalle) : undefined;
   const hijosDetalle = detalle ? hijosDe(datos, detalle.id) : [];
+  const pestana =
+    pestanaFicha === 'oikos' && !(detalle && esIglesia(detalle)) ? 'datos' : pestanaFicha;
   // El tablero: la familia y el embudo de la casa — congregados que
   // ya encontraron su Oikos y congregados que aún están en el proceso.
   const nIglesias = datos.grupos.filter((g) => esIglesia(g)).length;
@@ -555,15 +557,54 @@ export default function Grupos({ repo }: { repo: Repo }) {
           <Pestanas
             opciones={[
               { id: 'datos', etiqueta: '📋 Datos' },
+              ...(esIglesia(detalle)
+                ? [{ id: 'oikos' as const, etiqueta: `🏡 Oikos (${hijosDetalle.length})` }]
+                : []),
               { id: 'reuniones', etiqueta: `🗓️ Reuniones (${partesDeGrupo(datos, detalle.id).length})` },
             ]}
-            activa={pestanaFicha}
+            activa={pestana}
             onCambiar={setPestanaFicha}
           />
-          {pestanaFicha === 'reuniones' && (
+          {pestana === 'reuniones' && (
             <SeccionReuniones repo={repo} datos={datos} grupo={detalle} recargar={recargar} />
           )}
-          {pestanaFicha === 'datos' && (
+          {pestana === 'oikos' && (
+            <>
+              <p className="tenue">
+                De los congregados: {personasPorOikos(datos, 'en-oikos').size} ya están en un
+                Oikos · {personasPorOikos(datos, 'sin-oikos').size} aún no.
+              </p>
+              {hijosDetalle.length === 0 ? (
+                <p className="tenue">
+                  Esta Iglesia aún no tiene Oikos: se crean con «➕ Nuevo grupo», tipo Oikos
+                  y esta Iglesia como su Iglesia.
+                </p>
+              ) : (
+                <ul className="lista-personas">
+                  {hijosDetalle.map((h) => {
+                    const est = estadoGrupo(miembrosDe(h.id).length, h.capacidad);
+                    return (
+                      <li key={h.id}>
+                        <FilaPersona
+                          nombre={`🏡 ${h.nombre}`}
+                          meta={[
+                            `${miembrosDe(h.id).length} personas`,
+                            liderVisible(datos, h) || undefined,
+                            lineaReunion(h) || undefined,
+                          ]
+                            .filter(Boolean)
+                            .join(' · ')}
+                          derecha={<span className={`chip ${est.clase}`}>{est.etiqueta}</span>}
+                          onClick={() => setSeleccionado(h.id)}
+                        />
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </>
+          )}
+          {pestana === 'datos' && (
             <>
           <StatsGrupo datos={datos} grupo={detalle} miembros={miembrosDe(detalle.id)} />
           {padreDetalle && (
@@ -577,22 +618,6 @@ export default function Grupos({ repo }: { repo: Repo }) {
                     onClick={() => setSeleccionado(padreDetalle.id)}
                   />
                 </li>
-              </ul>
-            </>
-          )}
-          {hijosDetalle.length > 0 && (
-            <>
-              <h3>🏡 Sus Oikos</h3>
-              <ul className="lista-personas">
-                {hijosDetalle.map((h) => (
-                  <li key={h.id}>
-                    <FilaPersona
-                      nombre={`🏡 ${h.nombre}`}
-                      meta={`${miembrosDe(h.id).length} personas`}
-                      onClick={() => setSeleccionado(h.id)}
-                    />
-                  </li>
-                ))}
               </ul>
             </>
           )}
