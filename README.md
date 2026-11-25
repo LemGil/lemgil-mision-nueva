@@ -547,3 +547,14 @@ aún sin Oikos) y la lista de sus Oikos con personas, líder,
 reunión y estado; tocar uno abre su ficha. La sección «Sus
 Oikos» salió de Datos. La ficha de un Oikos no lleva esa
 pestaña (su Iglesia sigue en Datos). 151/151 pruebas.
+
+## Arreglo: las comidas del parte caen en su campaña (v57)
+
+Con dos campañas de almuerzo en la casa («almuerzo» y «Almuerzo
+con Jesús»), el parte llevaba las comidas a la primera que
+apareciera en la base — la suelta — y la campaña de la casa no
+las veía. Ahora la elección es firme: primero la campaña de la
+casa («Almuerzo con Jesús» / «Sopa con Jesús»), después el
+nombre exacto y solo al final un nombre que contenga la
+palabra. Las entregas ya registradas se mueven solas al volver
+a guardar su parte. 152/152 pruebas.

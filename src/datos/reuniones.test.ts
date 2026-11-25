@@ -112,3 +112,18 @@ describe('el motor de reuniones', () => {
     expect(res.porPersona.get('p1')).toBe(100);
   });
 });
+
+describe('la campaña de las comidas con nombres parecidos', () => {
+  it('prefiere la campaña de la casa aunque exista otra con la palabra', async () => {
+    const repo = new RepoFalso();
+    repo.sembrar('campanas', { id: 'camp-suelta', nombre: 'almuerzo', estado: 'En curso', borrado: false });
+    repo.sembrar('campanas', { id: 'camp-casa', nombre: 'Almuerzo con Jesús', estado: 'En curso', borrado: false });
+    repo.sembrar('campanas', { id: 'camp-sopa-suelta', nombre: 'Sopa de la casa', estado: 'En curso', borrado: false });
+    repo.sembrar('campanas', { id: 'camp-sopa', nombre: 'Sopa con Jesús', estado: 'En curso', borrado: false });
+    const datos = datosDesde(repo);
+    await registrarReunion(repo.comoRepo(), datos, { ...PARTE, almuerzos: 10, sopas: 4 }, 0);
+    const despues = datosDesde(repo);
+    expect(despues.entregas.find((e) => e.tipo === 'Almuerzo')?.campanaId).toBe('camp-casa');
+    expect(despues.entregas.find((e) => e.tipo === 'Sopa')?.campanaId).toBe('camp-sopa');
+  });
+});

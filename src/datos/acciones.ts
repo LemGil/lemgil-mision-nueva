@@ -965,9 +965,17 @@ async function campanaDeComida(
   creadas: Campana[],
 ): Promise<Campana> {
   const busca = tipo === 'Almuerzo' ? 'almuerzo' : 'sopa';
+  const casa = sinAcentos(NOMBRE_CAMPANA[tipo]);
+  const todas = [...datos.campanas, ...creadas];
+  // La campaña de la casa manda: primero el nombre de la casa
+  // («Almuerzo con Jesús»), después el nombre exacto («almuerzo»)
+  // y solo al final cualquier nombre que contenga la palabra.
+  // Antes decidía el orden de la base y las comidas caían en la
+  // campaña «almuerzo» en vez de en «Almuerzo con Jesús».
   const existente =
-    datos.campanas.find((c) => sinAcentos(c.nombre).includes(busca)) ??
-    creadas.find((c) => sinAcentos(c.nombre).includes(busca));
+    todas.find((c) => sinAcentos(c.nombre).trim() === casa) ??
+    todas.find((c) => sinAcentos(c.nombre).trim() === busca) ??
+    todas.find((c) => sinAcentos(c.nombre).includes(busca));
   if (existente) return existente;
   const nueva = await crearCampana(repo, { nombre: NOMBRE_CAMPANA[tipo], estado: 'En curso' });
   creadas.push(nueva);
