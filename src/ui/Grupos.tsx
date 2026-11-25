@@ -12,7 +12,7 @@ import { agrupar } from '../motor/vistas';
 import BarraVistas, { type Vista } from './BarraVistas';
 
 import Modal from './Modal';
-import { Buscador, CabeceraPagina, FilaAcciones, FilaPersona, FilaRegistro, Kpi, TarjetaPersona } from './Piezas';
+import { Buscador, CabeceraPagina, FilaAcciones, FilaPersona, FilaRegistro, Kpi, Pestanas, TarjetaPersona } from './Piezas';
 import { coincideBusqueda } from '../motor/personaVista';
 import BorrarBoton from './BorrarBoton';
 import GuiaPagina from './GuiaPagina';
@@ -265,7 +265,6 @@ function SeccionReuniones({
     editando && editando !== 'nuevo' ? partes.find((p) => p.id === editando) : undefined;
   return (
     <>
-      <h3>🗓️ Reuniones</h3>
       <p className="tenue">
         {resumen.partes === 0
           ? 'Sin partes registrados todavía.'
@@ -316,6 +315,7 @@ export default function Grupos({ repo }: { repo: Repo }) {
   const [datos, setDatos] = useState<DatosMinisterio | null>(null);
   const [recargas, setRecargas] = useState(0);
   const [seleccionado, setSeleccionado] = useState<string | null>(null);
+  const [pestanaFicha, setPestanaFicha] = useState<'datos' | 'reuniones'>('datos');
   const [nombre, setNombre] = useState('');
   const [tipo, setTipo] = useState('');
   const [miembrosSel, setMiembrosSel] = useState<string[]>([]);
@@ -355,6 +355,9 @@ export default function Grupos({ repo }: { repo: Repo }) {
       .filter((id) => !esPersonaBaja(id))
       .map((id) => personaDe(id))
       .filter(Boolean);
+  useEffect(() => {
+    setPestanaFicha('datos');
+  }, [seleccionado]);
   const detalle = seleccionado ? datos.grupos.find((g) => g.id === seleccionado) : undefined;
   const padreDetalle = detalle ? padreDe(datos, detalle) : undefined;
   const hijosDetalle = detalle ? hijosDe(datos, detalle.id) : [];
@@ -548,8 +551,20 @@ export default function Grupos({ repo }: { repo: Repo }) {
               {estadoGrupo(miembrosDe(detalle.id).length, detalle.capacidad).etiqueta}
             </span>
           </p>
+          <Pestanas
+            opciones={[
+              { id: 'datos', etiqueta: '📋 Datos' },
+              { id: 'reuniones', etiqueta: `🗓️ Reuniones (${partesDeGrupo(datos, detalle.id).length})` },
+            ]}
+            activa={pestanaFicha}
+            onCambiar={setPestanaFicha}
+          />
+          {pestanaFicha === 'reuniones' && (
+            <SeccionReuniones repo={repo} datos={datos} grupo={detalle} recargar={recargar} />
+          )}
+          {pestanaFicha === 'datos' && (
+            <>
           <StatsGrupo datos={datos} grupo={detalle} miembros={miembrosDe(detalle.id)} />
-          <SeccionReuniones repo={repo} datos={datos} grupo={detalle} recargar={recargar} />
           {padreDetalle && (
             <>
               <h3>Su Iglesia</h3>
@@ -598,6 +613,8 @@ export default function Grupos({ repo }: { repo: Repo }) {
               }}
             />
           </div>
+            </>
+          )}
         </Modal>
       )}
     </div>

@@ -521,3 +521,11 @@ el parte alimente Manos Abiertas es la clave.
   respaldo (verificado: 110 registros, $11.152.920) entran por su
   id a nombre de IGLESIA 120 Y 51.
 151/151 pruebas.
+
+## La ficha del grupo, en pestañas (v54)
+
+Regla Nº 8 aplicada a la ficha del grupo, que con Reuniones
+quedó cargada: ahora abre con dos pestañas — «📋 Datos» (el
+resumen, la familia y el formulario de siempre) y «🗓️ Reuniones
+(N)» (el parte y su historial). Al cambiar de grupo, la ficha
+abre siempre en Datos. 151/151 pruebas.
