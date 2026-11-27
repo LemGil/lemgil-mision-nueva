@@ -17,6 +17,7 @@ import SelectorPersona from './SelectorPersona';
 import { agrupar } from '../motor/vistas';
 import BarraVistas, { type Vista } from './BarraVistas';
 import BorrarBoton from './BorrarBoton';
+import Modal from './Modal';
 import GuiaPagina from './GuiaPagina';
 import { Buscador, CabeceraPagina, FilaAcciones, FilaPersona, FilaRegistro, Kpi, Pestanas, Tarjeta } from './Piezas';
 import { buscarPersonas } from '../motor/personaVista';
@@ -31,6 +32,11 @@ import {
 
 const hoyIso = () => new Date().toISOString().slice(0, 10);
 
+const MESES_CORTO = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+/** '2026-11-29' → '29 nov 2026', como la columna de fecha de la fila única. */
+const fechaCorta = (iso: string) =>
+  `${iso.slice(8, 10)} ${MESES_CORTO[Number(iso.slice(5, 7)) - 1] ?? ''} ${iso.slice(0, 4)}`;
+
 type PestanaAcademia = 'estudiantes' | 'academias' | 'encuentros';
 
 export default function Academia({ repo }: { repo: Repo }) {
@@ -38,6 +44,7 @@ export default function Academia({ repo }: { repo: Repo }) {
   const [recargas, setRecargas] = useState(0);
   const [error, setError] = useState('');
   const [pestana, setPestana] = useState<PestanaAcademia>('estudiantes');
+  const [seleccionado, setSeleccionado] = useState<string | null>(null);
   const [mostrarForm, setMostrarForm] = useState(false);
   const [busqueda, setBusqueda] = useState('');
   const [ver, setVer] = useState('activos');
@@ -64,6 +71,13 @@ export default function Academia({ repo }: { repo: Repo }) {
   const activos = datos.estudiantes.filter((e) => e.estado === 'Activo').length;
   const resumenAc = resumenAcademias(datos);
   const personaDe = (id: string) => datos.personas.find((p) => p.id === id);
+  const fichaEstudiante = seleccionado
+    ? datos.estudiantes.find((e) => e.id === seleccionado)
+    : undefined;
+  const personaFicha = fichaEstudiante ? personaDe(fichaEstudiante.personaId) : undefined;
+  const concluidasFicha = fichaEstudiante
+    ? conclusionesDeEstudiante(datos, fichaEstudiante.personaId)
+    : [];
 
   const alternar = async (e: (typeof visibles)[number]) => {
     await repo.guardar('estudiantes', { ...e, estado: e.estado === 'Activo' ? 'Inactivo' : 'Activo' });
@@ -85,6 +99,7 @@ export default function Academia({ repo }: { repo: Repo }) {
         <FilaAcciones
           nombre={`${p?.nombre} ${p?.apellidos ?? ''}`}
           meta={concluidas > 0 ? `🏁 Concluyó ${concluidas} academia(s)` : undefined}
+          onClick={() => setSeleccionado(e.id)}
           derecha={<span className={`chip ${e.estado === 'Activo' ? 'chip-verde' : 'chip-gris'}`}>{e.estado}</span>}
           acciones={
             <>
@@ -231,6 +246,58 @@ export default function Academia({ repo }: { repo: Repo }) {
       )}
       {pestana === 'encuentros' && (
         <SeccionEncuentros repo={repo} datos={datos} recargar={recargar} />
+      )}
+      {fichaEstudiante && (
+        <Modal onCerrar={() => setSeleccionado(null)}>
+          <h2>
+            {personaFicha?.nombre} {personaFicha?.apellidos ?? ''}
+          </h2>
+          <p>
+            <span className={`chip ${fichaEstudiante.estado === 'Activo' ? 'chip-verde' : 'chip-gris'}`}>
+              {fichaEstudiante.estado}
+            </span>{' '}
+            <span className="tenue">
+              {[personaFicha?.zona, personaFicha ? nombresGruposDe(datos, personaFicha.id) : undefined]
+                .filter(Boolean)
+                .join(' · ') || 'Sin zona ni grupo'}
+            </span>
+          </p>
+          <h3>🏁 Academias concluidas ({concluidasFicha.length})</h3>
+          {concluidasFicha.length === 0 ? (
+            <p className="tenue">
+              Todavía no concluyó ninguna academia: la conclusión llega con el encuentro final.
+            </p>
+          ) : (
+            <ul className="lista-personas">
+              {concluidasFicha.map((c) => (
+                <li key={c.encuentroId}>
+                  <FilaPersona
+                    nombre={c.academia.nombre}
+                    meta={`${c.academia.nivel || 'Sin nivel'} · concluida el ${fechaCorta(c.fecha)}`}
+                    onClick={() => {
+                      setSeleccionado(null);
+                      setPestana('encuentros');
+                    }}
+                  />
+                </li>
+              ))}
+            </ul>
+          )}
+          <div className="form-acciones">
+            <button className="btn" onClick={() => void alternar(fichaEstudiante)}>
+              {fichaEstudiante.estado === 'Activo' ? 'Pasar a Inactivo' : 'Reactivar'}
+            </button>
+            <BorrarBoton
+              texto="🗑️ Quitar"
+              titulo="Borrar el registro de estudiante"
+              onBorrar={async () => {
+                await borrarEstudiante(repo, fichaEstudiante.id);
+                setSeleccionado(null);
+                recargar();
+              }}
+            />
+          </div>
+        </Modal>
       )}
     </div>
   );
