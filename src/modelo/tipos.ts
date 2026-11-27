@@ -139,6 +139,12 @@ export interface Entrega {
   campanaId: string;
   beneficiarioId?: string;
   beneficiarioNombre?: string;
+  /** Si quien recibió es una persona de la ficha única (los regalos
+   * del Tesoro que anota el parte), su id; el nombre va también en
+   * beneficiarioNombre, para que Manos Abiertas lo muestre sin
+   * tener que resolver la ficha. Una visita no lleva personaId:
+   * queda solo su nombre escrito. */
+  personaId?: string;
   fecha: string;
   tipo?: string;
   cantidad?: number;

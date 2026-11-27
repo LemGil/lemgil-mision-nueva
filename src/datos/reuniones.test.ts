@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Aporte, Campana, DatosMinisterio, Entrega, Reunion } from '../modelo/tipos';
 import { RepoFalso } from '../migracion/repoFalso';
 import { actualizarReunion, borrarReunion, registrarReunion } from './acciones';
-import { avisoCuadreParte, ofrendaDeParte, partesDeGrupo, resumenReuniones } from '../motor/reuniones';
+import { avisoCuadreParte, ofrendaDeParte, partesDeGrupo, resumenReuniones, tesorosDeParte } from '../motor/reuniones';
 import { resumenBienComun } from '../motor/bienComun';
 
 const GRUPO = { id: 'g1', nombre: 'IGLESIA 120 Y 51', tipo: 'Iglesia' };
@@ -246,5 +246,93 @@ describe('los diezmos del parte pasan a Bien Común', () => {
     const resumen = resumenReuniones(datosDesde(repo), 'g1');
     expect(resumen.diezmos).toBe(2);
     expect(resumen.totalDiezmos).toBe(4500);
+  });
+});
+
+describe('el Tesoro de Manos Abiertas en el parte', () => {
+  const SIN_COMIDA = { ...PARTE, almuerzos: 0, sopas: 0 };
+  const TESOROS = [
+    { personaId: 'p1', nombre: 'Ana Hermana', tipo: 'Alimentos', detalle: 'Arroz y aceite' },
+    { nombre: 'María de visita', tipo: 'Aseo' },
+  ];
+
+  it('al registrar: cada regalo es una entrega a su nombre en la campaña del Tesoro, que nace si no existe', async () => {
+    const repo = new RepoFalso();
+    const reunion = await registrarReunion(repo.comoRepo(), datosDesde(repo), SIN_COMIDA, 0, [], TESOROS);
+    const d = datosDesde(repo);
+    expect(d.campanas.map((c) => c.nombre)).toEqual(['Tesoro de Manos Abiertas']);
+    const entregas = tesorosDeParte(d, reunion.id);
+    expect(entregas).toHaveLength(2);
+    const deAna = entregas.find((e) => e.personaId === 'p1');
+    expect(deAna).toMatchObject({
+      beneficiarioNombre: 'Ana Hermana',
+      tipo: 'Alimentos',
+      cantidad: 1,
+      unidad: 'regalo',
+      fecha: PARTE.fecha,
+      notas: 'Arroz y aceite',
+    });
+    const deMaria = entregas.find((e) => e.beneficiarioNombre === 'María de visita');
+    expect(deMaria?.personaId).toBeUndefined();
+    expect(deMaria?.tipo).toBe('Aseo');
+    expect(deMaria?.notas).toBeUndefined();
+    // el resumen del grupo cuenta los regalos
+    expect(resumenReuniones(d, 'g1').tesoros).toBe(2);
+  });
+
+  it('una entrega suelta de la campaña, misma fecha y misma persona, se adopta y no se duplica', async () => {
+    const repo = new RepoFalso();
+    repo.sembrar('campanas', { id: 'camp-tesoro', nombre: 'Tesoro de Manos Abiertas', estado: 'En curso', borrado: false });
+    repo.sembrar('entregas', { id: 'en-suelta', campanaId: 'camp-tesoro', personaId: 'p1', beneficiarioNombre: 'Ana Hermana', fecha: PARTE.fecha, tipo: 'Alimentos', borrado: false });
+    repo.sembrar('entregas', { id: 'en-visita', campanaId: 'camp-tesoro', beneficiarioNombre: 'María de visita', fecha: PARTE.fecha, tipo: 'Aseo', borrado: false });
+    const reunion = await registrarReunion(repo.comoRepo(), datosDesde(repo), SIN_COMIDA, 0, [], TESOROS);
+    const d = datosDesde(repo);
+    expect(d.entregas).toHaveLength(2);
+    expect(d.entregas.map((e) => e.id).sort()).toEqual(['en-suelta', 'en-visita']);
+    expect(d.entregas.every((e) => e.reunionId === reunion.id)).toBe(true);
+  });
+
+  it('la campaña de la casa manda sobre otra que solo contenga «tesoro»', async () => {
+    const repo = new RepoFalso();
+    repo.sembrar('campanas', { id: 'camp-suelta', nombre: 'tesoro', estado: 'En curso', borrado: false });
+    repo.sembrar('campanas', { id: 'camp-casa', nombre: 'Tesoro de Manos Abiertas', estado: 'En curso', borrado: false });
+    await registrarReunion(repo.comoRepo(), datosDesde(repo), SIN_COMIDA, 0, [], TESOROS);
+    const d = datosDesde(repo);
+    expect(d.campanas).toHaveLength(2);
+    expect(d.entregas.every((e) => e.campanaId === 'camp-casa')).toBe(true);
+  });
+
+  it('al corregir: cambiar un regalo, quitar uno y añadir otro deja la lista exacta', async () => {
+    const repo = new RepoFalso();
+    const r = repo.comoRepo();
+    const reunion = await registrarReunion(r, datosDesde(repo), SIN_COMIDA, 0, [], TESOROS);
+    await actualizarReunion(r, datosDesde(repo), reunion, 0, [], [
+      { personaId: 'p1', nombre: 'Ana Hermana', tipo: 'Ambos' },
+      { personaId: 'p2', nombre: 'Luis Hermano', tipo: 'Alimentos' },
+    ]);
+    const d = datosDesde(repo);
+    const entregas = tesorosDeParte(d, reunion.id);
+    expect(entregas).toHaveLength(2);
+    expect(entregas.find((e) => e.personaId === 'p1')?.tipo).toBe('Ambos');
+    expect(entregas.find((e) => e.personaId === 'p2')?.beneficiarioNombre).toBe('Luis Hermano');
+    expect(entregas.some((e) => e.beneficiarioNombre === 'María de visita')).toBe(false);
+  });
+
+  it('sin regalos no nace la campaña ni quedan entregas', async () => {
+    const repo = new RepoFalso();
+    await registrarReunion(repo.comoRepo(), datosDesde(repo), SIN_COMIDA, 0, [], []);
+    const d = datosDesde(repo);
+    expect(d.campanas).toHaveLength(0);
+    expect(d.entregas).toHaveLength(0);
+  });
+
+  it('al borrar el parte caen también sus regalos del Tesoro', async () => {
+    const repo = new RepoFalso();
+    const r = repo.comoRepo();
+    const reunion = await registrarReunion(r, datosDesde(repo), SIN_COMIDA, 0, [], TESOROS);
+    await borrarReunion(r, datosDesde(repo), reunion.id);
+    const d = datosDesde(repo);
+    expect(d.entregas).toHaveLength(0);
+    expect(d.reuniones).toHaveLength(0);
   });
 });

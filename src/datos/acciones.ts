@@ -943,10 +943,12 @@ export async function borrarPasoAccion(
   for (const p of restantes) await repo.guardar('pasos', p);
 }
 
-// ── Reuniones: el parte, con sus dos vínculos ─────────────────────────
+// ── Reuniones: el parte, con sus vínculos ────────────────────────────
 // El parte guarda los conteos. Su ofrenda vive como Aporte del grupo
-// en Bien Común (reunionId) y sus almuerzos/sopas como Entregas de
-// Manos Abiertas (reunionId): el parte es el editor de los tres.
+// en Bien Común (reunionId), sus diezmos como Aportes de cada persona
+// (reunionId) y sus almuerzos/sopas y los regalos del Tesoro como
+// Entregas de Manos Abiertas (reunionId): el parte es el editor de
+// todos ellos.
 
 const NOMBRE_CAMPANA: Record<'Almuerzo' | 'Sopa', string> = {
   Almuerzo: 'Almuerzo con Jesús',
@@ -1135,18 +1137,115 @@ async function sincronizarDiezmosDelParte(
   }
 }
 
+/** La campaña del proyecto Tesoro en Manos Abiertas. */
+const NOMBRE_CAMPANA_TESORO = 'Tesoro de Manos Abiertas';
+
+/** La campaña del Tesoro entre las que hay (la de la casa manda:
+ * primero el nombre exacto y solo al final cualquiera que contenga
+ * «tesoro», como con las comidas); sin crearla todavía. */
+function campanaTesoroExistente(todas: Campana[]): Campana | undefined {
+  const casa = sinAcentos(NOMBRE_CAMPANA_TESORO);
+  return (
+    todas.find((c) => sinAcentos(c.nombre).trim() === casa) ??
+    todas.find((c) => sinAcentos(c.nombre).includes('tesoro'))
+  );
+}
+
+/** Un regalo del Tesoro anotado en el parte: quién recibió (una
+ * persona de la casa, con su personaId, o una visita, solo con el
+ * nombre escrito), qué se le entregó y un detalle opcional. Sin
+ * costo: son regalos, no compras. Al guardar, pasa a Manos Abiertas
+ * como una Entrega de la campaña «Tesoro de Manos Abiertas» de esa
+ * fecha, enlazada al parte (reunionId). */
+export interface TesoroDelParte {
+  personaId?: string;
+  nombre: string;
+  /** 'Alimentos' | 'Aseo' | 'Ambos' */
+  tipo: string;
+  detalle?: string;
+}
+
+async function sincronizarTesoroDelParte(
+  repo: Repo,
+  datos: DatosMinisterio,
+  reunion: Reunion,
+  tesoros: TesoroDelParte[],
+  creadas: Campana[],
+): Promise<void> {
+  const validos = tesoros.filter((t) => t.nombre.trim());
+  const existente = campanaTesoroExistente([...datos.campanas, ...creadas]);
+  // Las entregas que este parte ya tenía en la campaña del Tesoro.
+  const delParte = existente
+    ? datos.entregas.filter((e) => e.reunionId === reunion.id && e.campanaId === existente.id)
+    : [];
+  if (validos.length === 0 && delParte.length === 0) return;
+  let campana = existente;
+  if (!campana) {
+    campana = await crearCampana(repo, { nombre: NOMBRE_CAMPANA_TESORO, estado: 'En curso' });
+    creadas.push(campana);
+  }
+  const reclamados = new Set<string>();
+  const mismaPersona = (e: { personaId?: string; beneficiarioNombre?: string }, t: TesoroDelParte) =>
+    t.personaId
+      ? e.personaId === t.personaId
+      : !e.personaId &&
+        sinAcentos(e.beneficiarioNombre ?? '').trim() === sinAcentos(t.nombre).trim();
+  for (const t of validos) {
+    const base: Omit<Entrega, 'id'> = {
+      campanaId: campana.id,
+      personaId: t.personaId,
+      beneficiarioNombre: t.nombre.trim(),
+      fecha: reunion.fecha,
+      tipo: t.tipo,
+      cantidad: 1,
+      unidad: 'regalo',
+      reunionId: reunion.id,
+      notas: t.detalle?.trim() || undefined,
+    };
+    const propio = delParte.find((e) => !reclamados.has(e.id) && mismaPersona(e, t));
+    if (propio) {
+      reclamados.add(propio.id);
+      await actualizarEntrega(repo, { ...propio, ...base });
+    } else {
+      // Adopción (como la ofrenda y los diezmos): una entrega suelta
+      // de la campaña, de la misma fecha y la misma persona, es la
+      // de esta reunión — se enlaza en vez de duplicarse.
+      const suelta = datos.entregas.find(
+        (e) =>
+          !e.reunionId &&
+          !reclamados.has(e.id) &&
+          e.campanaId === campana.id &&
+          e.fecha === reunion.fecha &&
+          mismaPersona(e, t),
+      );
+      if (suelta) {
+        reclamados.add(suelta.id);
+        await actualizarEntrega(repo, { ...suelta, ...base });
+      } else {
+        await registrarEntrega(repo, base);
+      }
+    }
+  }
+  // Los que el parte ya no trae, se borran: el parte es su editor.
+  for (const e of delParte) {
+    if (!reclamados.has(e.id)) await borrarEntrega(repo, e.id);
+  }
+}
+
 async function sincronizarVinculosDelParte(
   repo: Repo,
   datos: DatosMinisterio,
   reunion: Reunion,
   ofrenda: number,
   diezmos: DiezmoDelParte[],
+  tesoros: TesoroDelParte[] = [],
 ): Promise<void> {
   const creadas: Campana[] = [];
   await sincronizarOfrendaDelParte(repo, datos, reunion, ofrenda);
   await sincronizarDiezmosDelParte(repo, datos, reunion, diezmos);
   await sincronizarComidaDelParte(repo, datos, reunion, 'Almuerzo', reunion.almuerzos, creadas);
   await sincronizarComidaDelParte(repo, datos, reunion, 'Sopa', reunion.sopas, creadas);
+  await sincronizarTesoroDelParte(repo, datos, reunion, tesoros, creadas);
 }
 
 export async function registrarReunion(
@@ -1155,10 +1254,11 @@ export async function registrarReunion(
   entrada: Omit<Reunion, 'id'>,
   ofrenda: number,
   diezmos: DiezmoDelParte[] = [],
+  tesoros: TesoroDelParte[] = [],
 ): Promise<Reunion> {
   const completa: Reunion = { ...entrada, id: nuevoId() };
   await repo.guardar('reuniones', completa);
-  await sincronizarVinculosDelParte(repo, datos, completa, ofrenda, diezmos);
+  await sincronizarVinculosDelParte(repo, datos, completa, ofrenda, diezmos, tesoros);
   return completa;
 }
 
@@ -1168,9 +1268,10 @@ export async function actualizarReunion(
   reunion: Reunion,
   ofrenda: number,
   diezmos: DiezmoDelParte[] = [],
+  tesoros: TesoroDelParte[] = [],
 ): Promise<void> {
   await repo.guardar('reuniones', reunion);
-  await sincronizarVinculosDelParte(repo, datos, reunion, ofrenda, diezmos);
+  await sincronizarVinculosDelParte(repo, datos, reunion, ofrenda, diezmos, tesoros);
 }
 
 /** Borrar el parte borra también su ofrenda y sus entregas: son el
