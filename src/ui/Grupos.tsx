@@ -142,12 +142,16 @@ function FormParte({
   grupo,
   parte,
   onListo,
+  onGuardado,
 }: {
   repo: Repo;
   datos: DatosMinisterio;
   grupo: Grupo;
   parte?: Reunion;
   onListo: () => void;
+  /** Tras guardar un parte NUEVO: recarga sin cerrar (el formulario
+   * queda abierto y limpio para registrar otro). */
+  onGuardado: () => void;
 }) {
   const [fecha, setFecha] = useState(parte?.fecha ?? hoyIso());
   const [personas, setPersonas] = useState(String(parte?.personas ?? ''));
@@ -191,6 +195,7 @@ function FormParte({
   const [visita, setVisita] = useState('');
   const [notas, setNotas] = useState(parte?.notas ?? '');
   const [error, setError] = useState('');
+  const [guardado, setGuardado] = useState('');
   const nombreDe = (id: string) => {
     const p = datos.personas.find((x) => x.id === id);
     return p ? `${p.nombre} ${p.apellidos ?? ''}`.trim() : 'Persona borrada';
@@ -204,6 +209,7 @@ function FormParte({
   });
   const guardar = async () => {
     setError('');
+    setGuardado('');
     const sinMonto = diezmos.find((d) => !(Number(d.monto) > 0));
     if (sinMonto) {
       setError(`Falta el monto del diezmo de ${nombreDe(sinMonto.personaId)}.`);
@@ -235,9 +241,31 @@ function FormParte({
       notas: notas.trim() || undefined,
     };
     try {
-      if (parte) await actualizarReunion(repo, datos, { ...base, id: parte.id }, Number(ofrenda) || 0, listaDiezmos, listaTesoros);
-      else await registrarReunion(repo, datos, base, Number(ofrenda) || 0, listaDiezmos, listaTesoros);
-      onListo();
+      if (parte) {
+        await actualizarReunion(repo, datos, { ...base, id: parte.id }, Number(ofrenda) || 0, listaDiezmos, listaTesoros);
+        onListo();
+      } else {
+        await registrarReunion(repo, datos, base, Number(ofrenda) || 0, listaDiezmos, listaTesoros);
+        // El parte nuevo NO cierra el formulario: queda abierto y
+        // limpio para seguir registrando, conservando la fecha. Solo
+        // cierra con Cancelar o tocando otra vez «Registrar parte».
+        setPersonas('');
+        setMujeres('');
+        setHombres('');
+        setNinos('');
+        setVisitas('');
+        setNuevos('');
+        setProfesiones('');
+        setAlmuerzos('');
+        setSopas('');
+        setOfrenda('');
+        setDiezmos([]);
+        setTesoros([]);
+        setVisita('');
+        setNotas('');
+        setGuardado('✓ Parte guardado. El formulario quedó limpio para registrar otro; la fecha se mantiene.');
+        onGuardado();
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     }
@@ -387,6 +415,7 @@ function FormParte({
       <p className="tenue">La ofrenda queda en Bien Común como aporte del grupo, los diezmos a nombre de cada persona, los almuerzos y sopas en Manos Abiertas como entregas de ese día, y los regalos del Tesoro a nombre de cada persona que recibió.</p>
       {aviso && <p className="aviso">{aviso}</p>}
       {error && <p className="aviso aviso-rojo">{error}</p>}
+      {guardado && <p className="aviso aviso-verde">{guardado}</p>}
       <div className="form-acciones">
         <button className="btn btn-dorado" onClick={guardar}>💾 Guardar el parte</button>
         <button className="btn" onClick={onListo}>Cancelar</button>
@@ -405,8 +434,10 @@ function FormParte({
   );
 }
 
-/** La sección de Reuniones en la ficha del grupo: su resumen, el
- * botón del parte nuevo y el historial (tocar un parte lo corrige). */
+/** La sección de Reuniones en la ficha del grupo: el botón del
+ * parte en su propia fila (abre el formulario y lo vuelve a cerrar),
+ * el informe del período en tarjetas y el historial (tocar un parte
+ * lo corrige). */
 function SeccionReuniones({
   repo,
   datos,
@@ -427,14 +458,37 @@ function SeccionReuniones({
     editando && editando !== 'nuevo' ? partes.find((p) => p.id === editando) : undefined;
   return (
     <>
-      <p className="tenue">
-        {resumen.partes === 0
-          ? 'Sin partes registrados todavía.'
-          : `${resumen.partes} parte(s) · asistencia promedio ${resumen.promedioPersonas} · ${resumen.visitas} visitas · ${resumen.nuevos} nuevos congregados · ${resumen.profesiones} profesiones · ${resumen.almuerzos} almuerzos y ${resumen.sopas} sopas repartidas.${resumen.diezmos > 0 ? ` Diezmos anotados: ${resumen.diezmos} · ${formatoDinero(resumen.totalDiezmos)}.` : ''}${resumen.tesoros > 0 ? ` 🎁 Tesoro: ${resumen.tesoros} regalo(s) entregado(s).` : ''}`}
-        {ofrendas.length > 0 &&
-          ` Ofrendas del grupo en Bien Común: ${ofrendas.length} · ${formatoDinero(totalOfrendas)}.`}
-      </p>
-      {editando ? (
+      <div className="form-acciones">
+        <button
+          className="btn btn-dorado"
+          onClick={() => setEditando(editando ? null : 'nuevo')}
+        >
+          {editando ? '✕ Cerrar el formulario' : '➕ Registrar parte'}
+        </button>
+      </div>
+      {resumen.partes === 0 ? (
+        <p className="tenue">Sin partes registrados todavía.</p>
+      ) : (
+        <section className="kpis">
+          <Kpi icono="📅" numero={resumen.partes} titulo="Partes" />
+          <Kpi icono="👥" numero={resumen.promedioPersonas} titulo="Asistencia promedio" />
+          <Kpi icono="🚶" numero={resumen.visitas} titulo="Visitas" />
+          <Kpi icono="🌱" numero={resumen.nuevos} titulo="Nuevos congregados" />
+          <Kpi icono="✝️" numero={resumen.profesiones} titulo="Profesiones de fe" />
+          <Kpi icono="🍽️" numero={resumen.almuerzos} titulo="Almuerzos repartidos" />
+          <Kpi icono="🍲" numero={resumen.sopas} titulo="Sopas repartidas" />
+          {resumen.diezmos > 0 && (
+            <Kpi icono="🌾" numero={formatoDinero(resumen.totalDiezmos)} dinero titulo="Diezmos" sub={`${resumen.diezmos} anotados`} />
+          )}
+          {ofrendas.length > 0 && (
+            <Kpi icono="💰" numero={formatoDinero(totalOfrendas)} dinero titulo="Ofrendas del grupo" sub={`${ofrendas.length} en Bien Común`} />
+          )}
+          {resumen.tesoros > 0 && (
+            <Kpi icono="🎁" numero={resumen.tesoros} titulo="Regalos del Tesoro" />
+          )}
+        </section>
+      )}
+      {editando && (
         <FormParte
           key={editando}
           repo={repo}
@@ -445,11 +499,8 @@ function SeccionReuniones({
             setEditando(null);
             recargar();
           }}
+          onGuardado={recargar}
         />
-      ) : (
-        <button className="btn btn-dorado" onClick={() => setEditando('nuevo')}>
-          ➕ Registrar parte
-        </button>
       )}
       {partes.length > 0 && (
         <ul className="lista-personas">
