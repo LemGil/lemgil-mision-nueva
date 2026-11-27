@@ -29,6 +29,7 @@ describe('diagnosticoRed', () => {
       beneficiarios: [], hitos: [], asignaciones: [], grupos: [], evangelismos: [],
       aportes: [], pasos: CATALOGO_SEMILLA, campanas: [], entregas: [],
       reuniones: [],
+      academias: [], encuentros: [],
       colaboradores: [
         // La ficha de Isabel vive, pero con el nombre de Gina.
         { id: 'i1', nombre: 'GINA', apellido: 'HERRERA', estado: 'Activo' } as Colaborador,
@@ -65,6 +66,7 @@ describe('diagnosticoRed', () => {
       beneficiarios: [], hitos: [], asignaciones: [], grupos: [], evangelismos: [],
       aportes: [], pasos: CATALOGO_SEMILLA, campanas: [], entregas: [],
       reuniones: [],
+      academias: [], encuentros: [],
       colaboradores: [
         { id: 'i1', nombre: 'ISABEL', apellido: 'MIRANDA', estado: 'Activo' } as Colaborador,
         { id: 'g1', nombre: 'GINA', apellido: 'HERRERA', estado: 'Activo' } as Colaborador,

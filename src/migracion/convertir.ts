@@ -351,6 +351,7 @@ export function convertirRespaldo(respaldo: RespaldoViejo): {
     campanas: [],
     entregas: [],
     reuniones: [],
+    academias: [], encuentros: [],
     pasos,
   };
   return {

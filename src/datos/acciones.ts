@@ -28,6 +28,7 @@ import {
   renumerar,
 } from '../motor/pasosEditar';
 import type {
+  Academia,
   Aporte,
   AporteRed,
   AsignacionMinisterio,
@@ -37,6 +38,7 @@ import type {
   Conversion,
   DatosMinisterio,
   Diezmador,
+  Encuentro,
   Entrega,
   EntradaHistorial,
   Estudiante,
@@ -352,6 +354,81 @@ export async function crearEstudiante(
   const estudiante: Estudiante = { id: nuevoId(), personaId, estado: 'Activo' };
   await repo.guardar('estudiantes', estudiante);
   return estudiante;
+}
+
+// ——— Academia: el catálogo y el encuentro final ———
+// La academia se concluye en el encuentro presencial con el Maestro:
+// el Encuentro registra la academia, su fecha y los alumnos que lo
+// recibieron. Estar en un encuentro de una academia es haberla
+// concluido (ver motor/academia).
+
+export async function crearAcademia(
+  repo: Repo,
+  datos: DatosMinisterio,
+  entrada: { nombre: string; nivel: string },
+): Promise<Academia> {
+  const nombre = entrada.nombre.trim();
+  if (!nombre) throw new Error('La academia necesita un nombre.');
+  if (
+    datos.academias.some(
+      (a) => sinAcentos(a.nombre).trim() === sinAcentos(nombre).trim(),
+    )
+  ) {
+    throw new Error('Ya hay una academia con ese nombre.');
+  }
+  const academia: Academia = { id: nuevoId(), nombre, nivel: entrada.nivel.trim() };
+  await repo.guardar('academias', academia);
+  return academia;
+}
+
+export async function actualizarAcademia(repo: Repo, academia: Academia): Promise<void> {
+  await repo.guardar('academias', {
+    ...academia,
+    nombre: academia.nombre.trim(),
+    nivel: academia.nivel.trim(),
+  });
+}
+
+/** Una academia con encuentros no se borra: primero se borran sus
+ * encuentros, para no dejar conclusiones huérfanas. */
+export async function borrarAcademia(
+  repo: Repo,
+  datos: DatosMinisterio,
+  id: string,
+): Promise<void> {
+  if (datos.encuentros.some((e) => e.academiaId === id)) {
+    throw new Error('Esta academia ya tiene encuentros registrados; bórralos primero.');
+  }
+  await repo.borrar('academias', id);
+}
+
+export async function registrarEncuentro(
+  repo: Repo,
+  datos: DatosMinisterio,
+  entrada: Omit<Encuentro, 'id'>,
+): Promise<Encuentro> {
+  if (!datos.academias.some((a) => a.id === entrada.academiaId)) {
+    throw new Error('El encuentro necesita una academia del catálogo.');
+  }
+  if (!entrada.fecha) throw new Error('El encuentro necesita una fecha.');
+  const encuentro: Encuentro = {
+    ...entrada,
+    id: nuevoId(),
+    alumnoIds: [...new Set(entrada.alumnoIds)],
+  };
+  await repo.guardar('encuentros', encuentro);
+  return encuentro;
+}
+
+export async function actualizarEncuentro(repo: Repo, encuentro: Encuentro): Promise<void> {
+  await repo.guardar('encuentros', {
+    ...encuentro,
+    alumnoIds: [...new Set(encuentro.alumnoIds)],
+  });
+}
+
+export async function borrarEncuentro(repo: Repo, id: string): Promise<void> {
+  await repo.borrar('encuentros', id);
 }
 
 export async function crearDiezmador(

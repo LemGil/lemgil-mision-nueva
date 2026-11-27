@@ -93,6 +93,27 @@ export interface Estudiante {
   estado: string; // 'Activo' | 'Inactivo' | …
 }
 
+/** Una academia del catálogo de la Academia del Espíritu: su nombre
+ * («Descodificando la Salvación») y su nivel («Nivel I» — el nivel
+ * nace del uso, como las Zonas). */
+export interface Academia {
+  id: string;
+  nombre: string;
+  nivel: string;
+}
+
+/** El encuentro final de una academia, en una fecha: los alumnos
+ * que lo recibieron ese día (sus personaId). Estar en un encuentro
+ * de una academia es haberla concluido — la formación se sella en
+ * persona, con el Maestro. Un registro por encuentro, editable,
+ * como el parte es un registro por reunión. */
+export interface Encuentro {
+  id: string;
+  academiaId: string;
+  fecha: string;
+  alumnoIds: string[];
+}
+
 export interface Diezmador {
   id: string;
   personaId: string;
@@ -295,6 +316,8 @@ export interface DatosMinisterio {
   campanas: Campana[];
   entregas: Entrega[];
   reuniones: Reunion[];
+  academias: Academia[];
+  encuentros: Encuentro[];
   pasos: Paso[];
 }
 

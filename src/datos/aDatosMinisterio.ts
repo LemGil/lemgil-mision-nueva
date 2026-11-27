@@ -4,6 +4,7 @@
 
 import { CATALOGO_SEMILLA } from '../modelo/catalogo';
 import type {
+  Academia,
   Aporte,
   AporteRed,
   AsignacionMinisterio,
@@ -13,6 +14,7 @@ import type {
   Conversion,
   DatosMinisterio,
   Diezmador,
+  Encuentro,
   Entrega,
   Estudiante,
   Evangelismo,
@@ -49,6 +51,8 @@ export async function aDatosMinisterio(repo: Repo): Promise<DatosMinisterio> {
     campanas,
     entregas,
     reuniones,
+    academias,
+    encuentros,
     pasos,
   ] = await Promise.all([
     repo.listar<Persona>('personas'),
@@ -67,6 +71,8 @@ export async function aDatosMinisterio(repo: Repo): Promise<DatosMinisterio> {
     repo.listar<Campana>('campanas'),
     repo.listar<Entrega>('entregas'),
     repo.listar<Reunion>('reuniones'),
+    repo.listar<Academia>('academias'),
+    repo.listar<Encuentro>('encuentros'),
     repo.listar<Paso>('pasos'),
   ]);
   return {
@@ -86,6 +92,8 @@ export async function aDatosMinisterio(repo: Repo): Promise<DatosMinisterio> {
     campanas,
     entregas,
     reuniones,
+    academias,
+    encuentros,
     pasos: pasos.length > 0 ? pasos : CATALOGO_SEMILLA,
   };
 }
