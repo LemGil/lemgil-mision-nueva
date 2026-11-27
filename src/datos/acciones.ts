@@ -402,6 +402,27 @@ export async function borrarAcademia(
   await repo.borrar('academias', id);
 }
 
+/** El gozne del encuentro (como el de Misión → Miembros): quien
+ * recibe un encuentro ES estudiante de la Academia. Al guardar el
+ * encuentro, cada alumno que no tenga ficha de estudiante la gana
+ * (Activo), y el que la tenga Inactiva vuelve a Activo. Quitar a
+ * alguien de la lista del encuentro NO le quita la ficha: eso se
+ * maneja en la pestaña Estudiantes. */
+async function asegurarEstudiantesDelEncuentro(
+  repo: Repo,
+  datos: DatosMinisterio,
+  alumnoIds: string[],
+): Promise<void> {
+  for (const personaId of alumnoIds) {
+    const ficha = datos.estudiantes.find((e) => e.personaId === personaId);
+    if (!ficha) {
+      await repo.guardar('estudiantes', { id: nuevoId(), personaId, estado: 'Activo' });
+    } else if (ficha.estado !== 'Activo') {
+      await repo.guardar('estudiantes', { ...ficha, estado: 'Activo' });
+    }
+  }
+}
+
 export async function registrarEncuentro(
   repo: Repo,
   datos: DatosMinisterio,
@@ -417,14 +438,21 @@ export async function registrarEncuentro(
     alumnoIds: [...new Set(entrada.alumnoIds)],
   };
   await repo.guardar('encuentros', encuentro);
+  await asegurarEstudiantesDelEncuentro(repo, datos, encuentro.alumnoIds);
   return encuentro;
 }
 
-export async function actualizarEncuentro(repo: Repo, encuentro: Encuentro): Promise<void> {
-  await repo.guardar('encuentros', {
+export async function actualizarEncuentro(
+  repo: Repo,
+  datos: DatosMinisterio,
+  encuentro: Encuentro,
+): Promise<void> {
+  const limpio: Encuentro = {
     ...encuentro,
     alumnoIds: [...new Set(encuentro.alumnoIds)],
-  });
+  };
+  await repo.guardar('encuentros', limpio);
+  await asegurarEstudiantesDelEncuentro(repo, datos, limpio.alumnoIds);
 }
 
 export async function borrarEncuentro(repo: Repo, id: string): Promise<void> {

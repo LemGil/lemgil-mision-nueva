@@ -6,7 +6,7 @@ import {
   registrarEncuentro,
 } from './acciones';
 import { RepoFalso } from '../migracion/repoFalso';
-import type { Academia, DatosMinisterio, Encuentro } from '../modelo/tipos';
+import type { Academia, DatosMinisterio, Encuentro, Estudiante } from '../modelo/tipos';
 import {
   concluidosDeAcademia,
   conclusionesDeEstudiante,
@@ -18,7 +18,7 @@ function datosDesde(repo: RepoFalso): DatosMinisterio {
     personas: [],
     conversiones: [],
     miembros: [],
-    estudiantes: [],
+    estudiantes: repo.vivos<Estudiante>('estudiantes'),
     diezmadores: [],
     beneficiarios: [],
     hitos: [],
@@ -102,6 +102,38 @@ describe('los encuentros y las conclusiones', () => {
     expect(resumen).toEqual({ academias: 1, encuentros: 2, conclusiones: 3, alumnosConcluidos: 3 });
   });
 
+  it('el gozne: quien recibe el encuentro queda estudiante Activo, y el Inactivo se reactiva', async () => {
+    const repo = new RepoFalso();
+    const r = repo.comoRepo();
+    const a = await crearAcademia(r, datosDesde(repo), { nombre: 'Academia A', nivel: 'Nivel I' });
+    const fichaInactiva: Estudiante = { id: 'e-p2', personaId: 'p2', estado: 'Inactivo' };
+    await repo.guardar('estudiantes', fichaInactiva);
+    await registrarEncuentro(r, datosDesde(repo), {
+      academiaId: a.id,
+      fecha: '2026-11-29',
+      alumnoIds: ['p1', 'p2'],
+    });
+    const d = datosDesde(repo);
+    expect(d.estudiantes).toHaveLength(2);
+    expect(d.estudiantes.find((e) => e.personaId === 'p1')?.estado).toBe('Activo');
+    expect(d.estudiantes.find((e) => e.personaId === 'p2')?.estado).toBe('Activo');
+  });
+
+  it('quitar a un alumno del encuentro no le quita la ficha de estudiante', async () => {
+    const repo = new RepoFalso();
+    const r = repo.comoRepo();
+    const a = await crearAcademia(r, datosDesde(repo), { nombre: 'Academia A', nivel: 'Nivel I' });
+    const e = await registrarEncuentro(r, datosDesde(repo), {
+      academiaId: a.id,
+      fecha: '2026-11-29',
+      alumnoIds: ['p1'],
+    });
+    await actualizarEncuentro(r, datosDesde(repo), { ...e, alumnoIds: [] });
+    const d = datosDesde(repo);
+    expect(d.estudiantes.map((x) => x.personaId)).toEqual(['p1']);
+    expect(conclusionesDeEstudiante(d, 'p1')).toHaveLength(0);
+  });
+
   it('al corregir un encuentro, la lista de alumnos queda exacta', async () => {
     const repo = new RepoFalso();
     const r = repo.comoRepo();
@@ -111,7 +143,7 @@ describe('los encuentros y las conclusiones', () => {
       fecha: '2026-11-29',
       alumnoIds: ['p1', 'p2'],
     });
-    await actualizarEncuentro(r, { ...e, alumnoIds: ['p2', 'p3'] });
+    await actualizarEncuentro(r, datosDesde(repo), { ...e, alumnoIds: ['p2', 'p3'] });
     const d = datosDesde(repo);
     expect([...concluidosDeAcademia(d, a.id)].sort()).toEqual(['p2', 'p3']);
     expect(conclusionesDeEstudiante(d, 'p1')).toHaveLength(0);

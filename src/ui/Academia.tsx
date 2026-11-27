@@ -363,7 +363,8 @@ function SeccionAcademias({
 }
 
 /** El formulario de un encuentro: la academia, la fecha y los
- * alumnos que lo recibieron (se eligen de los estudiantes). */
+ * alumnos que lo recibieron (se eligen de la lista general de
+ * Personas; al guardar, quedan registrados como estudiantes). */
 function FormEncuentro({
   repo,
   datos,
@@ -383,16 +384,15 @@ function FormEncuentro({
     const p = datos.personas.find((x) => x.id === id);
     return p ? `${p.nombre} ${p.apellidos ?? ''}`.trim() : 'Persona borrada';
   };
-  const idsEstudiantes = new Set(datos.estudiantes.map((e) => e.personaId));
-  const excluir = new Set(
-    datos.personas.filter((p) => !idsEstudiantes.has(p.id)).map((p) => p.id),
-  );
-  for (const id of alumnos) excluir.add(id);
+  // Los alumnos se eligen de la lista general de Personas: al
+  // guardar el encuentro, el que no sea estudiante queda
+  // registrado como estudiante solo (el gozne del encuentro).
+  const excluir = new Set(alumnos);
   const guardar = async () => {
     setError('');
     try {
       if (encuentro) {
-        await actualizarEncuentro(repo, { ...encuentro, fecha, academiaId, alumnoIds: alumnos });
+        await actualizarEncuentro(repo, datos, { ...encuentro, fecha, academiaId, alumnoIds: alumnos });
       } else {
         await registrarEncuentro(repo, datos, { fecha, academiaId, alumnoIds: alumnos });
       }
