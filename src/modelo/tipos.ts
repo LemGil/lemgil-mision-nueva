@@ -149,6 +149,9 @@ export interface Entrega {
   tipo?: string;
   cantidad?: number;
   unidad?: string;
+  /** El producto entregado (los regalos del Tesoro que anota el
+   * parte: arroz, aceite, jabón…); cuántas unidades, en `cantidad`. */
+  producto?: string;
   /** Si nació del parte de reunión, su id: el parte es su editor. */
   reunionId?: string;
   notas?: string;

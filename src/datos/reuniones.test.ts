@@ -335,4 +335,31 @@ describe('el Tesoro de Manos Abiertas en el parte', () => {
     expect(d.entregas).toHaveLength(0);
     expect(d.reuniones).toHaveLength(0);
   });
+
+  it('el producto y la cantidad del regalo viajan a la entrega; sin cantidad, una unidad', async () => {
+    const repo = new RepoFalso();
+    const reunion = await registrarReunion(repo.comoRepo(), datosDesde(repo), SIN_COMIDA, 0, [], [
+      { personaId: 'p1', nombre: 'Ana Hermana', tipo: 'Alimentos', producto: 'Arroz', cantidad: 2 },
+      { nombre: 'María de visita', tipo: 'Aseo', producto: 'Jabón' },
+    ]);
+    const d = datosDesde(repo);
+    const entregas = tesorosDeParte(d, reunion.id);
+    expect(entregas.find((e) => e.personaId === 'p1')).toMatchObject({ producto: 'Arroz', cantidad: 2 });
+    expect(entregas.find((e) => e.beneficiarioNombre === 'María de visita')).toMatchObject({ producto: 'Jabón', cantidad: 1 });
+  });
+
+  it('al corregir el parte se corrigen el producto y la cantidad del regalo', async () => {
+    const repo = new RepoFalso();
+    const r = repo.comoRepo();
+    const reunion = await registrarReunion(r, datosDesde(repo), SIN_COMIDA, 0, [], [
+      { personaId: 'p1', nombre: 'Ana Hermana', tipo: 'Alimentos', producto: 'Arroz', cantidad: 1 },
+    ]);
+    await actualizarReunion(r, datosDesde(repo), reunion, 0, [], [
+      { personaId: 'p1', nombre: 'Ana Hermana', tipo: 'Alimentos', producto: 'Aceite', cantidad: 3 },
+    ]);
+    const d = datosDesde(repo);
+    const entregas = tesorosDeParte(d, reunion.id);
+    expect(entregas).toHaveLength(1);
+    expect(entregas[0]).toMatchObject({ producto: 'Aceite', cantidad: 3 });
+  });
 });

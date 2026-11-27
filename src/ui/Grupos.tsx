@@ -6,7 +6,8 @@ import type { DatosMinisterio } from '../modelo/tipos';
 import SelectorPersona from './SelectorPersona';
 import { clasificarPersona } from '../motor/censo';
 import { esBaja } from '../motor/vistas';
-import type { Grupo, Persona, Reunion } from '../modelo/tipos';
+import type { Grupo, Periodo, Persona, Reunion } from '../modelo/tipos';
+import { anosConRegistros, mesesConRegistros } from '../motor/periodos';
 import { InputZona } from './CamposLista';
 import { agrupar } from '../motor/vistas';
 import BarraVistas, { type Vista } from './BarraVistas';
@@ -136,6 +137,8 @@ function SeccionMiembros({
 /** El formulario del parte de reunión: los conteos de la reunión,
  * la ofrenda (que va a Bien Común como aporte del grupo) y las
  * comidas (que van a Manos Abiertas como entregas). */
+const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
 function FormParte({
   repo,
   datos,
@@ -177,7 +180,7 @@ function FormParte({
       : [],
   );
   const [tesoros, setTesoros] = useState<
-    { personaId?: string; nombre: string; tipo: string; detalle: string }[]
+    { personaId?: string; nombre: string; tipo: string; producto: string; cantidad: string; detalle: string }[]
   >(() =>
     parte
       ? tesorosDeParte(datos, parte.id).map((e) => {
@@ -187,6 +190,8 @@ function FormParte({
             nombre:
               e.beneficiarioNombre ?? (p ? `${p.nombre} ${p.apellidos ?? ''}`.trim() : ''),
             tipo: e.tipo ?? 'Alimentos',
+            producto: e.producto ?? '',
+            cantidad: e.cantidad ? String(e.cantidad) : '',
             detalle: e.notas ?? '',
           };
         })
@@ -219,11 +224,17 @@ function FormParte({
       setError('Falta el nombre de una persona que recibió el Tesoro.');
       return;
     }
+    if (tesoros.some((t) => !t.producto.trim())) {
+      setError('Falta el producto de uno de los regalos del Tesoro.');
+      return;
+    }
     const listaDiezmos = diezmos.map((d) => ({ personaId: d.personaId, monto: Number(d.monto) }));
     const listaTesoros = tesoros.map((t) => ({
       personaId: t.personaId,
       nombre: t.nombre.trim(),
       tipo: t.tipo,
+      producto: t.producto.trim(),
+      cantidad: Number(t.cantidad) > 0 ? Math.floor(Number(t.cantidad)) : 1,
       detalle: t.detalle.trim() || undefined,
     }));
     const base = {
@@ -361,6 +372,28 @@ function FormParte({
               </select>
             </label>
             <label>
+              Producto
+              <input
+                value={t.producto}
+                placeholder="Arroz, aceite, jabón…"
+                onChange={(e) =>
+                  setTesoros(tesoros.map((x, j) => (j === i ? { ...x, producto: e.target.value } : x)))
+                }
+              />
+            </label>
+            <label>
+              Cantidad
+              <input
+                type="number"
+                min="1"
+                value={t.cantidad}
+                placeholder="1"
+                onChange={(e) =>
+                  setTesoros(tesoros.map((x, j) => (j === i ? { ...x, cantidad: e.target.value } : x)))
+                }
+              />
+            </label>
+            <label>
               Detalle
               <input
                 value={t.detalle}
@@ -383,7 +416,7 @@ function FormParte({
           datos={datos}
           excluir={new Set(tesoros.map((t) => t.personaId).filter((x): x is string => !!x))}
           onElegir={(id) =>
-            setTesoros([...tesoros, { personaId: id, nombre: nombreDe(id), tipo: 'Alimentos', detalle: '' }])
+            setTesoros([...tesoros, { personaId: id, nombre: nombreDe(id), tipo: 'Alimentos', producto: '', cantidad: '', detalle: '' }])
           }
           placeholder="Añadir hermano que recibió…"
         />
@@ -401,7 +434,7 @@ function FormParte({
             className="btn"
             onClick={() => {
               if (!visita.trim()) return;
-              setTesoros([...tesoros, { nombre: visita.trim(), tipo: 'Alimentos', detalle: '' }]);
+              setTesoros([...tesoros, { nombre: visita.trim(), tipo: 'Alimentos', producto: '', cantidad: '', detalle: '' }]);
               setVisita('');
             }}
           >
@@ -450,10 +483,26 @@ function SeccionReuniones({
   recargar: () => void;
 }) {
   const [editando, setEditando] = useState<string | null>(null);
+  const [ano, setAno] = useState(0);
+  const [mes, setMes] = useState(0);
   const partes = partesDeGrupo(datos, grupo.id);
-  const resumen = resumenReuniones(datos, grupo.id);
-  const ofrendas = datos.aportes.filter((a) => a.grupoId === grupo.id);
+  const fechasPartes = partes.map((p) => p.fecha);
+  const periodo: Periodo | undefined =
+    ano === 0
+      ? undefined
+      : {
+          desde: `${ano}-${String(mes === 0 ? 1 : mes).padStart(2, '0')}-01`,
+          hasta: (() => {
+            const fin = mes === 0 ? new Date(ano, 12, 0) : new Date(ano, mes, 0);
+            return `${fin.getFullYear()}-${String(fin.getMonth() + 1).padStart(2, '0')}-${String(fin.getDate()).padStart(2, '0')}`;
+          })(),
+        };
+  const enPer = (f: string) => !periodo || (f >= periodo.desde && f <= periodo.hasta);
+  const resumen = resumenReuniones(datos, grupo.id, periodo);
+  const ofrendas = datos.aportes.filter((a) => a.grupoId === grupo.id && enPer(a.fecha));
   const totalOfrendas = ofrendas.reduce((x, a) => x + a.monto, 0);
+  const partesVisibles = partes.filter((p) => enPer(p.fecha));
+  const mesesDisp = ano === 0 ? [] : mesesConRegistros(fechasPartes, ano);
   const parteEditando =
     editando && editando !== 'nuevo' ? partes.find((p) => p.id === editando) : undefined;
   return (
@@ -466,8 +515,31 @@ function SeccionReuniones({
           {editando ? '✕ Cerrar el formulario' : '➕ Registrar parte'}
         </button>
       </div>
+      <div className="selector-periodo">
+        <label>
+          📅 Partes:{' '}
+          <select value={ano} onChange={(e) => setAno(Number(e.target.value))}>
+            <option value={0}>Todo el tiempo</option>
+            {anosConRegistros(fechasPartes).map((a) => (
+              <option key={a} value={a}>{a}</option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Mes{' '}
+          <select value={mes} onChange={(e) => setMes(Number(e.target.value))} disabled={ano === 0}>
+            <option value={0}>Todo el año</option>
+            {mesesDisp.map((m) => (
+              <option key={m} value={m}>{MESES[m - 1]}</option>
+            ))}
+            {mes !== 0 && !mesesDisp.includes(mes) && (
+              <option value={mes}>{MESES[mes - 1]}</option>
+            )}
+          </select>
+        </label>
+      </div>
       {resumen.partes === 0 ? (
-        <p className="tenue">Sin partes registrados todavía.</p>
+        <p className="tenue">{partes.length === 0 ? 'Sin partes registrados todavía.' : 'Sin partes en el período elegido.'}</p>
       ) : (
         <section className="kpis">
           <Kpi icono="📅" numero={resumen.partes} titulo="Partes" />
@@ -502,9 +574,9 @@ function SeccionReuniones({
           onGuardado={recargar}
         />
       )}
-      {partes.length > 0 && (
+      {partesVisibles.length > 0 && (
         <ul className="lista-personas">
-          {partes.map((p) => {
+          {partesVisibles.map((p) => {
             const of = ofrendaDeParte(datos, p.id);
             const dz = diezmosDeParte(datos, p.id);
             const ts = tesorosDeParte(datos, p.id);

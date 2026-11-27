@@ -1162,6 +1162,10 @@ export interface TesoroDelParte {
   nombre: string;
   /** 'Alimentos' | 'Aseo' | 'Ambos' */
   tipo: string;
+  /** El producto que se entrega (arroz, aceite, jabón…). */
+  producto?: string;
+  /** Cuántas unidades van en la entrega; si falta, 1. */
+  cantidad?: number;
   detalle?: string;
 }
 
@@ -1197,7 +1201,8 @@ async function sincronizarTesoroDelParte(
       beneficiarioNombre: t.nombre.trim(),
       fecha: reunion.fecha,
       tipo: t.tipo,
-      cantidad: 1,
+      producto: t.producto?.trim() || undefined,
+      cantidad: t.cantidad && t.cantidad > 0 ? Math.floor(t.cantidad) : 1,
       unidad: 'regalo',
       reunionId: reunion.id,
       notas: t.detalle?.trim() || undefined,

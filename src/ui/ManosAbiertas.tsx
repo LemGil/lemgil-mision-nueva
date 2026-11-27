@@ -222,7 +222,7 @@ export default function ManosAbiertas({ repo }: { repo: Repo }) {
         <FilaRegistro
           fecha={e.fecha}
           nombre={nombreDeEntrega(e, nombreBenefPorId)}
-          meta={[conCampana ? nombreCampana(e.campanaId) : null, e.tipo ?? null].filter(Boolean).join(' · ') || undefined}
+          meta={[conCampana ? nombreCampana(e.campanaId) : null, e.tipo ?? null, e.producto ?? null].filter(Boolean).join(' · ') || undefined}
           valor={e.cantidad ? `${e.cantidad} ${e.unidad ?? ''}`.trim() : ''}
           onClick={() => setEditandoEntrega(e.id)}
         />
