@@ -46,6 +46,14 @@ export default function Ministerios({ repo }: { repo: Repo }) {
     coincideBusqueda(busqueda, m.nombre, m.mision, m.responsable, ...m.miembros.map((x) => x.nombre)),
   );
   const detalleMin = abierto ? todosMinisterios.find((m) => m.nombre === abierto) : undefined;
+  // En la ficha, quien está al frente va delimitado aparte: el resto
+  // de la lista son los participantes.
+  const frenteMiembro = detalleMin?.responsableId
+    ? detalleMin.miembros.find((p) => p.personaId === detalleMin.responsableId)
+    : undefined;
+  const restoMiembros = detalleMin
+    ? detalleMin.miembros.filter((p) => p.personaId !== detalleMin.responsableId)
+    : [];
   const sirviendo = new Set(datos.asignaciones.map((a) => a.personaId));
   const conResponsable = todosMinisterios.filter((m) => m.responsable).length;
 
@@ -185,7 +193,6 @@ export default function Ministerios({ repo }: { repo: Repo }) {
           {error && <p className="aviso aviso-rojo">{error}</p>}
           <p className="tenue">
             {detalleMin.miembros.length} en el ministerio
-            {detalleMin.responsable ? ` · ⭐ al frente: ${detalleMin.responsable}` : ' · sin nadie al frente'}
             {detalleMin.inicio ? ` · desde el ${fechaCorta(detalleMin.inicio)}` : ''}
           </p>
           {detalleMin.mision && <p>{detalleMin.mision}</p>}
@@ -208,28 +215,69 @@ export default function Ministerios({ repo }: { repo: Repo }) {
               ✏️ Editar la ficha
             </button>
           </div>
+          <h3>⭐ Al frente</h3>
+          {detalleMin.responsable ? (
+            <section className="tarjeta">
+              <FilaAcciones
+                nombre={detalleMin.responsable}
+                meta="Responsable del ministerio"
+                acciones={
+                  <>
+                    <button
+                      type="button"
+                      className="btn"
+                      onClick={async () => {
+                        await fijarResponsableMinisterio(repo, datos, detalleMin.nombre, null);
+                        await recargar();
+                      }}
+                    >
+                      Quitar del frente
+                    </button>
+                    {frenteMiembro && (
+                      <button
+                        type="button"
+                        className="btn"
+                        onClick={async () => {
+                          await quitarDeMinisterio(repo, frenteMiembro.asignacionId);
+                          await fijarResponsableMinisterio(repo, datos, detalleMin.nombre, null);
+                          await recargar();
+                        }}
+                      >
+                        Quitar
+                      </button>
+                    )}
+                  </>
+                }
+              />
+            </section>
+          ) : (
+            <p className="tenue">
+              Sin nadie al frente todavía: pon a alguien desde los participantes o editando la ficha.
+            </p>
+          )}
+          <h3>Participantes ({restoMiembros.length})</h3>
           <ul className="lista-personas">
-            {detalleMin.miembros.map((p) => (
+            {restoMiembros.map((p) => (
               <li key={p.asignacionId}>
                 <FilaAcciones
-                  nombre={p.responsable ? `${p.nombre} ⭐` : p.nombre}
+                  nombre={p.nombre}
                   acciones={
                     <>
                       <button
                         type="button"
                         className="btn"
-                        title={p.responsable ? 'Quitar del frente' : 'Poner al frente del ministerio'}
+                        title="Poner al frente del ministerio"
                         onClick={async () => {
                           await fijarResponsableMinisterio(
                             repo,
                             datos,
                             detalleMin.nombre,
-                            p.responsable ? null : p.personaId,
+                            p.personaId,
                           );
                           await recargar();
                         }}
                       >
-                        {p.responsable ? '⭐ Al frente' : '☆ Al frente'}
+                        ☆ Al frente
                       </button>
                       <button
                         type="button"
@@ -246,7 +294,11 @@ export default function Ministerios({ repo }: { repo: Repo }) {
                 />
               </li>
             ))}
-            {detalleMin.miembros.length === 0 && <li className="tenue">Sin personas todavía.</li>}
+            {restoMiembros.length === 0 && (
+              <li className="tenue">
+                {detalleMin.miembros.length === 0 ? 'Sin personas todavía.' : 'Sin más participantes todavía.'}
+              </li>
+            )}
           </ul>
           <h3>Agregar a una persona</h3>
           <SelectorPersona
