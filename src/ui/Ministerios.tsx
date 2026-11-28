@@ -34,6 +34,7 @@ export default function Ministerios({ repo }: { repo: Repo }) {
   const [vista, setVista] = useState<Vista>('lista');
   const [agruparPor, setAgruparPor] = useState('ministerio');
   const [asignandoA, setAsignandoA] = useState<string | null>(null);
+  const [listaAbierta, setListaAbierta] = useState<'sirviendo' | 'sin-servir' | null>(null);
 
   const recargar = async () => setDatos(await aDatosMinisterio(repo));
   useEffect(() => {
@@ -66,9 +67,28 @@ export default function Ministerios({ repo }: { repo: Repo }) {
     .sort((a, b) =>
       `${a.nombre} ${a.apellidos ?? ''}`.localeCompare(`${b.nombre} ${b.apellidos ?? ''}`),
     );
-  const sinFrente = todosMinisterios.filter((v) => !v.responsable);
-  const sinGenteVista = todosMinisterios.filter((v) => v.miembros.length === 0);
-  const hayQueCuidar = sinServir.length > 0 || sinFrente.length > 0 || sinGenteVista.length > 0;
+  // Las listas salen al pinchar su tarjeta: quiénes sirven (y en
+  // qué, con su ⭐ si están al frente) y quiénes aún no sirven.
+  const claveNombre = (s: string) =>
+    s.normalize('NFD').replace(/\p{M}/gu, '').trim().toLowerCase();
+  const sirviendoDetalle = [...sirviendo]
+    .map((personaId) => {
+      const p = datos.personas.find((x) => x.id === personaId);
+      const mins = datos.asignaciones.filter((a) => a.personaId === personaId);
+      return {
+        personaId,
+        nombre: p ? `${p.nombre} ${p.apellidos ?? ''}`.trim() : '—',
+        ministerios: mins.map((a) => a.ministerio),
+        frenteEn: mins
+          .filter((a) =>
+            todosMinisterios.some(
+              (v) => claveNombre(v.nombre) === claveNombre(a.ministerio) && v.responsableId === personaId,
+            ),
+          )
+          .map((a) => a.ministerio),
+      };
+    })
+    .sort((a, b) => a.nombre.localeCompare(b.nombre));
 
   const asignar = async (ministerio: string, personaId: string) => {
     setError('');
@@ -107,95 +127,20 @@ export default function Ministerios({ repo }: { repo: Repo }) {
 
       <section className="kpis">
         <Kpi icono="⛪" numero={todosMinisterios.length} titulo="Ministerios" />
-        <Kpi icono="🤝" numero={sirviendo.size} titulo="Personas sirviendo" />
+        <Kpi
+          icono="🤝"
+          numero={sirviendo.size}
+          titulo="Personas sirviendo"
+          onClick={() => setListaAbierta('sirviendo')}
+        />
         <Kpi icono="⭐" numero={conResponsable} titulo="Con responsable" />
-        <Kpi icono="⚠️" numero={sinServir.length} titulo="Sin servir" />
+        <Kpi
+          icono="⚠️"
+          numero={sinServir.length}
+          titulo="Sin servir"
+          onClick={() => setListaAbierta('sin-servir')}
+        />
       </section>
-
-      {hayQueCuidar && (
-        <section className="tarjeta">
-          <h2>⚠️ A cuidar</h2>
-          {sinServir.length > 0 && (
-            <>
-              <h3>Miembros que aún no sirven ({sinServir.length})</h3>
-              <ul className="lista-personas">
-                {sinServir.map((p) => (
-                  <li key={p.id}>
-                    <FilaAcciones
-                      nombre={`${p.nombre} ${p.apellidos ?? ''}`}
-                      meta={p.zona ?? undefined}
-                      acciones={
-                        <button
-                          type="button"
-                          className="btn"
-                          onClick={() => setAsignandoA(asignandoA === p.id ? null : p.id)}
-                        >
-                          🤲 Asignar
-                        </button>
-                      }
-                    />
-                    {asignandoA === p.id && (
-                      <div className="form-fila">
-                        {todosMinisterios.length === 0 && (
-                          <span className="tenue">Primero crea un ministerio.</span>
-                        )}
-                        {todosMinisterios.map((v) => (
-                          <button
-                            key={v.nombre}
-                            type="button"
-                            className="btn"
-                            onClick={async () => {
-                              await asignar(v.nombre, p.id);
-                              setAsignandoA(null);
-                            }}
-                          >
-                            🤲 {v.nombre}
-                          </button>
-                        ))}
-                        <button type="button" className="btn" onClick={() => setAsignandoA(null)}>
-                          Cancelar
-                        </button>
-                      </div>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
-          {sinFrente.length > 0 && (
-            <>
-              <h3>Ministerios sin nadie al frente ({sinFrente.length})</h3>
-              <ul className="lista-personas">
-                {sinFrente.map((v) => (
-                  <li key={v.nombre}>
-                    <FilaPersona
-                      nombre={`🤲 ${v.nombre}`}
-                      meta="Toca para abrir su ficha y poner al responsable"
-                      onClick={() => setAbierto(v.nombre)}
-                    />
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
-          {sinGenteVista.length > 0 && (
-            <>
-              <h3>Ministerios sin gente ({sinGenteVista.length})</h3>
-              <ul className="lista-personas">
-                {sinGenteVista.map((v) => (
-                  <li key={v.nombre}>
-                    <FilaPersona
-                      nombre={`🤲 ${v.nombre}`}
-                      meta="Toca para abrir su ficha y agregarle gente"
-                      onClick={() => setAbierto(v.nombre)}
-                    />
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
-        </section>
-      )}
 
       <Buscador>
         <input placeholder="🔍 Buscar ministerio o persona…" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} />
@@ -418,6 +363,75 @@ export default function Ministerios({ repo }: { repo: Repo }) {
               }}
             />
           </div>
+        </Modal>
+      )}
+      {listaAbierta === 'sirviendo' && (
+        <Modal onCerrar={() => setListaAbierta(null)}>
+          <h2>🤝 Personas sirviendo ({sirviendoDetalle.length})</h2>
+          <ul className="lista-personas">
+            {sirviendoDetalle.map((s) => (
+              <li key={s.personaId}>
+                <FilaAcciones
+                  nombre={s.nombre}
+                  meta={s.ministerios
+                    .map((m) => (s.frenteEn.includes(m) ? `⭐ ${m}` : m))
+                    .join(' · ')}
+                />
+              </li>
+            ))}
+            {sirviendoDetalle.length === 0 && <li className="tenue">Nadie sirve todavía.</li>}
+          </ul>
+        </Modal>
+      )}
+      {listaAbierta === 'sin-servir' && (
+        <Modal onCerrar={() => setListaAbierta(null)}>
+          <h2>⚠️ Miembros que aún no sirven ({sinServir.length})</h2>
+          {error && <p className="aviso aviso-rojo">{error}</p>}
+          <ul className="lista-personas">
+            {sinServir.map((p) => (
+              <li key={p.id}>
+                <FilaAcciones
+                  nombre={`${p.nombre} ${p.apellidos ?? ''}`}
+                  meta={p.zona ?? undefined}
+                  acciones={
+                    <button
+                      type="button"
+                      className="btn"
+                      onClick={() => setAsignandoA(asignandoA === p.id ? null : p.id)}
+                    >
+                      🤲 Asignar
+                    </button>
+                  }
+                />
+                {asignandoA === p.id && (
+                  <div className="form-fila">
+                    {todosMinisterios.length === 0 && (
+                      <span className="tenue">Primero crea un ministerio.</span>
+                    )}
+                    {todosMinisterios.map((v) => (
+                      <button
+                        key={v.nombre}
+                        type="button"
+                        className="btn"
+                        onClick={async () => {
+                          await asignar(v.nombre, p.id);
+                          setAsignandoA(null);
+                        }}
+                      >
+                        🤲 {v.nombre}
+                      </button>
+                    ))}
+                    <button type="button" className="btn" onClick={() => setAsignandoA(null)}>
+                      Cancelar
+                    </button>
+                  </div>
+                )}
+              </li>
+            ))}
+            {sinServir.length === 0 && (
+              <li className="tenue">Todos los miembros activos ya sirven en un ministerio.</li>
+            )}
+          </ul>
         </Modal>
       )}
     </div>
