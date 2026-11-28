@@ -13,7 +13,7 @@ const datos: DatosMinisterio = {
   ],
   campanas: [], entregas: [],
   reuniones: [],
-  academias: [], encuentros: [],
+  academias: [], encuentros: [], ministerios: [],
   aportesRed: [
     { id: 'a1', colaboradorId: 'c1', fecha: '2025-08-10', monto: 210, tipo: 'Diezmo' },
     { id: 'a2', colaboradorId: 'c1', fecha: '2026-01-05', monto: 100, tipo: 'Ofrenda' },

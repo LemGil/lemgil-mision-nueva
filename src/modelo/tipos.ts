@@ -196,6 +196,24 @@ export interface AsignacionMinisterio {
   responsable?: boolean;
 }
 
+/** Un ministerio de la casa, con su ficha propia (pedido de LemGil,
+ * 2026-11-27): su nombre, cuándo inició o se formó, la misión que
+ * tendrá y quién está al frente como responsable — aquí nadie es
+ * «líder»: somos servidores. Su gente son las asignaciones con su
+ * nombre; un ministerio del catálogo se ve aunque aún no tenga
+ * gente, y uno que solo vive en asignaciones se adopta al editarlo. */
+export interface Ministerio {
+  id: string;
+  nombre: string;
+  /** Fecha de inicio o formación (ISO). */
+  inicio?: string;
+  /** La misión que el ministerio tendrá. */
+  mision?: string;
+  /** La persona al frente (responsable). Al guardar queda también
+   * como participante: estar al frente es servir ahí. */
+  responsableId?: string | null;
+}
+
 /** Un grupo de la iglesia. Sus miembros son las personas/miembros con su grupoId. */
 export interface Grupo {
   id: string;
@@ -318,6 +336,7 @@ export interface DatosMinisterio {
   reuniones: Reunion[];
   academias: Academia[];
   encuentros: Encuentro[];
+  ministerios: Ministerio[];
   pasos: Paso[];
 }
 

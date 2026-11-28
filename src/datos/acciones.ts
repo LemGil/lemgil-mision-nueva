@@ -46,6 +46,7 @@ import type {
   Grupo,
   Hito,
   Miembro,
+  Ministerio,
   Paso,
   Persona,
   Reunion,
@@ -837,7 +838,8 @@ export async function renombrarMinisterio(
   }
 }
 
-/** Borrar un ministerio = quitar a toda su gente de él. */
+/** Borrar un ministerio = quitar a toda su gente de él y borrar
+ * también su ficha del catálogo, si la tiene. */
 export async function borrarMinisterio(
   repo: Repo,
   datos: DatosMinisterio,
@@ -846,6 +848,8 @@ export async function borrarMinisterio(
   for (const a of datos.asignaciones.filter((x) => x.ministerio === nombre)) {
     await repo.borrar('asignaciones', a.id);
   }
+  const ficha = ministerioDelCatalogo(datos, nombre);
+  if (ficha) await repo.borrar('ministerios', ficha.id);
 }
 
 /** Marca quién está al frente (uno solo por ministerio; null = nadie). */
@@ -859,6 +863,169 @@ export async function marcarResponsableMinisterio(
     const responsable = a.id === asignacionId ? true : undefined;
     if ((a.responsable === true) !== (responsable === true)) {
       await repo.guardar('asignaciones', { ...a, responsable });
+    }
+  }
+}
+
+// ── Ministerios: la ficha propia (catálogo) ──────────────────────────
+// El ministerio tiene su registro: nombre, inicio o formación, la
+// misión que tendrá y quién está al frente como responsable (aquí
+// nadie es «líder»: somos servidores). Su gente siguen siendo las
+// asignaciones con su nombre, la fuente viva del paso Ministerio.
+
+const claveMinisterio = (nombre: string) => sinAcentos(nombre).trim();
+
+/** La ficha del catálogo de un ministerio por su nombre (sin
+ * acentos ni mayúsculas), si ya fue registrado. */
+export function ministerioDelCatalogo(
+  datos: DatosMinisterio,
+  nombre: string,
+): Ministerio | undefined {
+  const clave = claveMinisterio(nombre);
+  return datos.ministerios.find((m) => claveMinisterio(m.nombre) === clave);
+}
+
+/** Deja las asignaciones del ministerio exactamente en la lista
+ * pedida: agrega a los que faltan (con el nombre destino) y quita
+ * a los que sobran. `actuales` sale de la foto de datos, donde las
+ * asignaciones pueden llevar todavía el nombre previo a un renombre. */
+async function sincronizarParticipantesMinisterio(
+  repo: Repo,
+  actuales: AsignacionMinisterio[],
+  nombreDestino: string,
+  deseados: Set<string>,
+): Promise<void> {
+  for (const a of actuales) {
+    if (!deseados.has(a.personaId)) await repo.borrar('asignaciones', a.id);
+  }
+  const yaEstan = new Set(actuales.map((a) => a.personaId));
+  for (const personaId of deseados) {
+    if (!yaEstan.has(personaId)) {
+      await repo.guardar('asignaciones', { id: nuevoId(), personaId, ministerio: nombreDestino });
+    }
+  }
+}
+
+/** El responsable siempre es también participante: estar al frente
+ * es servir ahí. Sin lista de participantes, solo se le agrega. */
+async function asegurarResponsableMinisterio(
+  repo: Repo,
+  datos: DatosMinisterio,
+  nombreEnDatos: string,
+  nombreDestino: string,
+  responsableId: string | null | undefined,
+  deseados?: Set<string>,
+): Promise<void> {
+  if (deseados) {
+    if (responsableId) deseados.add(responsableId);
+    const actuales = datos.asignaciones.filter((a) => a.ministerio === nombreEnDatos);
+    await sincronizarParticipantesMinisterio(repo, actuales, nombreDestino, deseados);
+  } else if (responsableId) {
+    const ya = datos.asignaciones.some(
+      (a) => a.ministerio === nombreEnDatos && a.personaId === responsableId,
+    );
+    if (!ya) {
+      await repo.guardar('asignaciones', {
+        id: nuevoId(),
+        personaId: responsableId,
+        ministerio: nombreDestino,
+      });
+    }
+  }
+}
+
+export async function crearMinisterio(
+  repo: Repo,
+  datos: DatosMinisterio,
+  entrada: {
+    nombre: string;
+    inicio?: string;
+    mision?: string;
+    responsableId?: string | null;
+    participanteIds?: string[];
+  },
+): Promise<Ministerio> {
+  const nombre = entrada.nombre.trim();
+  if (!nombre) throw new Error('El ministerio necesita un nombre.');
+  if (ministerioDelCatalogo(datos, nombre)) {
+    throw new Error(`Ya hay un ministerio llamado «${nombre}».`);
+  }
+  const ministerio: Ministerio = {
+    id: nuevoId(),
+    nombre,
+    inicio: entrada.inicio || undefined,
+    mision: entrada.mision?.trim() || undefined,
+    responsableId: entrada.responsableId ?? null,
+  };
+  await repo.guardar('ministerios', ministerio);
+  // Si el nombre ya vivía en asignaciones (un ministerio sin ficha),
+  // esta creación lo adopta: la lista de participantes manda.
+  await asegurarResponsableMinisterio(
+    repo,
+    datos,
+    nombre,
+    nombre,
+    ministerio.responsableId,
+    entrada.participanteIds ? new Set(entrada.participanteIds) : undefined,
+  );
+  return ministerio;
+}
+
+export async function actualizarMinisterio(
+  repo: Repo,
+  datos: DatosMinisterio,
+  ministerio: Ministerio,
+  participanteIds?: string[],
+): Promise<void> {
+  const nombre = ministerio.nombre.trim();
+  if (!nombre) throw new Error('El ministerio necesita un nombre.');
+  const previo = datos.ministerios.find((m) => m.id === ministerio.id);
+  const choque = datos.ministerios.find(
+    (m) => m.id !== ministerio.id && claveMinisterio(m.nombre) === claveMinisterio(nombre),
+  );
+  if (choque) throw new Error(`Ya hay otro ministerio llamado «${nombre}».`);
+  if (previo && claveMinisterio(previo.nombre) !== claveMinisterio(nombre)) {
+    await renombrarMinisterio(repo, datos, previo.nombre, nombre);
+  }
+  const limpio: Ministerio = {
+    ...ministerio,
+    nombre,
+    inicio: ministerio.inicio || undefined,
+    mision: ministerio.mision?.trim() || undefined,
+    responsableId: ministerio.responsableId ?? null,
+  };
+  await repo.guardar('ministerios', limpio);
+  await asegurarResponsableMinisterio(
+    repo,
+    datos,
+    previo?.nombre ?? nombre,
+    nombre,
+    limpio.responsableId,
+    participanteIds ? new Set(participanteIds) : undefined,
+  );
+}
+
+/** Pone (o quita) a la persona al frente de un ministerio desde su
+ * ficha. Si el ministerio aún no tiene ficha, esta nace aquí con
+ * ese responsable (la adopción). */
+export async function fijarResponsableMinisterio(
+  repo: Repo,
+  datos: DatosMinisterio,
+  nombre: string,
+  personaId: string | null,
+): Promise<void> {
+  const ficha = ministerioDelCatalogo(datos, nombre);
+  if (ficha) {
+    await repo.guardar('ministerios', { ...ficha, responsableId: personaId });
+  } else {
+    await repo.guardar('ministerios', { id: nuevoId(), nombre, responsableId: personaId });
+  }
+  if (personaId) {
+    const ya = datos.asignaciones.some(
+      (a) => a.ministerio === nombre && a.personaId === personaId,
+    );
+    if (!ya) {
+      await repo.guardar('asignaciones', { id: nuevoId(), personaId, ministerio: nombre });
     }
   }
 }

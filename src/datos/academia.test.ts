@@ -33,6 +33,7 @@ function datosDesde(repo: RepoFalso): DatosMinisterio {
     reuniones: [],
     academias: repo.vivos<Academia>('academias'),
     encuentros: repo.vivos<Encuentro>('encuentros'),
+    ministerios: [],
     pasos: [],
   } as DatosMinisterio;
 }

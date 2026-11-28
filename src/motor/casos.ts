@@ -73,7 +73,7 @@ export const CASO_2026: DatosMinisterio = {
   campanas: [],
   entregas: [],
   reuniones: [],
-  academias: [], encuentros: [],
+  academias: [], encuentros: [], ministerios: [],
   aportes: [
     { id: 'ap5', personaId: 'p5', fecha: '2026-11-03', monto: 500, tipo: 'Diezmo' },
     { id: 'ap12', personaId: 'p12', fecha: '2026-11-10', monto: 200, tipo: 'Diezmo' },

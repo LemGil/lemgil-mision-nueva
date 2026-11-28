@@ -27,7 +27,7 @@ const base: DatosMinisterio = {
   campanas: [],
   entregas: [],
   reuniones: [],
-  academias: [], encuentros: [],
+  academias: [], encuentros: [], ministerios: [],
   pasos: [],
 };
 
@@ -54,5 +54,38 @@ describe('resumenMinisterios', () => {
 
   it('sin asignaciones, no hay ministerios', () => {
     expect(resumenMinisterios({ ...base, asignaciones: [] })).toEqual([]);
+  });
+
+  it('un ministerio del catálogo se ve aunque no tenga gente, con su ficha', () => {
+    const conCatalogo: DatosMinisterio = {
+      ...base,
+      asignaciones: [],
+      ministerios: [
+        { id: 'm1', nombre: 'Intercesión', inicio: '2025-03-02', mision: 'Orar por la casa', responsableId: 'p1' },
+      ],
+    };
+    const r = resumenMinisterios(conCatalogo);
+    expect(r).toHaveLength(1);
+    expect(r[0].ministerioId).toBe('m1');
+    expect(r[0].inicio).toBe('2025-03-02');
+    expect(r[0].mision).toBe('Orar por la casa');
+    expect(r[0].responsable).toBe('Ana Paz');
+    expect(r[0].miembros).toEqual([]);
+  });
+
+  it('el responsable de la ficha manda sobre la marca vieja de la asignación', () => {
+    const conAmbos: DatosMinisterio = {
+      ...base,
+      asignaciones: base.asignaciones.map((a, i) =>
+        i === 0 ? { ...a, responsable: true } : a,
+      ),
+      ministerios: [{ id: 'm1', nombre: 'ENSEÑANZA', responsableId: 'p1' }],
+    };
+    const r = resumenMinisterios(conAmbos);
+    const ensenanza = r.find((m) => m.nombre === 'ENSEÑANZA')!;
+    // La marca vieja señalaba a Beto (p2); la ficha manda: Ana (p1).
+    expect(ensenanza.responsable).toBe('Ana Paz');
+    expect(ensenanza.miembros.find((m) => m.personaId === 'p1')?.responsable).toBe(true);
+    expect(ensenanza.miembros.find((m) => m.personaId === 'p2')?.responsable).toBe(false);
   });
 });

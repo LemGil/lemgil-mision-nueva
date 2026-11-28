@@ -29,7 +29,7 @@ const base: DatosMinisterio = {
   campanas: [],
   entregas: [],
   reuniones: [],
-  academias: [], encuentros: [],
+  academias: [], encuentros: [], ministerios: [],
   aportes: [],
 };
 

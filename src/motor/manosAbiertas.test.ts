@@ -16,7 +16,7 @@ const datos: DatosMinisterio = {
     { id: 'e2', campanaId: 'c1', fecha: '2026-02-01', cantidad: 30 },
   ],
   reuniones: [],
-  academias: [], encuentros: [],
+  academias: [], encuentros: [], ministerios: [],
 };
 
 describe('resumenManos', () => {
