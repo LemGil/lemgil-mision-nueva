@@ -11,6 +11,7 @@ import { escaleraDeMiembro, tarjetasDeMiembros } from './miembros';
 import { corteBautizados, informeMision, type InformeMision } from './informeMision';
 import { nombreColaborador, resumenRed } from './red';
 import { resumenManos } from './manosAbiertas';
+import { resumenMinisterios } from './ministerios';
 import { formatoDinero } from './dinero';
 
 export type DepartamentoId =
@@ -52,6 +53,11 @@ export interface OpcionesInforme {
 }
 
 const n = (x: number) => String(x);
+
+const MESES_CORTO = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+/** '2025-03-02' → '2 mar 2025', la fecha corta de la casa. */
+const fechaInforme = (iso: string) =>
+  `${Number(iso.slice(8, 10))} ${MESES_CORTO[Number(iso.slice(5, 7)) - 1] ?? ''} ${iso.slice(0, 4)}`;
 
 /** Las secciones ampliadas del Informe de Misión (lo ampliado:
  * persona por persona). Las comparten la página Informe y la
@@ -185,37 +191,114 @@ export function construirInforme(
           if (e.cumplido) cumplidos.set(e.paso.nombre, (cumplidos.get(e.paso.nombre) ?? 0) + 1);
         }
       }
-      return {
-        id,
-        titulo: 'Informe de Miembros y Ministerios',
-        secciones: [
-          {
-            titulo: opts.cohorte?.ano ? '🏠 La foto de la cohorte' : '🏠 La foto de la membresía',
-            filas: [
-              ['Activos', n(t.activos)],
-              ['Inactivos', n(t.inactivos)],
-              ['Trasladados', n(t.trasladados)],
-              ['Fallecidos', n(t.fallecidos)],
-              ['Disciplinados', n(t.disciplinados)],
-            ],
-          },
-          {
-            titulo: '🪜 La escalera (sobre los Activos)',
-            filas: [
-              ['En Grupo', n(t.enGrupo)],
-              ['Diezmadores', n(t.diezmadores)],
-              ['En la Academia', n(t.enAcademia)],
-              ['Sirviendo', n(t.sirviendo)],
-              ['Hermano Mayor (los que son)', n(t.hermanoMayor)],
-              ['Líderes', n(t.lideres)],
-              ...[...cumplidos.entries()].map(([nombre, c]): [string, string] => [
-                `Paso cumplido: ${nombre}`,
-                n(c),
-              ]),
-            ],
-          },
-        ],
+      const secciones: SeccionInforme[] = [
+        {
+          titulo: opts.cohorte?.ano ? '🏠 La foto de la cohorte' : '🏠 La foto de la membresía',
+          filas: [
+            ['Activos', n(t.activos)],
+            ['Inactivos', n(t.inactivos)],
+            ['Trasladados', n(t.trasladados)],
+            ['Fallecidos', n(t.fallecidos)],
+            ['Disciplinados', n(t.disciplinados)],
+          ],
+        },
+        {
+          titulo: '🪜 La escalera (sobre los Activos)',
+          filas: [
+            ['En Grupo', n(t.enGrupo)],
+            ['Diezmadores', n(t.diezmadores)],
+            ['En la Academia', n(t.enAcademia)],
+            ['Sirviendo', n(t.sirviendo)],
+            ['Hermano Mayor (los que son)', n(t.hermanoMayor)],
+            ['Líderes', n(t.lideres)],
+            ...[...cumplidos.entries()].map(([nombre, c]): [string, string] => [
+              `Paso cumplido: ${nombre}`,
+              n(c),
+            ]),
+          ],
+        },
+      ];
+      // Los ministerios con su ficha (v67): el servicio, cada
+      // ministerio con su responsable y su misión, y lo que hay
+      // que cuidar — empezando por los miembros que aún no sirven.
+      const vistas = resumenMinisterios(datos);
+      const nombrePersona = (personaId: string) => {
+        const p = datos.personas.find((x) => x.id === personaId);
+        return p ? `${p.nombre} ${p.apellidos ?? ''}`.trim() : '—';
       };
+      const conGente = vistas.filter((v) => v.miembros.length > 0).length;
+      const sinFrente = vistas.filter((v) => !v.responsable);
+      const sinGente = vistas.filter((v) => v.miembros.length === 0);
+      const sirviendoIds = new Set(datos.asignaciones.map((a) => a.personaId));
+      secciones.push({
+        titulo: '🤲 El servicio en los ministerios',
+        filas: [
+          ['Ministerios', n(vistas.length)],
+          ['Con ficha registrada', n(datos.ministerios.length)],
+          ['Con gente sirviendo', n(conGente)],
+          ['Personas sirviendo', n(sirviendoIds.size)],
+          ['Sin nadie al frente', n(sinFrente.length)],
+          ['Sin gente todavía', n(sinGente.length)],
+        ],
+      });
+      if (vistas.length > 0) {
+        secciones.push({
+          titulo: '⛪ Los ministerios',
+          filas: vistas.map((v): [string, string] => [
+            v.nombre,
+            [
+              v.responsable ? `Al frente: ${v.responsable}` : 'Sin nadie al frente',
+              v.miembros.length > 0 ? `${v.miembros.length} sirviendo` : 'sin gente',
+              v.inicio ? `desde el ${fechaInforme(v.inicio)}` : null,
+            ]
+              .filter(Boolean)
+              .join(' · '),
+          ]),
+        });
+      }
+      const conMision = vistas.filter((v) => v.mision);
+      if (conMision.length > 0) {
+        secciones.push({
+          titulo: '🎯 Las misiones',
+          filas: conMision.map((v): [string, string] => [v.nombre, v.mision!]),
+        });
+      }
+      const sinServir = datos.miembros
+        .filter((m) => m.estado === 'Activo' && !sirviendoIds.has(m.personaId))
+        .map((m) => nombrePersona(m.personaId))
+        .sort((a, b) => a.localeCompare(b));
+      const porPersona = new Map<string, string[]>();
+      for (const a of datos.asignaciones) {
+        const lista = porPersona.get(a.personaId) ?? [];
+        lista.push(a.ministerio);
+        porPersona.set(a.personaId, lista);
+      }
+      const enVarios = [...porPersona.entries()]
+        .filter(([, lista]) => lista.length > 1)
+        .map(([personaId, lista]) => ({ nombre: nombrePersona(personaId), ministerios: lista }))
+        .sort(
+          (a, b) =>
+            b.ministerios.length - a.ministerios.length || a.nombre.localeCompare(b.nombre),
+        );
+      const filasCuidar: [string, string][] = [
+        ...sinServir.map((nombre): [string, string] => [
+          nombre,
+          'Miembro activo · aún no sirve en un ministerio',
+        ]),
+        ...enVarios.map((x): [string, string] => [
+          x.nombre,
+          `Sirve en ${x.ministerios.length}: ${x.ministerios.join(', ')}`,
+        ]),
+        ...sinFrente.map((v): [string, string] => [v.nombre, 'Ministerio sin nadie al frente']),
+        ...sinGente.map((v): [string, string] => [v.nombre, 'Ministerio sin gente todavía']),
+      ];
+      if (filasCuidar.length > 0) {
+        secciones.push({
+          titulo: `⚠️ A cuidar (${sinServir.length} sin servir · ${enVarios.length} en varios)`,
+          filas: filasCuidar,
+        });
+      }
+      return { id, titulo: 'Informe de Miembros y Ministerios', secciones };
     }
     case 'academia': {
       const activos = datos.estudiantes.filter((e) => e.estado === 'Activo').length;
